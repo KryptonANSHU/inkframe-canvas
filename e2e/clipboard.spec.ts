@@ -12,19 +12,25 @@ async function inkAt(page: Page, [x, y]: readonly [number, number]) {
 }
 
 test('copy in one tab, paste in another; cut removes the shape', async ({ context }) => {
+  // Both tabs open before anything is drawn: tabs share autosave storage, so a tab
+  // opened after the first one autosaved would restore its drawing.
   const first = await context.newPage();
-  const problems = await openEditor(first);
+  const second = await context.newPage();
+  const problems = [...(await openEditor(first)), ...(await openEditor(second))];
+  // Proof the timing no longer matters: well past the 500 ms autosave delay.
+  const settle = () => first.waitForTimeout(800);
+
+  await first.bringToFront();
   await canvas(first).focus();
   await first.keyboard.press('r');
   await drag(first, [200, 200], [400, 300]);
   await first.keyboard.press('ControlOrMeta+C');
-
   // Pasting in the same tab lands one offset away.
   await first.keyboard.press('ControlOrMeta+V');
   await expect.poll(() => inkAt(first, pasted)).toBe(FULL);
+  await settle();
 
-  const second = await context.newPage();
-  problems.push(...(await openEditor(second)));
+  await second.bringToFront();
   await canvas(second).focus();
   await second.keyboard.press('ControlOrMeta+V');
   await expect.poll(() => inkAt(second, pasted)).toBe(FULL);
