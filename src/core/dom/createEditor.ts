@@ -114,7 +114,15 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
       pan: createPanTool(store),
     },
     reportError,
-    files,
+    {
+      open: () => {
+        files.open();
+      },
+      save: () => {
+        files.save();
+      },
+      viewSize: () => ({ width: surface.cssWidth(), height: surface.cssHeight() }),
+    },
   );
   const unbindInput = bindCanvasInput(canvas, controller, surface);
   canvas.style.cursor = controller.cursor();

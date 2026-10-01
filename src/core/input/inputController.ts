@@ -1,4 +1,4 @@
-import { performEditAction, type FileCommands } from '../editActions';
+import { performEditAction, type EditorHooks } from '../editActions';
 import type { Point } from '../geometry/point';
 import { nudgeSelection } from '../selection/selectedShapes';
 import { EMPTY_SELECTION, type EditorStore } from '../store';
@@ -50,6 +50,11 @@ export type InputController = {
   wantsEveryMove(): boolean;
   /** Returns true when the key was handled, so the caller should preventDefault. */
   keyDown(input: KeyInput): boolean;
+  /**
+   * A key pressed while a toolbar or panel control has focus: only tool and edit
+   * shortcuts. Arrows, Space, and Escape stay with the control.
+   */
+  chromeKeyDown(input: KeyInput): boolean;
   keyUp(key: string): void;
   /** Window blur: keys may be released elsewhere, so forget them and cancel. */
   releaseAll(): void;
@@ -66,7 +71,7 @@ export function createInputController(
   store: EditorStore,
   tools: ControllerTools,
   reportError: (error: Error) => void,
-  files?: FileCommands,
+  hooks?: EditorHooks,
 ): InputController {
   let spaceHeld = false;
   // The tool is locked in at pointerdown, so releasing space mid-pan doesn't switch tools.
@@ -136,7 +141,7 @@ export function createInputController(
   const editShortcut = (input: KeyInput) => {
     const action = editActionFor(input);
     if (action !== null && !busy()) {
-      performEditAction(action, store, reportError, files);
+      performEditAction(action, store, reportError, hooks);
     }
     return action !== null;
   };
@@ -195,6 +200,7 @@ export function createInputController(
       }
       return editShortcut(input) || nudge(input) || switchToolByShortcut(input);
     },
+    chromeKeyDown: (input) => editShortcut(input) || switchToolByShortcut(input),
     keyUp(key) {
       if (key === ' ') {
         spaceHeld = false;

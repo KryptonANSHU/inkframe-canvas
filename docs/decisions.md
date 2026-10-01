@@ -352,3 +352,18 @@ A log of real design decisions: what we chose, why, and what we rejected.
 **Why:** CLAUDE.md §6 (tokens as CSS variables, `data-theme`, `prefers-color-scheme`, renderer on the same tokens) and §10 (error boundaries, never a silently blank canvas). Storing light values keeps M6's file format unchanged.
 **Alternatives rejected:** a checked-in generated `tokens.css` with a drift test (two artifacts for one source); reading CSS variables back with `getComputedStyle` in the renderer (string parsing per theme change, and unavailable in the export worker); a CSS `invert()` filter for dark mode (shifts every hue, including user colors and the selection blue); `react-error-boundary` (a dependency for ~30 lines).
 **Note:** `ErrorBoundary` is the codebase's one class component; React has no hook for catching render errors.
+
+## 2026-10-02 — M7b core: tool lock, style, arrange, zoom, and input fixes
+
+**Decision:**
+
+- **Tool lock (Q):** while locked, drawing keeps the tool and selects nothing, so shape after shape can follow. It's off by default, so a shape still returns to Select (the user picked this over always-sticky tools).
+- **Style:** `applyStyle` changes the selection as one undo step. Fill only reaches rectangles and ellipses; a slider drag joins one step through a history group. `selectionStyle` reports shared or mixed values for the panel.
+- **Palette:** shapes store the light value; `tokens.ts` pairs each light value with a dark counterpart that the dark canvas draws, so drawings read well in both themes.
+- **Arrange:** forward and backward move each selected shape past one unselected neighbor (the selection keeps its order and gaps); front and back move it to an end. Shortcuts: Ctrl / ⌘ + ] / [, with Shift for front / back.
+- **Zoom:** in and out step through preset levels (10–400%) around the view's center; Ctrl / ⌘ + 0 resets to 100%, Shift + 1 fits the drawing.
+- **Shortcuts:** tool and edit shortcuts also work while a toolbar or panel control has focus, but not keys a control handled, and never while typing.
+- **Input fixes** for strokes that "vanished" on the user's machine (not reproducible in headless Chromium):
+  - only a stylus (`pointerType: 'pen'`) sets pen width from pressure; trackpads can report click force, which made mouse strokes hairline-thin;
+  - canvas `pointerdown` prevents the default action (no text selection or native drag can cancel a stroke) and moves focus itself.
+    **Why:** PRD 1A (style panel, layers, zoom), CLAUDE.md (shortcuts with toolbar focus), and the user's reports.

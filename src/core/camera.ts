@@ -1,3 +1,4 @@
+import type { Bounds } from './geometry/bounds';
 import { createPoint, type Point } from './geometry/point';
 
 // The only place that converts between coordinate spaces:
@@ -58,6 +59,21 @@ export function zoomAt(camera: Camera, anchor: Readonly<Point>, factor: number):
   const anchorWorldX = anchor.x / camera.zoom + camera.x;
   const anchorWorldY = anchor.y / camera.zoom + camera.y;
   return { x: anchorWorldX - anchor.x / zoom, y: anchorWorldY - anchor.y / zoom, zoom };
+}
+
+/**
+ * The camera that shows `bounds` centered in a `width` × `height` view, as large as fits
+ * with `padding` screen pixels around it, within the zoom limits.
+ */
+export function fitBounds(bounds: Bounds, width: number, height: number, padding: number): Camera {
+  const boundsWidth = Math.max(bounds.maxX - bounds.minX, Number.EPSILON);
+  const boundsHeight = Math.max(bounds.maxY - bounds.minY, Number.EPSILON);
+  const zoom = clampZoom(
+    Math.min((width - 2 * padding) / boundsWidth, (height - 2 * padding) / boundsHeight),
+  );
+  const centerX = (bounds.minX + bounds.maxX) / 2;
+  const centerY = (bounds.minY + bounds.maxY) / 2;
+  return { x: centerX - width / 2 / zoom, y: centerY - height / 2 / zoom, zoom };
 }
 
 /** Moves the content by (dx, dy) screen pixels, like dragging the page under a hand tool. */

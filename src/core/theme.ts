@@ -1,4 +1,4 @@
-import { colors, type ThemeName } from '../design/tokens';
+import { colors, fillSwatches, strokeSwatches, type ThemeName } from '../design/tokens';
 
 /** The colors the canvas draws with, from the same tokens as the UI. */
 export type CanvasTheme = {
@@ -14,12 +14,11 @@ export type CanvasTheme = {
 /**
  * Shape colors are stored as their light-theme value, so files and exports never
  * depend on the theme. In dark mode, colors with a dark counterpart are swapped for
- * display; any other color is drawn as stored. The style panel's palette (M7b) adds
- * its swatches here.
+ * display; any other color (from an imported file, say) is drawn as stored.
  */
-const DARK_SHAPE_COLORS: ReadonlyMap<string, string> = new Map([
-  [colors.light.ink.toLowerCase(), colors.dark.ink],
-]);
+const DARK_SHAPE_COLORS: ReadonlyMap<string, string> = new Map(
+  [...strokeSwatches, ...fillSwatches].map((swatch) => [swatch.light.toLowerCase(), swatch.dark]),
+);
 
 const themes: Readonly<Record<ThemeName, CanvasTheme>> = {
   light: {

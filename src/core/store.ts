@@ -46,6 +46,10 @@ export type EditorState = {
   readonly fileStatus: FileStatus;
   /** The theme the canvas draws in; follows the page (see dom/themeMode.ts). */
   readonly theme: ThemeName;
+  /** Keeps the drawing tool after each shape instead of returning to select (Q). */
+  readonly toolLocked: boolean;
+  /** The keyboard shortcuts dialog (?). */
+  readonly helpOpen: boolean;
 };
 
 export type EditorStore = StoreApi<EditorState>;
@@ -68,6 +72,8 @@ export function createEditorStore(initial: Partial<EditorState> = {}): EditorSto
     autosave: 'starting',
     fileStatus: { kind: 'idle' },
     theme: 'light',
+    toolLocked: false,
+    helpOpen: false,
     ...initial,
   }));
 }

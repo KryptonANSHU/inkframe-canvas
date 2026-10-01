@@ -61,6 +61,17 @@ export function replaceShapes(document: DocumentState, updated: readonly Shape[]
   return { shapes, order: document.order };
 }
 
+/** The same shapes in a new draw order; every zIndex is renumbered to match. */
+export function reorderShapes(document: DocumentState, order: readonly ShapeId[]): DocumentState {
+  const unchanged = new Set(order);
+  if (order.length !== document.order.length || document.order.some((id) => !unchanged.has(id))) {
+    throw new DocumentError('A new draw order must list exactly the same shapes.');
+  }
+  const shapes = new Map(document.shapes);
+  renumberFrom(shapes, order, 0);
+  return { shapes, order: [...order] };
+}
+
 function renumberFrom(shapes: Map<ShapeId, Shape>, order: readonly ShapeId[], start: number) {
   for (let zIndex = start; zIndex < order.length; zIndex++) {
     const id = order[zIndex];

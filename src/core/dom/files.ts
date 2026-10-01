@@ -1,6 +1,5 @@
 import { executeCommand, replaceDocumentCommand } from '../commands';
 import { exportBounds, shapesToExport } from '../export/exportArea';
-import type { FileCommands } from '../editActions';
 import {
   documentFromShapes,
   fileTooLarge,
@@ -17,7 +16,11 @@ import { downloadBlob } from './download';
 import type { ExportClient } from './exportClient';
 import type { FileReaderClient } from './fileWorkerClient';
 
-export type FileActions = FileCommands & {
+export type FileActions = {
+  /** Shows the file picker. */
+  open(): void;
+  /** Downloads the drawing as Inkframe JSON. */
+  save(): void;
   /** The selection, or the whole drawing when nothing is selected, as PNG or SVG. */
   exportImage(format: ExportFormat): Promise<void>;
   /** Opens a file the user picked or dropped. Errors land in `fileStatus`. */

@@ -33,6 +33,35 @@ export const colors = {
 
 export type ColorToken = keyof (typeof colors)['light'];
 
+/**
+ * A color users can give shapes. Shapes store `light`; the dark theme draws `dark`, a
+ * counterpart tuned for the dark canvas, so a drawing reads well in both themes.
+ */
+export type ShapeSwatch = { readonly name: string; readonly light: string; readonly dark: string };
+
+/** Stroke and text colors: saturated enough for thin lines on either canvas. */
+export const strokeSwatches: readonly ShapeSwatch[] = [
+  { name: 'Ink', light: '#1E2430', dark: '#E7EAF0' },
+  { name: 'Slate', light: '#66708A', dark: '#9AA3B8' },
+  { name: 'Red', light: '#D63A45', dark: '#FF7B84' },
+  { name: 'Orange', light: '#E2700F', dark: '#FFA052' },
+  { name: 'Yellow', light: '#C29000', dark: '#F5CB4D' },
+  { name: 'Green', light: '#2E9E4F', dark: '#6BDB8C' },
+  { name: 'Blue', light: '#2275D8', dark: '#73B6FF' },
+  { name: 'Violet', light: '#7450E6', dark: '#B39BFF' },
+];
+
+/** Fill colors: soft tints in light mode, deep tones in dark mode, never louder than ink. */
+export const fillSwatches: readonly ShapeSwatch[] = [
+  { name: 'Gray', light: '#E9ECF1', dark: '#353B47' },
+  { name: 'Red', light: '#FFE1E3', dark: '#4C2629' },
+  { name: 'Orange', light: '#FFE6CF', dark: '#4C3320' },
+  { name: 'Yellow', light: '#FFF1BF', dark: '#463D1A' },
+  { name: 'Green', light: '#D7F5DE', dark: '#203F29' },
+  { name: 'Blue', light: '#D7E9FF', dark: '#1E3452' },
+  { name: 'Violet', light: '#E7DFFF', dark: '#33294F' },
+];
+
 /** One layered shadow for floating surfaces; nothing else gets a shadow. */
 export const shadows = {
   light: { float: '0 1px 2px rgb(16 24 40 / 0.06), 0 6px 16px rgb(16 24 40 / 0.08)' },

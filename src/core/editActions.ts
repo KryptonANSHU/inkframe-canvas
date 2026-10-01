@@ -1,3 +1,4 @@
+import { arrangeSelection, type ArrangeAction } from './arrange';
 import { assertNever } from './assertNever';
 import {
   createShapesCommand,
@@ -12,17 +13,42 @@ import type { Result } from './result';
 import { selectedShapes } from './selection/selectedShapes';
 import { createShapeId, type Shape } from './shapes';
 import { EMPTY_SELECTION, type EditorStore } from './store';
+import { zoomView } from './view';
 
 /**
- * Actions bound to keys. Copy, cut, and paste aren't here: they run from the
- * browser's clipboard events (see dom/clipboard.ts), which come with clipboard access.
+ * Actions bound to keys and buttons. Copy, cut, and paste aren't here: they run from
+ * the browser's clipboard events (see dom/clipboard.ts), which come with access.
  */
-export type EditAction = 'undo' | 'redo' | 'delete' | 'duplicate' | 'open' | 'save';
+export type EditAction =
+  | 'undo'
+  | 'redo'
+  | 'delete'
+  | 'duplicate'
+  | 'open'
+  | 'save'
+  | 'zoomIn'
+  | 'zoomOut'
+  | 'zoomReset'
+  | 'zoomFit'
+  | ArrangeAction
+  | 'toggleLock'
+  | 'help';
 
-/** Opening and saving files need the browser; the DOM layer supplies them. */
-export type FileCommands = { open(): void; save(): void };
+/** What only the browser can do: open and save files, and measure the view. */
+export type EditorHooks = {
+  open(): void;
+  save(): void;
+  /** The canvas's size in CSS pixels. */
+  viewSize(): { readonly width: number; readonly height: number };
+};
 
-const NO_FILE_COMMANDS: FileCommands = { open: () => undefined, save: () => undefined };
+const NO_HOOKS: EditorHooks = {
+  open: () => undefined,
+  save: () => undefined,
+  viewSize: () => ({ width: 0, height: 0 }),
+};
+
+const ZOOMS = { zoomIn: 'in', zoomOut: 'out', zoomReset: 'reset', zoomFit: 'fit' } as const;
 
 /** World units between a shape and its duplicate, and between successive pastes. */
 export const COPY_OFFSET = 10;
@@ -67,7 +93,7 @@ export function performEditAction(
   action: EditAction,
   store: EditorStore,
   reportError: (error: Error) => void,
-  files: FileCommands = NO_FILE_COMMANDS,
+  hooks: EditorHooks = NO_HOOKS,
 ): void {
   switch (action) {
     case 'undo':
@@ -83,10 +109,30 @@ export function performEditAction(
       addCopies(store, 'Duplicate', selectedShapes(store.getState()), COPY_OFFSET, reportError);
       return;
     case 'open':
-      files.open();
+      hooks.open();
       return;
     case 'save':
-      files.save();
+      hooks.save();
+      return;
+    case 'zoomIn':
+    case 'zoomOut':
+    case 'zoomReset':
+    case 'zoomFit': {
+      const { width, height } = hooks.viewSize();
+      zoomView(store, ZOOMS[action], width, height);
+      return;
+    }
+    case 'forward':
+    case 'backward':
+    case 'front':
+    case 'back':
+      arrangeSelection(store, action, reportError);
+      return;
+    case 'toggleLock':
+      store.setState({ toolLocked: !store.getState().toolLocked });
+      return;
+    case 'help':
+      store.setState({ helpOpen: !store.getState().helpOpen });
       return;
     default:
       assertNever(action);

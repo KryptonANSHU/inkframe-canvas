@@ -3,6 +3,8 @@ import type { InputController } from '../input/inputController';
 import type { CanvasSurface } from './canvasSurface';
 
 const PRIMARY_BUTTON = 0;
+/** What a pressed mouse reports; used for every pointer that can't sense pressure. */
+const DEFAULT_PRESSURE = 0.5;
 
 /**
  * Translates DOM events into controller calls. Returns a function that removes
@@ -30,7 +32,9 @@ export function bindCanvasInput(
   const readPointer = (event: PointerEvent) => {
     pointer.pointerId = event.pointerId;
     pointer.pointerType = event.pointerType;
-    pointer.pressure = event.pressure;
+    // Only a stylus measures pressure. Some trackpads report click force instead,
+    // which would make mouse strokes randomly hairline-thin.
+    pointer.pressure = event.pointerType === 'pen' ? event.pressure : DEFAULT_PRESSURE;
     pointer.shiftKey = event.shiftKey;
     pointer.altKey = event.altKey;
     pointer.ctrlKey = event.ctrlKey;
@@ -55,6 +59,10 @@ export function bindCanvasInput(
       if (event.button !== PRIMARY_BUTTON) {
         return;
       }
+      // No text selection or native drag can start on the canvas and cancel the
+      // gesture. That also skips the default focus change, so focus is moved here.
+      event.preventDefault();
+      canvas.focus({ preventScroll: true, focusVisible: false });
       // Capture keeps the gesture alive when the pointer leaves the canvas or window.
       if (controller.pointerDown(readPointer(event))) {
         canvas.setPointerCapture(event.pointerId);
@@ -96,6 +104,7 @@ export function bindCanvasInput(
   canvas.addEventListener('pointercancel', cancel, { signal });
   canvas.addEventListener('lostpointercapture', cancel, { signal });
   bindKeys(canvas, controller, syncCursor, signal);
+  bindChromeKeys(canvas, controller, syncCursor, signal);
 
   // Must be non-passive: preventDefault stops Ctrl + wheel from zooming the page.
   canvas.addEventListener(
@@ -158,4 +167,40 @@ function coalescedMoves(event: PointerEvent): readonly PointerEvent[] {
   // Older browsers lack it, though the DOM types always declare it.
   const merged = 'getCoalescedEvents' in event ? event.getCoalescedEvents() : [];
   return merged.length > 0 ? merged : [event];
+}
+
+/**
+ * Tool and edit shortcuts also work while a toolbar or panel control has focus
+ * (CLAUDE.md), but never while typing, and never for keys a control handled itself.
+ */
+function bindChromeKeys(
+  canvas: HTMLCanvasElement,
+  controller: InputController,
+  syncCursor: () => void,
+  signal: AbortSignal,
+): void {
+  canvas.parentElement?.addEventListener(
+    'keydown',
+    (event) => {
+      if (event.target === canvas || event.defaultPrevented || isTextEntry(event.target)) {
+        return;
+      }
+      const { key, ctrlKey, metaKey, altKey, shiftKey, repeat } = event;
+      if (controller.chromeKeyDown({ key, ctrlKey, metaKey, altKey, shiftKey, repeat })) {
+        event.preventDefault();
+      }
+      syncCursor();
+    },
+    { signal },
+  );
+}
+
+function isTextEntry(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLElement &&
+    (target.isContentEditable ||
+      target instanceof HTMLTextAreaElement ||
+      target instanceof HTMLSelectElement ||
+      target instanceof HTMLInputElement)
+  );
 }

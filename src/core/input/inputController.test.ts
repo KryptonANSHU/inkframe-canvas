@@ -323,4 +323,16 @@ describe('input controller', () => {
     controller.pointerUp(pointerAt(350, 350));
     expect(store.getState().document.order).toHaveLength(1);
   });
+
+  it('Q locks the tool: shapes keep coming, unselected, until it is unlocked', () => {
+    const { store, controller } = setup();
+    controller.keyDown(key('q'));
+    drag(controller);
+    expect(store.getState().activeTool).toBe('rectangle');
+    expect(store.getState().selectedIds.size).toBe(0);
+    controller.keyDown(key('q'));
+    drag(controller);
+    expect(store.getState().activeTool).toBe('select');
+    expect(store.getState().document.order).toHaveLength(2);
+  });
 });

@@ -6,6 +6,8 @@ export type CanvasSurface = {
   readonly viewport: () => Viewport;
   /** CSS height of the canvas, for wheel deltas measured in pages. */
   readonly cssHeight: () => number;
+  /** CSS width of the canvas, for centering and zoom to fit. */
+  readonly cssWidth: () => number;
   /** Client (viewport) coordinates → screen space, using the rect cached on resize. */
   readonly toScreen: (clientX: number, clientY: number, out: Point) => Point;
   readonly dispose: () => void;
@@ -65,6 +67,7 @@ export function observeCanvasSurface(
   return {
     viewport: () => viewport,
     cssHeight: () => cssRect.height,
+    cssWidth: () => cssRect.width,
     toScreen: (clientX, clientY, out) => {
       out.x = clientX - cssRect.left;
       out.y = clientY - cssRect.top;
