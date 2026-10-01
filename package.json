@@ -15,6 +15,7 @@
     "test": "vitest run --project unit",
     "test:property": "vitest run --project property",
     "test:coverage": "vitest run --coverage",
+    "e2e": "playwright test",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",
+    "@playwright/test": "1.63.0",
     "@types/node": "24.19.0",
     "@types/react": "18.3.31",
     "@types/react-dom": "18.3.7",
