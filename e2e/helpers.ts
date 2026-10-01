@@ -51,6 +51,8 @@ export async function openEditor(page: Page): Promise<string[]> {
   page.on('pageerror', (error) => problems.push(`pageerror: ${error.message}`));
   await page.goto('/');
   await expect(canvas(page)).toBeVisible();
+  // The toolbar renders once the editor exists, so its key and pointer handlers are bound.
+  await expect(page.getByRole('toolbar', { name: 'Tools' })).toBeVisible();
   return problems;
 }
 
