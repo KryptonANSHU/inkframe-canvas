@@ -43,6 +43,12 @@ export function hitsShape(shape: Shape, point: Readonly<Point>, tolerance: numbe
         return true;
       }
       return distanceToRectOutline(local.x, local.y, halfWidth, halfHeight) <= reach;
+    case 'text':
+      // Text has no outline to aim for: its whole box counts, plus the tolerance.
+      return (
+        distanceToRectOutline(local.x, local.y, halfWidth, halfHeight) <= tolerance ||
+        (Math.abs(local.x) <= halfWidth && Math.abs(local.y) <= halfHeight)
+      );
     case 'ellipse':
       if (filled && isInsideEllipse(local.x, local.y, halfWidth, halfHeight)) {
         return true;

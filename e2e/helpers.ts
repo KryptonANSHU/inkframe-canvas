@@ -57,3 +57,33 @@ export async function openEditor(page: Page): Promise<string[]> {
 export function canvas(page: Page) {
   return page.getByRole('application', { name: 'Drawing canvas' });
 }
+
+/** How many backing-store pixels in a rectangle have any ink (alpha > 0). */
+export async function inkedPixels(
+  page: Page,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): Promise<number> {
+  return page.evaluate(
+    ([px, py, w, h]) => {
+      const source = document.querySelector('canvas');
+      const copy = document.createElement('canvas');
+      copy.width = w;
+      copy.height = h;
+      const context = copy.getContext('2d', { willReadFrequently: true });
+      if (source === null || context === null) {
+        throw new Error('No canvas on the page.');
+      }
+      context.drawImage(source, px, py, w, h, 0, 0, w, h);
+      const { data } = context.getImageData(0, 0, w, h);
+      let count = 0;
+      for (let i = 3; i < data.length; i += 4) {
+        if ((data[i] ?? 0) > 0) count++;
+      }
+      return count;
+    },
+    [x, y, width, height] as const,
+  );
+}

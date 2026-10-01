@@ -14,6 +14,7 @@ export function shapeBox(shape: Shape): Box {
   switch (shape.type) {
     case 'rectangle':
     case 'ellipse':
+    case 'text':
       return shape;
     case 'line':
     case 'arrow':

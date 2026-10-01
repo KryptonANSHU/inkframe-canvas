@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { arrowHeadLength, inkMargin, isFilled, shapeBounds, shapeBox } from './shapeGeometry';
 import { DEFAULT_SHAPE_STYLE } from './shapes';
-import { makeArrow, makeEllipse, makeLine, makePen, makeRect } from './testing/factories';
+import { makeArrow, makeEllipse, makeLine, makePen, makeRect, makeText } from './testing/factories';
 
 const filled = { ...DEFAULT_SHAPE_STYLE, fillColor: '#ff0000' };
 
 describe('shapeBox', () => {
-  it('is the shape itself for rectangles and ellipses', () => {
-    const rect = makeRect();
-    expect(shapeBox(rect)).toBe(rect);
+  it('is the shape itself for rectangles, ellipses, and text', () => {
+    for (const shape of [makeRect(), makeEllipse(), makeText()]) {
+      expect(shapeBox(shape)).toBe(shape);
+    }
   });
 
   it('spans the points of a path, offset by its position', () => {
@@ -44,6 +45,7 @@ describe('isFilled', () => {
     expect(isFilled(makeEllipse({ style: filled }))).toBe(true);
     expect(isFilled(makeRect())).toBe(false);
     expect(isFilled(makeLine({ style: filled }))).toBe(false);
+    expect(isFilled(makeText({ style: filled }))).toBe(false);
   });
 });
 

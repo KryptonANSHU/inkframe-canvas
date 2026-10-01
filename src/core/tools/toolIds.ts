@@ -1,5 +1,5 @@
-/** Tools that create shapes. Text arrives in M3d; selection in M4. */
-export type ToolId = 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'pen';
+/** Tools that create shapes. Selection arrives in M4. */
+export type ToolId = 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'pen' | 'text';
 
 export const DEFAULT_TOOL: ToolId = 'rectangle';
 
@@ -10,4 +10,5 @@ export const TOOL_SHORTCUTS: Readonly<Record<string, ToolId>> = {
   l: 'line',
   a: 'arrow',
   p: 'pen',
+  t: 'text',
 };

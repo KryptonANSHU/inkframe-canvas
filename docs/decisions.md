@@ -172,3 +172,22 @@ A log of real design decisions: what we chose, why, and what we rejected.
 
 **Decision:** `activeTool` lives in the store. R / O / L / A / P switch tools (case-insensitive) when the canvas has focus, no gesture is active, and no Ctrl / Cmd / Alt is held. The visible toolbar comes in M7.
 **Why:** Modifier combinations belong to the browser and OS (Ctrl + R reloads, Cmd + A selects all later). Switching mid-gesture would change what the current drag creates.
+
+## 2026-10-01 — Text height is stored on the shape, not derived
+
+**Decision:** `TextShape` stores `width` (wrap width) and `height`, measured with the loaded font when the text is committed (`createTextShape`). The renderer still wraps lines at draw time with `layoutText`, cached per shape object and reset when the font loads.
+**Why:** With a stored height, `shapeBox` stays a pure function of the document, so the spatial index, hit-testing, and (later) selection need no font service passed in, and "same bounds after reload and in export" (PRD 1B) holds by construction. This changes the M3 plan, which said height would be derived.
+**Rejected:** deriving height on demand (every caller of `shapeBox` would need a measurer, or core would need a global one).
+**Risk and follow-up:** a browser whose text widths differ slightly could wrap to a different number of lines than the stored height. M6's import should re-measure text heights after fonts load.
+
+## 2026-10-01 — Self-hosted Instrument Sans via the FontFace API
+
+**Decision:** `public/fonts/instrument-sans-latin-400-normal.woff2` (16,860 bytes, from @fontsource/instrument-sans 5.3.0 via jsDelivr; SHA-256 9a91efaa…0850) with its OFL 1.1 license in `public/fonts/OFL.txt`. `loadTextFont` adds it to `document.fonts` on editor start. Text is not drawn and the text tool does nothing until it loads; then measurements are reset and the canvas redraws. If loading fails, the user is told and text falls back to a system font.
+**Why:** No npm dependency for one file; `document.fonts` makes the face available to both canvas and CSS, so the editing textarea uses the same font. Line height comes from the font's own `fontBoundingBoxAscent + Descent`.
+**Rejected:** `@fontsource/instrument-sans` as a dependency; drawing with a fallback font first (text would jump when the real one arrives).
+
+## 2026-10-01 — Text editing through a textarea owned by core/dom
+
+**Decision:** The text tool only records where to type (`textEdit` in the store). `core/dom/textEditor.ts` opens a `<textarea>` there, sized and fonted to match the canvas at the current zoom, follows camera changes, and commits one shape on blur, Escape, or Ctrl/Cmd + Enter. Blank text creates nothing; trailing whitespace is dropped. Focus returns to the canvas afterwards. A click while editing only ends the edit. The textarea's static look is a CSS-module class passed in from `CanvasHost`.
+**Why:** The browser handles caret, selection, IME, and accessibility for free. Keeping it out of React means no re-render per keystroke and no plumbing from React back into the editor.
+**Known limitation:** the textarea wraps with the browser's rules (`overflow-wrap: break-word`), our layout with its own. Normal text matches (checked visually); very long words may shift slightly on commit. Agreed not to build a custom text input.

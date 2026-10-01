@@ -33,6 +33,14 @@ export function shapeArbitrary(id: ShapeId): fc.Arbitrary<Shape> {
     fc.record({ ...base, type: fc.constant('arrow' as const), points: fc.tuple(point, point) }),
     fc.record({
       ...base,
+      type: fc.constant('text' as const),
+      width: size,
+      height: size,
+      text: fc.constant('Text'),
+      fontSize: fc.constant(20),
+    }),
+    fc.record({
+      ...base,
       type: fc.constant('pen' as const),
       points: fc.array(point, { minLength: 2, maxLength: 40 }),
     }),

@@ -12,7 +12,10 @@ export function CanvasHost() {
     if (canvas === null) {
       return;
     }
-    const editor = createEditor(canvas, { reportError });
+    const editor = createEditor(canvas, {
+      reportError,
+      textEditorClassName: styles.textEditor ?? '',
+    });
     return () => {
       editor.dispose();
     };

@@ -6,6 +6,7 @@ import { pointerAt } from '../testing/factories';
 import { createDragShapeTool } from '../tools/dragShapeTool';
 import { createPanTool } from '../tools/panTool';
 import { createPenTool } from '../tools/penTool';
+import { createTextTool } from '../tools/textTool';
 import {
   arrowBetween,
   ellipseBetween,
@@ -26,6 +27,7 @@ function setup() {
       line: createDragShapeTool(store, reportError, lineBetween),
       arrow: createDragShapeTool(store, reportError, arrowBetween),
       pen: createPenTool(store, reportError),
+      text: createTextTool(store),
     },
     pan: createPanTool(store),
   });
@@ -143,6 +145,7 @@ describe('input controller', () => {
     ['L', 'line'],
     ['a', 'arrow'],
     ['p', 'pen'],
+    ['T', 'text'],
   ] as const)('switches tools with the %s shortcut', (shortcut, tool) => {
     const { store, controller } = setup();
     store.setState({ activeTool: tool === 'rectangle' ? 'pen' : 'rectangle' });

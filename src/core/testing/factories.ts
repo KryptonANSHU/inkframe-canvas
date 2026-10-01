@@ -6,7 +6,9 @@ import {
   type PenShape,
   type RectShape,
   type ShapeId,
+  type TextShape,
 } from '../shapes';
+import type { TextMeasurer } from '../text/layout';
 
 /** Readable, deterministic IDs for tests. Real IDs come from createShapeId(). */
 export function testShapeId(name: string): ShapeId {
@@ -61,6 +63,25 @@ export function makePen(overrides: Partial<Omit<PenShape, 'type'>> = {}): PenSha
   ];
   return { ...pathDefaults, id: testShapeId('pen'), type: 'pen', points, ...overrides };
 }
+
+export function makeText(overrides: Partial<Omit<TextShape, 'type'>> = {}): TextShape {
+  return {
+    ...makeRect({ width: 240, height: 20 }),
+    id: testShapeId('text'),
+    type: 'text',
+    text: 'Hello',
+    fontSize: 20,
+    ...overrides,
+  };
+}
+
+const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+
+/** Every grapheme is 10 units wide at any size; lines are 20 tall with a 16 ascent. */
+export const fakeMeasurer: TextMeasurer = {
+  width: (text) => Array.from(graphemes.segment(text)).length * 10,
+  metrics: () => ({ ascent: 16, lineHeight: 20 }),
+};
 
 /** A fresh pointer input at a screen position (the real controller reuses one object). */
 export function pointerAt(x: number, y: number, pointerId = 1) {

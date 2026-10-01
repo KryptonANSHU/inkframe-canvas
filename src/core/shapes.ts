@@ -53,7 +53,19 @@ export type PenShape = ShapeBase & {
   readonly points: readonly PathPoint[];
 };
 
-export type BoxShape = RectShape | EllipseShape;
+/**
+ * Plain text wrapped inside `width`. `height` is the laid-out height, measured with the
+ * loaded font when the text is committed, so bounds never depend on re-measuring.
+ * Drawn in the stroke color.
+ */
+export type TextShape = BoxShapeBase & {
+  readonly type: 'text';
+  readonly text: string;
+  /** In world units. */
+  readonly fontSize: number;
+};
+
+export type BoxShape = RectShape | EllipseShape | TextShape;
 export type PathShape = LineShape | ArrowShape | PenShape;
 export type Shape = BoxShape | PathShape;
 

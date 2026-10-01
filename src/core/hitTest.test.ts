@@ -10,6 +10,7 @@ import {
   makeLine,
   makePen,
   makeRect,
+  makeText,
   testShapeId,
 } from './testing/factories';
 
@@ -113,6 +114,19 @@ describe('hitsShape: paths', () => {
 
   it('never hits an empty path', () => {
     expect(hitsShape(makePen({ points: [] }), { x: 0, y: 0 }, 100)).toBe(false);
+  });
+});
+
+describe('hitsShape: text in (0,0)–(240,20)', () => {
+  const text = makeText();
+
+  it('hits anywhere in its box, and within the tolerance around it', () => {
+    expect(hitsShape(text, { x: 120, y: 10 }, tolerance)).toBe(true);
+    expect(hitsShape(text, { x: 120, y: 20 + tolerance }, tolerance)).toBe(true);
+  });
+
+  it('misses beyond the tolerance', () => {
+    expect(hitsShape(text, { x: 120, y: 20 + tolerance + 0.01 }, tolerance)).toBe(false);
   });
 });
 

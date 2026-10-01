@@ -1,14 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { EMPTY_DOCUMENT, insertShape } from './document';
-import { createRenderer, type RenderContext, type Viewport } from './renderer';
+import {
+  createRenderer as createRendererWithLayout,
+  type RenderContext,
+  type Viewport,
+} from './renderer';
+import { createTextLayoutCache } from './text/layout';
 import { DEFAULT_SHAPE_STYLE } from './shapes';
 import { createEditorStore } from './store';
 import {
+  fakeMeasurer,
   makeArrow,
   makeEllipse,
   makeLine,
   makePen,
   makeRect,
+  makeText,
   testShapeId,
 } from './testing/factories';
 
@@ -41,8 +48,16 @@ function createRecordingContext() {
     lineJoin: 'miter',
     strokeStyle: '',
     fillStyle: '',
+    fillText: record('fillText'),
+    font: '',
+    textBaseline: 'alphabetic',
   };
   return { context, calls };
+}
+
+const textLayouts = createTextLayoutCache(fakeMeasurer);
+function createRenderer(context: RenderContext) {
+  return createRendererWithLayout(context, (shape) => textLayouts.layout(shape));
 }
 
 const viewport: Viewport = { pixelWidth: 1600, pixelHeight: 1200, devicePixelRatio: 2 };
@@ -167,5 +182,36 @@ describe('createRenderer', () => {
       createRenderer(context).draw(createEditorStore({ draft }).getState(), viewport);
       expect(calls).not.toContain('fill()');
     }
+  });
+
+  it('draws text line by line on its baselines, in the stroke color, once fonts are ready', () => {
+    const { context, calls } = createRecordingContext();
+    // 240 wide at 10 per character: "Hello world again and" (210) fits; "again" wraps.
+    const draft = makeText({
+      x: 0,
+      y: 0,
+      width: 240,
+      height: 40,
+      text: 'Hello world again and again',
+    });
+    createRenderer(context).draw(
+      createEditorStore({ draft, fontsReady: true }).getState(),
+      viewport,
+    );
+
+    expect(calls.filter((c) => c.startsWith('fillText('))).toEqual([
+      // Left edge −120; first baseline at −20 (top) + 16 (ascent); next line 20 lower.
+      'fillText(Hello world again and,-120,-4)',
+      'fillText(again,-120,16)',
+    ]);
+    expect(context.fillStyle).toBe(DEFAULT_SHAPE_STYLE.strokeColor);
+    expect(context.font).toBe('20px "Instrument Sans", system-ui, sans-serif');
+    expect(calls).not.toContain('stroke()');
+  });
+
+  it('draws no text until fonts are ready', () => {
+    const { context, calls } = createRecordingContext();
+    createRenderer(context).draw(createEditorStore({ draft: makeText() }).getState(), viewport);
+    expect(calls.some((c) => c.startsWith('fillText('))).toBe(false);
   });
 });

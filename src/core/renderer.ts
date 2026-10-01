@@ -2,8 +2,11 @@ import { assertNever } from './assertNever';
 import { DEFAULT_CAMERA, worldToDeviceTransform } from './camera';
 import { createPoint } from './geometry/point';
 import { ARROW_HEAD_SIDES, arrowHeadWing, isFilled, shapeBox } from './shapeGeometry';
-import type { ArrowShape, PathPoint, Shape } from './shapes';
+import type { Box } from './geometry/bounds';
+import type { ArrowShape, PathPoint, Shape, TextShape } from './shapes';
 import type { EditorState } from './store';
+import { fontString } from './text/font';
+import type { TextLayout } from './text/layout';
 
 // Scratch point for arrowhead wings, so drawing allocates nothing per shape.
 const wing = createPoint();
@@ -31,7 +34,15 @@ export type RenderContext = Pick<
   | 'lineJoin'
   | 'strokeStyle'
   | 'fillStyle'
+  | 'fillText'
+  | 'font'
+  | 'textBaseline'
 >;
+
+/** Shapes drawn as a stroked (and maybe filled) path: everything except text. */
+type OutlinedShape = Exclude<Shape, TextShape>;
+
+type LayoutText = (shape: TextShape) => TextLayout;
 
 export type Viewport = {
   /** Backing-store size in device pixels. */
@@ -44,8 +55,11 @@ export type Renderer = {
   draw(state: EditorState, viewport: Viewport): void;
 };
 
-/** Full redraw every frame. Dirty rectangles only if profiling proves they help (M8). */
-export function createRenderer(context: RenderContext): Renderer {
+/**
+ * Full redraw every frame. Dirty rectangles only if profiling proves they help (M8).
+ * `layoutText` wraps text with the real font; it is only called once fonts are ready.
+ */
+export function createRenderer(context: RenderContext, layoutText: LayoutText): Renderer {
   // Reused every frame so drawing allocates nothing for the camera transform.
   const transform = worldToDeviceTransform(DEFAULT_CAMERA, 1);
 
@@ -57,50 +71,71 @@ export function createRenderer(context: RenderContext): Renderer {
       const t = worldToDeviceTransform(state.camera, viewport.devicePixelRatio, transform);
       context.setTransform(t.a, t.b, t.c, t.d, t.e, t.f);
 
+      // Text is never drawn with a fallback font: it waits for the real one (PRD 1B).
+      const layout = state.fontsReady ? layoutText : null;
       const { shapes, order } = state.document;
       for (const id of order) {
         // Always present while document invariants hold (checked from M5).
         const shape = shapes.get(id);
         if (shape !== undefined) {
-          drawShape(context, shape);
+          drawShape(context, shape, layout);
         }
       }
       if (state.draft !== null) {
-        drawShape(context, state.draft);
+        drawShape(context, state.draft, layout);
       }
     },
   };
 }
 
-function drawShape(context: RenderContext, shape: Shape): void {
+function drawShape(context: RenderContext, shape: Shape, layoutText: LayoutText | null): void {
   const box = shapeBox(shape);
-  const centerX = box.x + box.width / 2;
-  const centerY = box.y + box.height / 2;
-  const { style } = shape;
-
   context.save();
   // Every shape is drawn centered on the origin, so rotation is always around its center.
-  context.translate(centerX, centerY);
+  context.translate(box.x + box.width / 2, box.y + box.height / 2);
   context.rotate(shape.rotation);
-  context.globalAlpha = style.opacity;
+  context.globalAlpha = shape.style.opacity;
+  if (shape.type !== 'text') {
+    drawOutlined(context, shape, box);
+  } else if (layoutText !== null) {
+    drawText(context, shape, layoutText(shape));
+  }
+  context.restore();
+}
+
+function drawOutlined(context: RenderContext, shape: OutlinedShape, box: Box): void {
+  const { style } = shape;
   context.lineWidth = style.strokeWidth;
   context.strokeStyle = style.strokeColor;
   context.lineJoin = shape.type === 'rectangle' ? 'miter' : 'round';
   context.lineCap = 'round';
   context.beginPath();
   // Path points are relative to (x, y); this offset makes them relative to the center.
-  traceShape(context, shape, box.width, box.height, shape.x - centerX, shape.y - centerY);
+  const offsetX = shape.x - (box.x + box.width / 2);
+  const offsetY = shape.y - (box.y + box.height / 2);
+  traceShape(context, shape, box.width, box.height, offsetX, offsetY);
   if (isFilled(shape) && style.fillColor !== null) {
     context.fillStyle = style.fillColor;
     context.fill();
   }
   context.stroke();
-  context.restore();
+}
+
+/** Lines from the top-left of the box, each on its baseline (top + ascent + n × lineHeight). */
+function drawText(context: RenderContext, shape: TextShape, layout: TextLayout): void {
+  context.fillStyle = shape.style.strokeColor;
+  context.font = fontString(shape.fontSize);
+  context.textBaseline = 'alphabetic';
+  const left = -shape.width / 2;
+  const top = -shape.height / 2 + layout.ascent;
+  layout.lines.forEach((line, index) => {
+    context.fillText(line.text, left, top + index * layout.lineHeight);
+  });
 }
 
 function traceShape(
   context: RenderContext,
-  shape: Shape,
+  shape: OutlinedShape,
   width: number,
   height: number,
   offsetX: number,

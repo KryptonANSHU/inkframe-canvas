@@ -11,3 +11,17 @@
 .canvas:focus-visible {
   outline-offset: -2px;
 }
+
+/* The textarea for typing new text. Position, font size, and line height are set at
+   runtime to match the canvas at the current zoom. */
+.textEditor {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
