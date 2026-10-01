@@ -1,9 +1,9 @@
-import { CircleAlert, LoaderCircle, X } from 'lucide-react';
+import { CircleAlert, Info, LoaderCircle, X } from 'lucide-react';
 import { Toast } from 'radix-ui';
 import { useStore } from 'zustand';
 import { ICON_STROKE, size } from '../design/tokens';
 import { useEditor, useEditorState } from './EditorContext';
-import { dismissNotice, notices } from './notifications';
+import { dismissNotice, notices, type NoticeKind } from './notifications';
 import styles from './Toaster.module.css';
 
 /** Long enough to read a two-line error; errors that need action stay until closed. */
@@ -35,7 +35,8 @@ export function Toaster() {
         </Toast.Root>
       )}
       {fileStatus.kind === 'error' && (
-        <ErrorToast
+        <NoticeToast
+          kind="error"
           message={fileStatus.message}
           onClose={() => {
             editor.files.dismissStatus();
@@ -43,8 +44,9 @@ export function Toaster() {
         />
       )}
       {list.map((notice) => (
-        <ErrorToast
+        <NoticeToast
           key={notice.id}
+          kind={notice.kind}
           message={notice.message}
           onClose={() => {
             dismissNotice(notice.id);
@@ -56,23 +58,25 @@ export function Toaster() {
   );
 }
 
-function ErrorToast({
-  message,
-  onClose,
-}: {
+type NoticeToastProps = {
   readonly message: string;
+  readonly kind: NoticeKind;
   readonly onClose: () => void;
-}) {
+};
+
+/** Errors interrupt (announced assertively); news like "Canvas cleared" waits its turn. */
+function NoticeToast({ message, kind, onClose }: NoticeToastProps) {
+  const Icon = kind === 'error' ? CircleAlert : Info;
   return (
     <Toast.Root
-      className={styles.error}
-      type="foreground"
+      className={styles.notice}
+      type={kind === 'error' ? 'foreground' : 'background'}
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
     >
-      <CircleAlert
-        className={styles.alert}
+      <Icon
+        className={kind === 'error' ? styles.alert : styles.info}
         size={size.icon}
         strokeWidth={ICON_STROKE}
         aria-hidden

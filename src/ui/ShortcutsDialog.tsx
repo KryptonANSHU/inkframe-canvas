@@ -19,6 +19,7 @@ const GROUPS: readonly Group[] = [
       ['Arrow', 'A'],
       ['Pen', 'P'],
       ['Text', 'T'],
+      ['Text anywhere', 'Double-click'],
       ['Keep tool after drawing', 'Q'],
     ],
   },

@@ -285,8 +285,11 @@ describe('input controller', () => {
     const { store, controller } = setup();
     const text = makeText({ x: 0, y: 0 });
     store.setState({ activeTool: 'select', document: insertShape(EMPTY_DOCUMENT, text) });
+    // Empty canvas: new text there, with the text tool shown as active.
     controller.doubleClick(pointerAt(500, 500));
-    expect(store.getState().textEdit).toBeNull();
+    expect(store.getState().textEdit).toMatchObject({ x: 500, y: 500, original: null });
+    expect(store.getState().activeTool).toBe('text');
+    store.setState({ textEdit: null });
     controller.doubleClick(pointerAt(10, 10));
     expect(store.getState().textEdit).toEqual({ id: text.id, x: 0, y: 0, original: text });
   });

@@ -1,4 +1,5 @@
 import {
+  Eraser,
   FileCode,
   FolderOpen,
   ImageDown,
@@ -15,6 +16,7 @@ import { DropdownMenu } from 'radix-ui';
 import { ICON_STROKE, size } from '../design/tokens';
 import { useEditor, useEditorState } from './EditorContext';
 import styles from './MainMenu.module.css';
+import { notify } from './notifications';
 import { shortcutText } from './shortcutLabel';
 import { applyThemePreference, readThemePreference, type ThemePreference } from './themePreference';
 
@@ -29,11 +31,17 @@ type ItemProps = {
   readonly label: string;
   readonly shortcut?: string;
   readonly onSelect: () => void;
+  readonly danger?: boolean;
+  readonly disabled?: boolean;
 };
 
-function Item({ Icon, label, shortcut, onSelect }: ItemProps) {
+function Item({ Icon, label, shortcut, onSelect, danger, disabled }: ItemProps) {
   return (
-    <DropdownMenu.Item className={styles.item} onSelect={onSelect}>
+    <DropdownMenu.Item
+      className={danger === true ? styles.danger : styles.item}
+      onSelect={onSelect}
+      disabled={disabled === true}
+    >
       <Icon className={styles.icon} size={size.icon} strokeWidth={ICON_STROKE} aria-hidden />
       {label}
       {shortcut !== undefined && <span className={styles.shortcut}>{shortcutText(shortcut)}</span>}
@@ -46,6 +54,7 @@ export function MainMenu() {
   const editor = useEditor();
   const { files } = editor;
   const hasSelection = useEditorState((state) => state.selectedIds.size > 0);
+  const isEmpty = useEditorState((state) => state.document.order.length === 0);
   const [theme, setTheme] = useState(readThemePreference);
   const what = hasSelection ? 'selection' : 'drawing';
 
@@ -95,6 +104,18 @@ export function MainMenu() {
             Icon={FileCode}
             label={`Export ${what} as SVG`}
             onSelect={() => void files.exportImage('svg')}
+          />
+          <DropdownMenu.Separator className={styles.separator} />
+          <Item
+            Icon={Eraser}
+            label="Clear canvas"
+            danger
+            disabled={isEmpty}
+            onSelect={() => {
+              editor.perform('clear');
+              // One undo step brings it all back, so a toast beats an "Are you sure?".
+              notify(`Canvas cleared. Press ${shortcutText('Mod+Z')} to undo.`, 'info');
+            }}
           />
           <DropdownMenu.Separator className={styles.separator} />
           <DropdownMenu.Label className={styles.label}>Theme</DropdownMenu.Label>

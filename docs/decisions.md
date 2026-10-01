@@ -400,3 +400,12 @@ A log of real design decisions: what we chose, why, and what we rejected.
 - **Dialog focus:** the shortcuts dialog didn't take focus (Escape and Tab still acted on the canvas behind it); it now focuses itself through a ref.
 - **Lingering tooltip:** a tooltip opened by keyboard focus on a menu trigger outlived the menu and swallowed the next Escape, so menu triggers have no tooltip (the menu explains itself).
   **Not covered:** snapping while resizing or drawing (the PRD names moves; it can follow); a measured Lighthouse score (axe covers the automated checks; Lighthouse joins the Tier 1 gate's manual pass).
+
+## 2026-10-02 — Text on double-click, and Clear canvas
+
+**Decision:**
+
+- **Double-click:** with any tool, a double-click edits the text under the pointer, or, on empty canvas, opens a new text box there and shows the text tool as active. The input controller routes every double-click to the select tool's handler, which can hit-test; double-clicking any other shape does nothing for now (text inside shapes would be its own feature). Not while panning with Space.
+- **Clear canvas:** a main-menu item in the danger color, disabled on an empty canvas. It removes everything as one undo step, then a toast says "Canvas cleared. Press ⌘Z / Ctrl+Z to undo." instead of asking for confirmation first.
+  **Why:** User requests. An undoable clear with a clear way back is kinder than an "Are you sure?" that users click through by habit. Toasts gained an info kind for this, announced politely; errors stay assertive.
+  **Tests:** none added, at the user's request; one existing test that expected double-clicking empty canvas to do nothing was updated to the new behavior.

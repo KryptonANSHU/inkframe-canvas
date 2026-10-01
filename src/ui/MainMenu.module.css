@@ -24,6 +24,24 @@
   composes: menuItem from './surfaces.module.css';
 }
 
+.danger {
+  composes: menuItem from './surfaces.module.css';
+}
+
+/* The attribute outranks the composed base color, whatever order the CSS loads in. */
+.danger[role='menuitem'] {
+  color: var(--color-danger);
+}
+
+.danger[role='menuitem'][data-disabled] {
+  color: var(--color-ink-muted);
+}
+
+/* The icon takes the row's color: red with it, muted when disabled. */
+.danger .icon {
+  color: inherit;
+}
+
 .icon {
   composes: menuIcon from './surfaces.module.css';
 }

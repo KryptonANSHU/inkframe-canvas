@@ -37,7 +37,7 @@
   transform: translateY(var(--radix-toast-swipe-move-y));
 }
 
-.error {
+.notice {
   composes: toast;
   padding-inline-end: var(--space-1);
 }
@@ -66,6 +66,12 @@
   color: var(--color-danger);
 }
 
+.info {
+  flex-shrink: 0;
+  margin-block-start: 2px;
+  color: var(--color-ink-muted);
+}
+
 .spinner {
   flex-shrink: 0;
   margin-block-start: 2px;
@@ -80,6 +86,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .info {
+    flex-shrink: 0;
+    margin-block-start: 2px;
+    color: var(--color-ink-muted);
+  }
+
   .spinner {
     animation: none;
   }

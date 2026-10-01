@@ -25,6 +25,7 @@ export type EditAction =
   | 'delete'
   | 'duplicate'
   | 'selectAll'
+  | 'clear'
   | 'open'
   | 'save'
   | 'zoomIn'
@@ -109,6 +110,9 @@ export function performEditAction(
     case 'duplicate':
       addCopies(store, 'Duplicate', selectedShapes(store.getState()), COPY_OFFSET, reportError);
       return;
+    case 'clear':
+      clearCanvas(store, reportError);
+      return;
     case 'selectAll':
       store.setState({ selectedIds: new Set(store.getState().document.order) });
       return;
@@ -140,6 +144,23 @@ export function performEditAction(
       return;
     default:
       assertNever(action);
+  }
+}
+
+/** Removes every shape as one undo step, so one Ctrl / ⌘ + Z brings the drawing back. */
+function clearCanvas(store: EditorStore, reportError: (error: Error) => void): void {
+  const { document } = store.getState();
+  const shapes = document.order.flatMap((id) => {
+    const shape = document.shapes.get(id);
+    return shape === undefined ? [] : [shape];
+  });
+  if (shapes.length > 0) {
+    report(
+      executeCommand(store, deleteShapesCommand('Clear canvas', shapes), {
+        select: EMPTY_SELECTION,
+      }),
+      reportError,
+    );
   }
 }
 

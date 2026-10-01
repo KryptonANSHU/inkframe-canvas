@@ -184,9 +184,11 @@ export function createInputController(
       tool.pointerUp(input);
     },
     cancelGesture,
+    // Whatever the active tool, a double-click edits text or starts new text there; the
+    // select tool decides which, since it hit-tests. Not while panning with space.
     doubleClick(input) {
-      if (!busy()) {
-        toolForNextGesture().doubleClick?.(input);
+      if (!busy() && !spaceHeld) {
+        tools.byId.select.doubleClick?.(input);
       }
     },
     wantsEveryMove: () => gesture?.tool.wantsEveryMove === true,

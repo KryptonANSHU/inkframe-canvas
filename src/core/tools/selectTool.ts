@@ -7,7 +7,7 @@ import { handleAt, handleCursor, type HandleId } from '../selection/handles';
 import { shapesInMarquee } from '../selection/marquee';
 import { selectedShapes } from '../selection/selectedShapes';
 import { frameContains, selectionFrame, type SelectionFrame } from '../selection/selectionFrame';
-import type { Shape, ShapeId } from '../shapes';
+import { createShapeId, type Shape, type ShapeId } from '../shapes';
 import { shapeGeometryBounds } from '../shapeGeometry';
 import type { SpatialIndex } from '../spatial/spatialIndex';
 import { EMPTY_SELECTION, NO_GUIDES, type EditorStore } from '../store';
@@ -53,7 +53,7 @@ export type SelectToolOptions = {
  * Click to select, Shift + click to add or remove, Alt + click to cycle through the
  * shapes under the pointer, drag to move, drag a handle to resize or rotate, drag on
  * empty canvas for a marquee (Ctrl / ⌘ selects what it touches), double-click text to
- * edit it. Every drag is one command on release; cancel restores shapes and selection.
+ * edit it or empty canvas to type new text. Every drag is one command on release; cancel restores shapes and selection.
  */
 export function createSelectTool({ store, index, measurer, reportError }: SelectToolOptions): Tool {
   let state: SelectToolState = { kind: 'idle' };
@@ -152,13 +152,25 @@ export function createSelectTool({ store, index, measurer, reportError }: Select
       }
     },
 
+    // Runs for every tool (see the input controller): text is a double-click away.
     doubleClick(event) {
       const { document, camera, textEdit } = store.getState();
-      const hit = textEdit === null ? hitTest(document, index, toWorld(event), camera.zoom) : null;
+      if (textEdit !== null) {
+        return;
+      }
+      const point = toWorld(event);
+      const hit = hitTest(document, index, point, camera.zoom);
       const shape = hit === null ? undefined : document.shapes.get(hit);
       if (shape?.type === 'text') {
         // Deselected while editing so handles don't sit on the textarea; the commit reselects.
         store.setState({ textEdit: editExisting(shape), selectedIds: EMPTY_SELECTION });
+      } else if (shape === undefined) {
+        // Empty canvas: a new text box here, as if the text tool had been used.
+        store.setState({
+          activeTool: 'text',
+          selectedIds: EMPTY_SELECTION,
+          textEdit: { id: createShapeId(), x: point.x, y: point.y, original: null },
+        });
       }
     },
 
