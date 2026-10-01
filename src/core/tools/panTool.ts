@@ -18,6 +18,10 @@ export function createPanTool(store: EditorStore): Tool {
   return {
     getCursor: () => (dragging ? 'grabbing' : 'grab'),
 
+    hover() {
+      // The cursor is the same everywhere for this tool.
+    },
+
     pointerDown(event) {
       dragging = true;
       last.x = event.screen.x;

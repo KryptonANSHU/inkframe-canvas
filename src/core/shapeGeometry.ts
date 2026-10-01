@@ -1,6 +1,7 @@
 import { assertNever } from './assertNever';
 import { inflateBox, rotatedBoxBounds, type Bounds, type Box } from './geometry/bounds';
 import type { Point } from './geometry/point';
+import { toWorldPoint } from './geometry/transform';
 import type { ArrowShape, PathShape, Shape } from './shapes';
 
 /** Half-angle between the arrow shaft and each side of the head. */
@@ -91,4 +92,78 @@ export function inkMargin(shape: Shape): number {
 /** Axis-aligned world bounds of everything the shape draws, including rotation and stroke. */
 export function shapeBounds(shape: Shape): Bounds {
   return rotatedBoxBounds(inflateBox(shapeBox(shape), inkMargin(shape)), shape.rotation);
+}
+
+/**
+ * Tight world bounds of the shape's geometry, without stroke: exact for rotated
+ * ellipses (not their box) and for paths (every point rotated). Marquee "fully inside"
+ * and the multi-selection frame use this, so they match what the user sees.
+ */
+export function shapeGeometryBounds(shape: Shape): Bounds {
+  const box = shapeBox(shape);
+  const centerX = box.x + box.width / 2;
+  const centerY = box.y + box.height / 2;
+  switch (shape.type) {
+    case 'ellipse': {
+      const cos = Math.cos(shape.rotation);
+      const sin = Math.sin(shape.rotation);
+      const a = box.width / 2;
+      const b = box.height / 2;
+      const halfX = Math.hypot(a * cos, b * sin);
+      const halfY = Math.hypot(a * sin, b * cos);
+      return {
+        minX: centerX - halfX,
+        minY: centerY - halfY,
+        maxX: centerX + halfX,
+        maxY: centerY + halfY,
+      };
+    }
+    case 'line':
+    case 'arrow':
+    case 'pen':
+      return pathWorldBounds(shape, centerX, centerY);
+    case 'rectangle':
+    case 'text':
+      return rotatedBoxBounds(box, shape.rotation);
+    default:
+      return assertNever(shape);
+  }
+}
+
+function pathWorldBounds(shape: PathShape, centerX: number, centerY: number): Bounds {
+  const local = { x: 0, y: 0 };
+  const world = { x: 0, y: 0 };
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const point of shape.points) {
+    // Points are relative to (x, y); the shape rotates around its box center.
+    local.x = shape.x + point.x - centerX;
+    local.y = shape.y + point.y - centerY;
+    toWorldPoint(local, centerX, centerY, shape.rotation, world);
+    minX = Math.min(minX, world.x);
+    minY = Math.min(minY, world.y);
+    maxX = Math.max(maxX, world.x);
+    maxY = Math.max(maxY, world.y);
+  }
+  return minX === Infinity
+    ? { minX: shape.x, minY: shape.y, maxX: shape.x, maxY: shape.y }
+    : { minX, minY, maxX, maxY };
+}
+
+/** A path's points in world space (rotation applied), in order. */
+export function pathWorldPoints(shape: PathShape): Point[] {
+  const box = shapeBox(shape);
+  const centerX = box.x + box.width / 2;
+  const centerY = box.y + box.height / 2;
+  return shape.points.map((point) =>
+    toWorldPoint(
+      { x: shape.x + point.x - centerX, y: shape.y + point.y - centerY },
+      centerX,
+      centerY,
+      shape.rotation,
+      { x: 0, y: 0 },
+    ),
+  );
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DocumentError, EMPTY_DOCUMENT, insertShape, removeShape } from './document';
+import { DocumentError, EMPTY_DOCUMENT, insertShape, removeShape, replaceShapes } from './document';
 import { makeRect, testShapeId } from './testing/factories';
 
 const a = makeRect({ id: testShapeId('a'), zIndex: 0 });
@@ -69,5 +69,21 @@ describe('removeShape', () => {
   it('reports a draw order that lists a missing shape', () => {
     const corrupted = { ...abc, order: [...abc.order, testShapeId('ghost')] };
     expect(() => removeShape(corrupted, testShapeId('a'))).toThrow(/ghost/);
+  });
+});
+
+describe('replaceShapes', () => {
+  it('swaps in new versions and keeps the draw order and each zIndex', () => {
+    const moved = { ...b, x: 500, zIndex: 99 };
+    const replaced = replaceShapes(abc, [moved]);
+    expect(replaced.order).toBe(abc.order);
+    expect(replaced.shapes.get(testShapeId('b'))).toEqual({ ...moved, zIndex: 1 });
+    expect(abc.shapes.get(testShapeId('b'))).toBe(b);
+  });
+
+  it('rejects a shape that is not in the document', () => {
+    expect(() => replaceShapes(abc, [makeRect({ id: testShapeId('ghost') })])).toThrow(
+      DocumentError,
+    );
   });
 });

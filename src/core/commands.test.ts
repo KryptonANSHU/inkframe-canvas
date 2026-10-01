@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { CommandError, createShapeCommand, executeCommand, type Command } from './commands';
+import {
+  CommandError,
+  createShapeCommand,
+  executeCommand,
+  updateShapesCommand,
+  type Command,
+} from './commands';
 import { EMPTY_DOCUMENT, insertShape } from './document';
 import { createEditorStore } from './store';
 import { makeRect, testShapeId } from './testing/factories';
@@ -57,5 +63,21 @@ describe('executeCommand', () => {
     };
     const result = executeCommand(store, failing);
     expect(result.ok ? null : result.error.message).toBe('Broken failed: boom');
+  });
+});
+
+describe('updateShapesCommand', () => {
+  const moved = { ...existing, x: 300, y: 40 };
+  const command = updateShapesCommand('Move', [existing], [moved]);
+
+  it('do → undo → redo restores the exact same documents', () => {
+    const afterDo = command.do(start);
+    expect(afterDo.shapes.get(existing.id)).toEqual(moved);
+    expect(command.undo(afterDo)).toEqual(start);
+    expect(command.do(command.undo(afterDo))).toEqual(afterDo);
+  });
+
+  it('refuses mismatched before and after lists', () => {
+    expect(() => updateShapesCommand('Move', [existing], [])).toThrow(/same shapes/);
   });
 });

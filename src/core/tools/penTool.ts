@@ -32,6 +32,10 @@ export function createPenTool(store: EditorStore, reportError: (error: Error) =>
   return {
     getCursor: () => 'crosshair',
 
+    hover() {
+      // The cursor is the same everywhere for this tool.
+    },
+
     pointerDown(event) {
       const origin = screenToWorld(store.getState().camera, event.screen);
       stroke = {

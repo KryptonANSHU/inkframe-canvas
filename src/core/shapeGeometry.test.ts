@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { arrowHeadLength, inkMargin, isFilled, shapeBounds, shapeBox } from './shapeGeometry';
+import {
+  arrowHeadLength,
+  inkMargin,
+  isFilled,
+  pathWorldPoints,
+  shapeBounds,
+  shapeBox,
+  shapeGeometryBounds,
+} from './shapeGeometry';
 import { DEFAULT_SHAPE_STYLE } from './shapes';
 import { makeArrow, makeEllipse, makeLine, makePen, makeRect, makeText } from './testing/factories';
 
@@ -98,5 +106,69 @@ describe('shapeBounds', () => {
   it('includes rotation', () => {
     const bounds = shapeBounds(makeRect({ width: 100, height: 10, rotation: Math.PI / 2 }));
     expect(bounds.maxY - bounds.minY).toBeCloseTo(104, 9);
+  });
+});
+
+describe('shapeGeometryBounds', () => {
+  it('is exact for a rotated ellipse, tighter than its rotated box', () => {
+    const ellipse = makeEllipse({ x: 0, y: 0, width: 200, height: 40, rotation: Math.PI / 4 });
+    const bounds = shapeGeometryBounds(ellipse);
+    let maxX = -Infinity;
+    for (let i = 0; i < 100_000; i++) {
+      const t = (i / 100_000) * Math.PI * 2;
+      const lx = 100 * Math.cos(t);
+      const ly = 20 * Math.sin(t);
+      maxX = Math.max(maxX, 100 + lx * Math.cos(Math.PI / 4) - ly * Math.sin(Math.PI / 4));
+    }
+    expect(bounds.maxX).toBeCloseTo(maxX, 3);
+    expect(bounds.maxX).toBeLessThan(shapeBounds(ellipse).maxX - 2);
+  });
+
+  it('uses the rotated points of a path, not its box', () => {
+    const line = makeLine({
+      x: 0,
+      y: 0,
+      points: [
+        { x: 0, y: 0 },
+        { x: 100, y: 0 },
+      ],
+      rotation: Math.PI / 2,
+    });
+    const bounds = shapeGeometryBounds(line);
+    expect(bounds.minX).toBeCloseTo(50, 9);
+    expect(bounds.maxX).toBeCloseTo(50, 9);
+    expect(bounds.maxY - bounds.minY).toBeCloseTo(100, 9);
+  });
+
+  it('gives an empty path a point at its position', () => {
+    expect(shapeGeometryBounds(makePen({ x: 3, y: 4, points: [] }))).toEqual({
+      minX: 3,
+      minY: 4,
+      maxX: 3,
+      maxY: 4,
+    });
+  });
+
+  it('is the rotated box for rectangles and text', () => {
+    expect(shapeGeometryBounds(makeRect())).toEqual({ minX: 0, minY: 0, maxX: 100, maxY: 50 });
+    expect(shapeGeometryBounds(makeText()).maxX).toBe(240);
+  });
+});
+
+describe('pathWorldPoints', () => {
+  it('applies position and rotation to every point', () => {
+    const points = pathWorldPoints(
+      makeLine({
+        x: 10,
+        y: 10,
+        points: [
+          { x: 0, y: 0 },
+          { x: 20, y: 0 },
+        ],
+        rotation: Math.PI,
+      }),
+    );
+    expect(points[0]?.x).toBeCloseTo(30, 9);
+    expect(points[1]?.x).toBeCloseTo(10, 9);
   });
 });

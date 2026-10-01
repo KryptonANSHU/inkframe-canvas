@@ -36,6 +36,10 @@ export function createDragShapeTool(
   return {
     getCursor: () => 'crosshair',
 
+    hover() {
+      // The cursor is the same everywhere for this tool.
+    },
+
     pointerDown(event) {
       const startWorld = screenToWorld(store.getState().camera, event.screen);
       state = { kind: 'pressing', startScreen: { ...event.screen }, startWorld };

@@ -15,11 +15,22 @@ export function bindCanvasInput(
 ): () => void {
   const abort = new AbortController();
   const { signal } = abort;
-  const pointer = { pointerId: 0, screen: createPoint() };
+  const pointer = {
+    pointerId: 0,
+    screen: createPoint(),
+    shiftKey: false,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+  };
   const wheelAnchor = createPoint();
 
   const readPointer = (event: PointerEvent) => {
     pointer.pointerId = event.pointerId;
+    pointer.shiftKey = event.shiftKey;
+    pointer.altKey = event.altKey;
+    pointer.ctrlKey = event.ctrlKey;
+    pointer.metaKey = event.metaKey;
     surface.toScreen(event.clientX, event.clientY, pointer.screen);
     return pointer;
   };

@@ -19,6 +19,10 @@ export function createTextTool(store: EditorStore): Tool {
   return {
     getCursor: () => 'text',
 
+    hover() {
+      // The cursor is the same everywhere for this tool.
+    },
+
     pointerDown(event) {
       const { textEdit, fontsReady, camera } = store.getState();
       if (textEdit !== null || !fontsReady) {

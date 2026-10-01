@@ -6,6 +6,11 @@ export type ToolPointerEvent = {
    * The same object is reused for every event: copy anything you need to keep.
    */
   readonly screen: Readonly<Point>;
+  readonly shiftKey: boolean;
+  readonly altKey: boolean;
+  readonly ctrlKey: boolean;
+  /** ⌘ on macOS. Where the PRD says "Ctrl", tools accept either. */
+  readonly metaKey: boolean;
 };
 
 /**
@@ -17,6 +22,8 @@ export type Tool = {
   pointerDown(event: ToolPointerEvent): void;
   pointerMove(event: ToolPointerEvent): void;
   pointerUp(event: ToolPointerEvent): void;
+  /** Pointer moves with no button pressed, so the tool can update its cursor. */
+  hover(event: ToolPointerEvent): void;
   /** Ends the gesture and leaves the document as it was before it. Safe to call when idle. */
   cancel(): void;
 };

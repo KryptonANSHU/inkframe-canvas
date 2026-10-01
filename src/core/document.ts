@@ -42,6 +42,25 @@ export function removeShape(document: DocumentState, id: ShapeId): DocumentState
   return { shapes, order };
 }
 
+/**
+ * Swaps in new versions of existing shapes (same IDs). Draw order never changes here:
+ * each shape keeps the zIndex it already has in the document.
+ */
+export function replaceShapes(document: DocumentState, updated: readonly Shape[]): DocumentState {
+  const shapes = new Map(document.shapes);
+  for (const shape of updated) {
+    const existing = document.shapes.get(shape.id);
+    if (existing === undefined) {
+      throw new DocumentError(`Shape ${shape.id} does not exist.`);
+    }
+    shapes.set(
+      shape.id,
+      shape.zIndex === existing.zIndex ? shape : { ...shape, zIndex: existing.zIndex },
+    );
+  }
+  return { shapes, order: document.order };
+}
+
 function renumberFrom(shapes: Map<ShapeId, Shape>, order: readonly ShapeId[], start: number) {
   for (let zIndex = start; zIndex < order.length; zIndex++) {
     const id = order[zIndex];

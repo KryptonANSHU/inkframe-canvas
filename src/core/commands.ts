@@ -1,4 +1,4 @@
-import { insertShape, removeShape, type DocumentState } from './document';
+import { insertShape, removeShape, replaceShapes, type DocumentState } from './document';
 import type { Result } from './result';
 import type { Shape } from './shapes';
 import type { EditorStore } from './store';
@@ -30,6 +30,27 @@ export function createShapeCommand(shape: Shape): Command {
     label: 'Create shape',
     do: (document) => insertShape(document, { ...shape, zIndex: document.order.length }),
     undo: (document) => removeShape(document, shape.id),
+  };
+}
+
+/**
+ * Replaces shapes with new versions of themselves: moves, resizes, rotations, nudges,
+ * text edits. `before` and `after` must list the same shapes; undo puts `before` back.
+ */
+export function updateShapesCommand(
+  label: string,
+  before: readonly Shape[],
+  after: readonly Shape[],
+): Command {
+  const beforeIds = before.map((shape) => shape.id).sort();
+  const afterIds = after.map((shape) => shape.id).sort();
+  if (beforeIds.join('\n') !== afterIds.join('\n')) {
+    throw new Error(`${label}: "before" and "after" must list the same shapes.`);
+  }
+  return {
+    label,
+    do: (document) => replaceShapes(document, after),
+    undo: (document) => replaceShapes(document, before),
   };
 }
 
