@@ -63,7 +63,7 @@ export const arrowBetween: DragShapeBuilder = (id, start, end) => ({
  * (x, y) is the top-left of the points' box, so both points are non-negative offsets.
  * Shorter than 1 unit is stretched to 1 along the drag direction.
  */
-function pathBetween(start: Readonly<Point>, end: Readonly<Point>) {
+export function pathBetween(start: Readonly<Point>, end: Readonly<Point>) {
   const length = Math.hypot(end.x - start.x, end.y - start.y);
   const target =
     length >= MIN_SHAPE_SIZE
