@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { canvas, inkedPixels, openEditor } from './helpers';
+import { canvas, inkedPixels, nextFrame, openEditor } from './helpers';
 
 let consoleProblems: string[] = [];
 
@@ -70,10 +70,40 @@ test('long text wraps inside the 240-unit box', async ({ page }) => {
   await page.mouse.click(200, 200);
   await page.keyboard.type('The quick brown fox jumps over the lazy dog');
   await page.keyboard.press('Control+Enter');
+  // The new text is selected; deselect so its handles don't count as ink.
+  await page.keyboard.press('Escape');
+  await nextFrame(page);
 
   await expect.poll(() => firstLineInk(page)).toBeGreaterThan(100);
   // A second line exists below the first...
   expect(await inkedPixels(page, 200, 230, 240, 20)).toBeGreaterThan(50);
   // ...and nothing runs past the right edge of the box.
   expect(await inkedPixels(page, 442, 195, 200, 60)).toBe(0);
+});
+
+test.describe('with a slow font', () => {
+  test('text typed before the font loads appears once it does', async ({ page }) => {
+    // Hold the font back until the text has been typed and committed.
+    let releaseFont: () => void = () => undefined;
+    const fontHeld = new Promise<void>((resolve) => {
+      releaseFont = resolve;
+    });
+    await page.route('**/fonts/*.woff2', async (route) => {
+      await fontHeld;
+      await route.continue();
+    });
+    await page.reload();
+    await canvas(page).focus();
+    await page.keyboard.press('t');
+
+    await page.mouse.click(200, 200);
+    await expect(textbox(page)).toBeFocused();
+    await page.keyboard.type('Early text');
+    await page.keyboard.press('Escape');
+    await nextFrame(page);
+    expect(await firstLineInk(page)).toBe(0);
+
+    releaseFont();
+    await expect.poll(() => firstLineInk(page)).toBeGreaterThan(100);
+  });
 });

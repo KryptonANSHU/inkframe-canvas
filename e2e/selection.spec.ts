@@ -23,6 +23,7 @@ async function drawRectangle(
 }
 
 // Rectangle A: (200,200)–(400,300). Rectangle B: (500,200)–(600,300).
+// Edge samples avoid corners and edge midpoints, where white resize handles sit.
 async function drawTwo(page: Page) {
   await drawRectangle(page, [200, 200], [400, 300]);
   await drawRectangle(page, [500, 200], [600, 300]);
@@ -31,34 +32,34 @@ async function drawTwo(page: Page) {
 
 test('a new shape is selected, and clicking empty canvas deselects it', async ({ page }) => {
   await drawRectangle(page, [200, 200], [400, 300]);
-  await expect.poll(() => isSelectionBlue(page, 300, 200)).toBe(true);
+  await expect.poll(() => isSelectionBlue(page, 250, 200)).toBe(true);
 
   await page.mouse.click(700, 500);
-  await expect.poll(() => isSelectionBlue(page, 300, 200)).toBe(false);
-  expect(await alphaAt(page, 300, 200)).toBeGreaterThan(0);
+  await expect.poll(() => isSelectionBlue(page, 250, 200)).toBe(false);
+  expect(await alphaAt(page, 250, 200)).toBeGreaterThan(0);
 });
 
 test('click selects, Shift + click adds, Escape clears', async ({ page }) => {
   await drawTwo(page);
   await page.mouse.click(300, 200);
-  await expect.poll(() => isSelectionBlue(page, 300, 300)).toBe(true);
-  expect(await isSelectionBlue(page, 550, 300)).toBe(false);
+  await expect.poll(() => isSelectionBlue(page, 250, 300)).toBe(true);
+  expect(await isSelectionBlue(page, 525, 300)).toBe(false);
 
   await page.keyboard.down('Shift');
   await page.mouse.click(550, 200);
   await page.keyboard.up('Shift');
-  await expect.poll(() => isSelectionBlue(page, 550, 300)).toBe(true);
-  expect(await isSelectionBlue(page, 300, 300)).toBe(true);
+  await expect.poll(() => isSelectionBlue(page, 525, 300)).toBe(true);
+  expect(await isSelectionBlue(page, 250, 300)).toBe(true);
 
   await page.keyboard.press('Escape');
-  await expect.poll(() => isSelectionBlue(page, 550, 300)).toBe(false);
+  await expect.poll(() => isSelectionBlue(page, 525, 300)).toBe(false);
 });
 
 test('a marquee selects only the shapes fully inside it', async ({ page }) => {
   await drawTwo(page);
   await drag(page, [150, 150], [450, 350]);
-  await expect.poll(() => isSelectionBlue(page, 300, 300)).toBe(true);
-  expect(await isSelectionBlue(page, 550, 300)).toBe(false);
+  await expect.poll(() => isSelectionBlue(page, 250, 300)).toBe(true);
+  expect(await isSelectionBlue(page, 525, 300)).toBe(false);
 });
 
 test('dragging a shape moves it; the old place is left empty', async ({ page }) => {
@@ -105,11 +106,11 @@ test('Alt + click cycles to the shape underneath', async ({ page }) => {
   await page.keyboard.down('Alt');
   await page.mouse.click(250, 200);
   // B is selected: its bottom edge (y 250) is blue, A's (y 300) is not.
-  await expect.poll(() => isSelectionBlue(page, 250, 250)).toBe(true);
+  await expect.poll(() => isSelectionBlue(page, 230, 250)).toBe(true);
   expect(await isSelectionBlue(page, 350, 300)).toBe(false);
 
   await page.mouse.click(250, 200);
   await page.keyboard.up('Alt');
   await expect.poll(() => isSelectionBlue(page, 350, 300)).toBe(true);
-  expect(await isSelectionBlue(page, 250, 250)).toBe(false);
+  expect(await isSelectionBlue(page, 230, 250)).toBe(false);
 });

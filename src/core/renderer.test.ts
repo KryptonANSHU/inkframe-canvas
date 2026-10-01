@@ -38,6 +38,7 @@ function createRecordingContext() {
     closePath: record('closePath'),
     rect: record('rect'),
     ellipse: record('ellipse'),
+    arc: record('arc'),
     moveTo: record('moveTo'),
     lineTo: record('lineTo'),
     quadraticCurveTo: record('quadraticCurveTo'),
@@ -237,7 +238,8 @@ describe('createRenderer', () => {
     createRenderer(context).draw(state, { ...viewport, devicePixelRatio: 1 });
 
     const overlay = calls.slice(calls.lastIndexOf('setTransform(1,0,0,1,0,0)'));
-    expect(overlay).toEqual([
+    // The frame comes first, on half-pixel coordinates so a 1 px line is crisp.
+    expect(overlay.slice(0, 8)).toEqual([
       'setTransform(1,0,0,1,0,0)',
       'beginPath()',
       'moveTo(10.5,20.5)',
@@ -247,8 +249,36 @@ describe('createRenderer', () => {
       'closePath()',
       'stroke()',
     ]);
+    // Then 8 square resize handles and 1 round rotation handle, each filled and outlined.
+    expect(overlay.filter((c) => c === 'fill()')).toHaveLength(9);
+    expect(overlay.filter((c) => c.startsWith('arc('))).toEqual([
+      `arc(60,-4,4.5,0,${String(Math.PI * 2)})`,
+    ]);
+    // The bottom-right handle is an 8 px square centered on the corner, snapped to pixels.
+    expect(overlay).toContain('moveTo(106.5,66.5)');
     expect(context.strokeStyle).toBe('#3d5afe');
     expect(context.lineWidth).toBe(1);
+  });
+
+  it('shows only end handles for a lone line, and no handles mid-gesture', () => {
+    const line = makeLine();
+    const document = insertShape(EMPTY_DOCUMENT, line);
+    const selected = { document, selectedIds: new Set([line.id]) };
+
+    const idle = createRecordingContext();
+    createRenderer(idle.context).draw(createEditorStore(selected).getState(), viewport);
+    const idleOverlay = idle.calls.slice(idle.calls.lastIndexOf('setTransform(1,0,0,1,0,0)'));
+    expect(idleOverlay.filter((c) => c.startsWith('arc('))).toHaveLength(2);
+    expect(idleOverlay.filter((c) => c === 'stroke()')).toHaveLength(2);
+
+    const moving = createRecordingContext();
+    const preview = new Map([[line.id, { ...line, x: 50 }]]);
+    createRenderer(moving.context).draw(
+      createEditorStore({ ...selected, preview }).getState(),
+      viewport,
+    );
+    const movingOverlay = moving.calls.slice(moving.calls.lastIndexOf('setTransform(1,0,0,1,0,0)'));
+    expect(movingOverlay.some((c) => c.startsWith('arc('))).toBe(false);
   });
 
   it('outlines each shape and the shared frame for a multi-selection, plus the marquee', () => {
@@ -264,7 +294,8 @@ describe('createRenderer', () => {
     }).getState();
     createRenderer(context).draw(state, viewport);
 
-    // Two shape outlines + one frame are stroked; the marquee is filled and stroked.
+    // Two shape outlines + one frame are stroked; the marquee is filled and stroked;
+    // handles are hidden while the marquee is out.
     const overlay = calls.slice(calls.lastIndexOf('setTransform(1,0,0,1,0,0)'));
     expect(overlay.filter((c) => c === 'stroke()')).toHaveLength(4);
     expect(overlay.filter((c) => c === 'fill()')).toHaveLength(1);

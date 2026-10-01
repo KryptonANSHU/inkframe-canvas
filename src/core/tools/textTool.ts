@@ -24,8 +24,9 @@ export function createTextTool(store: EditorStore): Tool {
     },
 
     pointerDown(event) {
-      const { textEdit, fontsReady, camera } = store.getState();
-      if (textEdit !== null || !fontsReady) {
+      // Typing can start before the font loads; the editor waits for it before measuring.
+      const { textEdit, camera } = store.getState();
+      if (textEdit !== null) {
         state = { kind: 'endingEdit' };
         return;
       }

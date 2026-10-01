@@ -4,7 +4,9 @@ import { DEFAULT_SHAPE_STYLE, type Shape } from '../shapes';
 import { createSpatialIndex } from '../spatial/spatialIndex';
 import { bindSpatialIndex } from '../spatial/syncIndex';
 import { createEditorStore } from '../store';
-import { makeRect, pointerAt, testShapeId, type Modifiers } from '../testing/factories';
+import { makeLine, makeRect, pointerAt, testShapeId, type Modifiers } from '../testing/factories';
+import { selectionFrame } from '../selection/selectionFrame';
+import { fakeMeasurer } from '../testing/factories';
 import { createSelectTool } from './selectTool';
 
 const filled = { ...DEFAULT_SHAPE_STYLE, fillColor: '#ff0000' };
@@ -34,7 +36,7 @@ function setup(shapes: readonly Shape[] = [a, b, far]) {
   const index = createSpatialIndex();
   bindSpatialIndex(store, index);
   const reportError = vi.fn();
-  const tool = createSelectTool(store, index, reportError);
+  const tool = createSelectTool({ store, index, measurer: fakeMeasurer, reportError });
   const selected = () => [...store.getState().selectedIds].sort();
   const shape = (id: string) => store.getState().document.shapes.get(testShapeId(id));
   return { store, tool, selected, shape, reportError };
@@ -215,5 +217,182 @@ describe('select tool: marquee', () => {
     click(tool, 425, 0);
     drag(tool, [300, 300], [350, 350]);
     expect(selected()).toEqual([]);
+  });
+});
+
+describe('select tool: handles', () => {
+  // One 100 × 50 rectangle at the origin, selected; handles sit on its frame.
+  function selectedRect() {
+    const rect = makeRect({ id: testShapeId('r'), x: 0, y: 0, width: 100, height: 50 });
+    const env = setup([rect]);
+    env.store.setState({ selectedIds: new Set([rect.id]) });
+    return env;
+  }
+
+  it('resizes from a corner as one command, keeping the opposite corner', () => {
+    const { tool, shape, store } = selectedRect();
+    const documentChanges = vi.fn();
+    store.subscribe((s, p) => {
+      if (s.document !== p.document) documentChanges();
+    });
+    drag(tool, [100, 50], [150, 100]);
+    expect(shape('r')).toMatchObject({ x: 0, y: 0, width: 150, height: 100 });
+    expect(documentChanges).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the grab offset, so the handle does not jump to the pointer', () => {
+    const { tool, shape } = selectedRect();
+    // Press 3 px inside the corner handle, drag by (+50, +50).
+    drag(tool, [97, 47], [147, 97]);
+    expect(shape('r')).toMatchObject({ width: 150, height: 100 });
+  });
+
+  it('with Shift keeps the aspect ratio, with Alt resizes around the center', () => {
+    const shifted = selectedRect();
+    drag(shifted.tool, [100, 50], [300, 60], { shiftKey: true });
+    expect(shifted.shape('r')).toMatchObject({ width: 300, height: 150 });
+
+    const centered = selectedRect();
+    drag(centered.tool, [100, 50], [150, 75], { altKey: true });
+    expect(centered.shape('r')).toMatchObject({ x: -50, y: -25, width: 200, height: 100 });
+  });
+
+  it('resizes one side from an edge handle', () => {
+    const { tool, shape } = selectedRect();
+    drag(tool, [100, 25], [40, 300]);
+    expect(shape('r')).toMatchObject({ x: 0, y: 0, width: 40, height: 50 });
+  });
+
+  it('flips a line when dragged past the anchor, without negative sizes', () => {
+    const line = makeLine({
+      id: testShapeId('l'),
+      x: 0,
+      y: 0,
+      points: [
+        { x: 0, y: 0 },
+        { x: 100, y: 0 },
+      ],
+    });
+    const pen = makeRect({ id: testShapeId('p'), x: 0, y: 100, width: 100, height: 50 });
+    const { tool, shape, store } = setup([line, pen]);
+    store.setState({ selectedIds: new Set([line.id, pen.id]) });
+    // Group frame spans x 0–100, y 0–150; drag its right edge 100 left of its left edge.
+    drag(tool, [100, 75], [-100, 75]);
+    expect(shape('l')).toMatchObject({
+      x: -100,
+      points: [
+        { x: 100, y: 0 },
+        { x: 0, y: 0 },
+      ],
+    });
+    expect(shape('p')).toMatchObject({ x: -100, width: 100 });
+  });
+
+  it('rotates around the center, snapping to 15° with Shift', () => {
+    const { tool, shape } = selectedRect();
+    // The rotation handle is 24 px above the top-center (50, −24); the center is (50, 25).
+    drag(tool, [50, -24], [99, 25]);
+    expect(shape('r')?.rotation).toBeCloseTo(Math.PI / 2, 9);
+
+    const snapping = selectedRect();
+    drag(snapping.tool, [50, -24], [80, -20], { shiftKey: true });
+    const rotation = snapping.shape('r')?.rotation ?? 0;
+    expect((rotation / (Math.PI / 12)) % 1).toBeCloseTo(0, 9);
+  });
+
+  it('drags one end of a lone line', () => {
+    const line = makeLine({
+      id: testShapeId('l'),
+      x: 0,
+      y: 0,
+      points: [
+        { x: 0, y: 0 },
+        { x: 100, y: 0 },
+      ],
+    });
+    const { tool, shape, store } = setup([line]);
+    store.setState({ selectedIds: new Set([line.id]) });
+    drag(tool, [100, 0], [100, 80]);
+    expect(shape('l')).toMatchObject({
+      x: 0,
+      y: 0,
+      points: [
+        { x: 0, y: 0 },
+        { x: 100, y: 80 },
+      ],
+    });
+  });
+
+  it('forces a uniform resize for a group with mixed rotations', () => {
+    const a = makeRect({ id: testShapeId('a'), x: 0, y: 0, width: 100, height: 100 });
+    const b = makeRect({
+      id: testShapeId('b'),
+      x: 200,
+      y: 200,
+      width: 100,
+      height: 100,
+      rotation: 0.5,
+    });
+    const { tool, store } = setup([a, b]);
+    store.setState({ selectedIds: new Set([a.id, b.id]) });
+    const frame = selectionFrame([a, b]);
+    if (frame === null) throw new Error('no frame');
+    const corner = { x: frame.centerX + frame.width / 2, y: frame.centerY + frame.height / 2 };
+    // Pull the corner right only; the height must follow.
+    drag(tool, [corner.x, corner.y], [corner.x + frame.width, corner.y]);
+    expect(store.getState().document.shapes.get(a.id)).toMatchObject({ width: 200, height: 200 });
+  });
+
+  it('Alt + click on a handle still cycles, while Alt + drag resizes from the center', () => {
+    const under = makeRect({
+      id: testShapeId('under'),
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+      zIndex: 0,
+    });
+    const over = makeRect({
+      id: testShapeId('over'),
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 50,
+      zIndex: 1,
+    });
+    const { tool, selected, store } = setup([under, over]);
+    store.setState({ selectedIds: new Set([over.id]) });
+    // (50, 0) is the top-center handle of the selected shape and on both top edges.
+    click(tool, 50, 0, { altKey: true });
+    expect(selected()).toEqual(['under']);
+  });
+
+  it('cancel mid-resize puts the shape back', () => {
+    const { tool, shape } = selectedRect();
+    tool.pointerDown(pointerAt(100, 50));
+    tool.pointerMove(pointerAt(300, 300));
+    tool.cancel();
+    tool.pointerUp(pointerAt(300, 300));
+    expect(shape('r')).toMatchObject({ width: 100, height: 50 });
+  });
+
+  it('adds no command for a resize that ends where it started', () => {
+    const { tool, store } = selectedRect();
+    const before = store.getState().document;
+    tool.pointerDown(pointerAt(100, 50));
+    tool.pointerMove(pointerAt(150, 90));
+    tool.pointerUp(pointerAt(100, 50));
+    expect(store.getState().document).toBe(before);
+  });
+
+  it('shows a resize cursor over handles and the drag cursor during a gesture', () => {
+    const { tool } = selectedRect();
+    tool.hover(pointerAt(100, 50));
+    expect(tool.getCursor()).toBe('nwse-resize');
+    tool.hover(pointerAt(50, -24));
+    expect(tool.getCursor()).toBe('grab');
+    tool.pointerDown(pointerAt(50, -24));
+    tool.pointerMove(pointerAt(80, -10));
+    expect(tool.getCursor()).toBe('grabbing');
   });
 });

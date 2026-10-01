@@ -5,6 +5,13 @@ import { rotatedBoxCorners } from '../geometry/transform';
 import type { RenderContext } from '../renderer';
 import { shapeBox } from '../shapeGeometry';
 import type { EditorState } from '../store';
+import {
+  availableHandles,
+  HANDLE_SIZE_PX,
+  handlePosition,
+  singleSegment,
+  type HandleId,
+} from './handles';
 import { selectedShapes } from './selectedShapes';
 import { selectionFrame, type SelectionFrame } from './selectionFrame';
 
@@ -12,6 +19,10 @@ import { selectionFrame, type SelectionFrame } from './selectionFrame';
 export const SELECTION_COLOR = '#3d5afe';
 /** Marquee fill opacity: enough to see the area, not enough to hide shapes. */
 const MARQUEE_FILL_ALPHA = 0.08;
+/** Handle fill, so handles stand out over any shape. Moves to theme tokens in M7. */
+const HANDLE_FILL = '#ffffff';
+/** Radius of round handles (rotation, line ends), in screen pixels. */
+const ROUND_HANDLE_RADIUS_PX = 4.5;
 
 /**
  * Draws selection outlines, the selection frame, and the marquee in device pixels,
@@ -44,8 +55,13 @@ export function drawSelectionOverlay(
     }
   }
   const frame = selectionFrame(shapes);
-  if (frame !== null) {
+  // A lone line or arrow is edited by its ends; a box around it would only add noise.
+  if (frame !== null && singleSegment(shapes) === null) {
     strokePolygon(context, project(frameCorners(frame), isAxisAligned(frame.rotation)));
+  }
+  // Handles are hidden mid-gesture: the shapes are moving under them.
+  if (frame !== null && state.preview === null && state.marquee === null) {
+    drawHandles(context, shapes, frame, state.camera, devicePixelRatio, lineWidth);
   }
   if (state.marquee !== null) {
     drawMarquee(context, project(marqueeCorners(state.marquee), true));
@@ -121,4 +137,71 @@ function drawMarquee(context: RenderContext, points: readonly Readonly<Point>[])
   context.fill();
   context.globalAlpha = 1;
   context.stroke();
+}
+
+function drawHandles(
+  context: RenderContext,
+  shapes: Parameters<typeof availableHandles>[0],
+  frame: SelectionFrame,
+  camera: Camera,
+  devicePixelRatio: number,
+  lineWidth: number,
+): void {
+  context.fillStyle = HANDLE_FILL;
+  for (const handle of availableHandles(shapes, frame, camera.zoom)) {
+    const screen = worldToScreen(camera, handlePosition(handle, shapes, frame, camera.zoom));
+    const x = screen.x * devicePixelRatio;
+    const y = screen.y * devicePixelRatio;
+    context.beginPath();
+    if (isRound(handle)) {
+      context.arc(x, y, ROUND_HANDLE_RADIUS_PX * devicePixelRatio, 0, Math.PI * 2);
+    } else {
+      traceSquare(
+        context,
+        x,
+        y,
+        (HANDLE_SIZE_PX * devicePixelRatio) / 2,
+        frame.rotation,
+        lineWidth,
+      );
+    }
+    context.fill();
+    context.stroke();
+  }
+}
+
+function isRound(handle: HandleId): boolean {
+  return handle === 'rotate' || handle === 'start' || handle === 'end';
+}
+
+/** A square handle turned with the frame; unrotated squares are snapped to the pixel grid. */
+function traceSquare(
+  context: RenderContext,
+  x: number,
+  y: number,
+  half: number,
+  rotation: number,
+  lineWidth: number,
+): void {
+  const offset = lineWidth % 2 === 1 ? 0.5 : 0;
+  const snap = isAxisAligned(rotation);
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  [
+    [-half, -half],
+    [half, -half],
+    [half, half],
+    [-half, half],
+  ].forEach(([dx = 0, dy = 0], index) => {
+    const px = x + dx * cos - dy * sin;
+    const py = y + dx * sin + dy * cos;
+    const sx = snap ? Math.round(px - offset) + offset : px;
+    const sy = snap ? Math.round(py - offset) + offset : py;
+    if (index === 0) {
+      context.moveTo(sx, sy);
+    } else {
+      context.lineTo(sx, sy);
+    }
+  });
+  context.closePath();
 }

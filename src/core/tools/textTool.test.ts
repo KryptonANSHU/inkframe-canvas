@@ -36,10 +36,10 @@ describe('text tool', () => {
     expect(store.getState().textEdit).toBeNull();
   });
 
-  it('does nothing until fonts are ready', () => {
+  it('places text even before fonts are ready, so typing never goes to the canvas', () => {
     const { store, tool } = setup({ fontsReady: false });
     click(tool, 20, 40);
-    expect(store.getState().textEdit).toBeNull();
+    expect(store.getState().textEdit).toMatchObject({ x: 110, y: 20 });
   });
 
   it('places nothing after cancel', () => {

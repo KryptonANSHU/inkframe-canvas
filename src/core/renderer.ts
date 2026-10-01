@@ -25,6 +25,7 @@ export type RenderContext = Pick<
   | 'closePath'
   | 'rect'
   | 'ellipse'
+  | 'arc'
   | 'moveTo'
   | 'lineTo'
   | 'quadraticCurveTo'

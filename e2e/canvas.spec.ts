@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { alphaAt, canvas, drag, EMPTY, FULL, openEditor } from './helpers';
+import { alphaAt, canvas, drag, EMPTY, FULL, nextFrame, openEditor } from './helpers';
 
 // The default rectangle has a 2-unit stroke centered on its edges. At 100% zoom and
 // DPR 1, the top edge at y = 200 covers y 199–201: pixel rows 199 and 200 are fully
@@ -20,6 +20,9 @@ test.afterEach(() => {
 
 test('dragging draws a rectangle with crisp edges', async ({ page }) => {
   await drag(page, [200, 200], [400, 300]);
+  // Deselect so the selection outline and handles don't cover the edge pixels.
+  await page.keyboard.press('Escape');
+  await nextFrame(page);
 
   await expect.poll(() => alphaAt(page, 300, 200)).toBe(FULL);
   expect(await alphaAt(page, 300, 199)).toBe(FULL);
@@ -99,6 +102,9 @@ test.describe('on a 2× display', () => {
     expect(sizes.backing).toEqual(sizes.css);
 
     await drag(page, [200, 200], [400, 300]);
+    // Deselect and wait for that frame: the selection's handles would cover these pixels.
+    await page.keyboard.press('Escape');
+    await nextFrame(page);
     // The top edge at CSS y = 200 is device y = 400, with a 4-device-pixel stroke (398–402).
     await expect.poll(() => alphaAt(page, 600, 400)).toBe(FULL);
     expect(await alphaAt(page, 600, 398)).toBe(FULL);

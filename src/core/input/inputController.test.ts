@@ -3,6 +3,7 @@ import { DEFAULT_CAMERA } from '../camera';
 import { EMPTY_DOCUMENT } from '../document';
 import { createEditorStore } from '../store';
 import { pointerAt } from '../testing/factories';
+import { fakeMeasurer } from '../testing/factories';
 import { createDragShapeTool } from '../tools/dragShapeTool';
 import { createPanTool } from '../tools/panTool';
 import { createPenTool } from '../tools/penTool';
@@ -30,7 +31,7 @@ function setup() {
     store,
     {
       byId: {
-        select: createSelectTool(store, index, reportError),
+        select: createSelectTool({ store, index, measurer: fakeMeasurer, reportError }),
         rectangle: createDragShapeTool(store, reportError, rectangleBetween),
         ellipse: createDragShapeTool(store, reportError, ellipseBetween),
         line: createDragShapeTool(store, reportError, lineBetween),
@@ -241,8 +242,11 @@ describe('input controller', () => {
   it('sends hover to the idle tool so the select tool can show a move cursor', () => {
     const { controller } = setup();
     drag(controller);
-    controller.pointerMove(pointerAt(50, 0));
+    controller.pointerMove(pointerAt(25, 0));
     expect(controller.cursor()).toBe('move');
+    // The middle of the top edge is the top resize handle.
+    controller.pointerMove(pointerAt(50, 0));
+    expect(controller.cursor()).toBe('ns-resize');
     controller.pointerMove(pointerAt(500, 500));
     expect(controller.cursor()).toBe('default');
   });

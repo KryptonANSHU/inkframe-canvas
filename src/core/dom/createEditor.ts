@@ -68,7 +68,7 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
     store,
     {
       byId: {
-        select: createSelectTool(store, index, reportError),
+        select: createSelectTool({ store, index, measurer, reportError }),
         rectangle: createDragShapeTool(store, reportError, rectangleBetween),
         ellipse: createDragShapeTool(store, reportError, ellipseBetween),
         line: createDragShapeTool(store, reportError, lineBetween),

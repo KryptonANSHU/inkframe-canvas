@@ -40,14 +40,23 @@ export function bindTextEditor(options: TextEditorOptions): () => void {
     if (document.activeElement === null || document.activeElement === document.body) {
       canvas.focus();
     }
-    const shape = placement === null ? null : createTextShape(placement, typed, options.measurer);
-    if (shape !== null) {
-      const result = executeCommand(store, createShapeCommand(shape));
-      if (result.ok) {
-        selectCreated(store, shape.id);
-      } else {
-        options.reportError(result.error);
-      }
+    if (placement !== null) {
+      whenFontsReady(store, () => {
+        createText(placement, typed);
+      });
+    }
+  };
+
+  const createText = (placement: TextPlacement, typed: string) => {
+    const shape = createTextShape(placement, typed, options.measurer);
+    if (shape === null) {
+      return;
+    }
+    const result = executeCommand(store, createShapeCommand(shape));
+    if (result.ok) {
+      selectCreated(store, shape.id);
+    } else {
+      options.reportError(result.error);
     }
   };
 
@@ -127,4 +136,21 @@ function placeTextarea(
   // `font` resets line-height, so it must be set first.
   style.font = fontString(DEFAULT_FONT_SIZE * camera.zoom);
   style.lineHeight = `${String(lineHeight * camera.zoom)}px`;
+}
+
+/**
+ * Runs `action` now if the text font is ready, otherwise as soon as it is. Text typed
+ * before the font loads is measured with the real font, so its stored height is right.
+ */
+function whenFontsReady(store: EditorStore, action: () => void): void {
+  if (store.getState().fontsReady) {
+    action();
+    return;
+  }
+  const unsubscribe = store.subscribe((state) => {
+    if (state.fontsReady) {
+      unsubscribe();
+      action();
+    }
+  });
 }

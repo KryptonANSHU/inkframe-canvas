@@ -216,3 +216,33 @@ A log of real design decisions: what we chose, why, and what we rejected.
 
 **Decision:** Arrow keys move the selection 1 world unit (10 with Shift) via `updateShapesCommand('Nudge', …)`. Arrow keys are claimed even with nothing selected so the page never scrolls; Ctrl / ⌘ / Alt + arrow are left to the browser.
 **Changed from the plan:** "a held key is one undo step" needs undo history, which arrives in M5; M5's history will merge consecutive nudges.
+
+## 2026-10-01 — Resize = signed scale along the selection frame's axes
+
+**Decision:** A handle drag becomes two signed scale factors along the frame's own axes (`resizeFromHandle`): the opposite handle (or, with Alt, the center) stays fixed, Shift keeps the aspect ratio (corners: the axis that moved further wins; edges: the other axis follows symmetrically), dragging past the anchor gives a negative factor (a flip), and no size drops below 1 world unit. `resizeShapes` applies it to every shape: centers move with the frame, and each shape scales in its own frame. A shape at a quarter-turn multiple from the frame scales exactly (axes swap at 90°/270°); any other angle gets a uniform scale, where a single-axis flip turns rotation θ into −θ (or π − θ) with the mirror baked into the shape's local geometry.
+**Why:** One rule covers single shapes, rotated shapes, groups, and flips. Flips stay in the geometry (mirrored path points; boxes just stay positive), so no `flipX`/`flipY` flag exists for the renderer, hit-testing, or the index to honour. (User's choice.)
+**Group rule:** a multi-selection containing text or a shape not at a quarter turn from the frame can only scale uniformly (user's choice) — it shows corner handles only.
+**Verified:** fast-check properties over random rotations, handles, and drags: the anchor stays fixed and the dragged handle lands on the pointer (within 1e-3 units), sizes stay finite and ≥ 1, rotations stay in [0, 2π), and a uniform group scale multiplies every inter-shape distance by the same factor. A deliberately wrong sign in the center shift fails both position properties. 5,000-run stress pass clean.
+
+## 2026-10-01 — Handles
+
+**Decision:** 8 resize handles (8 px squares, turned with the frame) and a rotation handle 24 px above the top edge, all at fixed screen sizes. A lone line or arrow shows only its two end handles (no box): dragging an end moves just that end and returns an unrotated line. Lone text has side handles (wrap width, height re-measured) and corners (uniform: font size scales); no top/bottom handles because text height follows its content. Side handles hide when the frame is under 24 px on screen, so corners stay grabbable. Handles are hit within 8 px, checked before shapes. Resize cursors turn with the frame (nearest 45°). Handles hide during a drag or marquee.
+
+## 2026-10-01 — All selection drags are one TransformGesture
+
+**Decision:** Move, resize, rotate, and line-end drags are each a `TransformGesture` with a pure `apply(pointer, modifiers) → shapes` (`tools/transformGestures.ts`). The select tool previews `apply` on every move and commits the final result as one `updateShapesCommand` labelled Move / Resize / Rotate. A drag that ends where it started adds no command. Resize remembers where on the handle the press landed, so the handle never jumps to the pointer.
+**Why:** The select tool stays a small state machine (pressing → transforming | marquee); each gesture's math is tested on its own.
+
+## 2026-10-01 — Rotation
+
+**Decision:** Rotation is around the selection frame's center; each shape's center orbits it and its rotation gains the same angle, normalized to [0, 2π). Shift snaps to 15°: a single shape snaps its final angle (so it lands on 0°, 15°, …), a group snaps the turn itself.
+
+## 2026-10-01 — Alt + click cycles even on a handle
+
+**Decision:** An Alt + click without a drag always cycles through the shapes under the pointer, even when it lands on a handle; Alt + drag on a handle still resizes from the center.
+**Why:** Found by e2e: after Alt + click selects a shape, clicking the same spot again lands on that shape's edge-midpoint handle, which swallowed the second cycle.
+
+## 2026-10-01 — Text can be typed before the font loads
+
+**Decision:** The text tool always opens the textarea. If the text is committed before the font has loaded, the shape is created as soon as it does, so its height is still measured with the real font.
+**Why:** Found by a flaky e2e test under load: the tool used to ignore clicks until `fontsReady`, so on a slow connection a click did nothing and the letters typed afterwards switched tools — a silent failure. A new e2e test holds the font back with `page.route` to prove the fix.
