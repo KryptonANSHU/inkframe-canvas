@@ -25,6 +25,9 @@ export const colors = {
     tooltipText: '#F3F5F8',
     /** Dims the canvas behind a dialog. */
     scrim: 'rgb(16 24 40 / 0.28)',
+    /** Grid lines: barely there, so the drawing stays the hero. */
+    gridMinor: 'rgb(30 36 48 / 0.06)',
+    gridMajor: 'rgb(30 36 48 / 0.12)',
   },
   dark: {
     canvas: '#181B21',
@@ -39,6 +42,8 @@ export const colors = {
     tooltip: '#E7EAF0',
     tooltipText: '#181B21',
     scrim: 'rgb(0 0 0 / 0.5)',
+    gridMinor: 'rgb(231 234 240 / 0.05)',
+    gridMajor: 'rgb(231 234 240 / 0.10)',
   },
 } as const satisfies Record<ThemeName, Record<string, string>>;
 

@@ -34,6 +34,7 @@ export type EditAction =
   | 'zoomFit'
   | ArrangeAction
   | 'toggleLock'
+  | 'toggleGrid'
   | 'help';
 
 /** What only the browser can do: open and save files, and measure the view. */
@@ -138,6 +139,9 @@ export function performEditAction(
       return;
     case 'toggleLock':
       store.setState({ toolLocked: !store.getState().toolLocked });
+      return;
+    case 'toggleGrid':
+      store.setState({ gridVisible: !store.getState().gridVisible });
       return;
     case 'help':
       store.setState({ helpOpen: !store.getState().helpOpen });

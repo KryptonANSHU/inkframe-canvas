@@ -13,6 +13,7 @@ const WITH_COMMAND_KEY: Readonly<Record<string, EditAction>> = {
   '+': 'zoomIn',
   '-': 'zoomOut',
   '0': 'zoomReset',
+  "'": 'toggleGrid',
   ']': 'forward',
   '[': 'backward',
   // Shift + ] and Shift + [ type braces on most layouts.

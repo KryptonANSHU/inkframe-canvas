@@ -24,6 +24,11 @@
   background: var(--color-hover);
 }
 
+.divider {
+  composes: divider from './surfaces.module.css';
+  margin-inline: var(--space-1);
+}
+
 .menu {
   composes: menu from './surfaces.module.css';
   min-inline-size: 200px;

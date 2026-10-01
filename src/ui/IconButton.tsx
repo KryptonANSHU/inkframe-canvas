@@ -11,6 +11,8 @@ type IconButtonProps = {
   readonly onClick: () => void;
   readonly shortcut?: string;
   readonly disabled?: boolean;
+  /** For toggles: pressed shows the selected look and is announced as on. */
+  readonly pressed?: boolean;
   readonly tipSide?: 'top' | 'bottom' | 'left' | 'right';
 };
 
@@ -19,7 +21,15 @@ type IconButtonProps = {
  * After a pointer click, focus returns to the canvas so shortcuts keep working;
  * keyboard users stay where they are.
  */
-export function IconButton({ label, Icon, onClick, shortcut, disabled, tipSide }: IconButtonProps) {
+export function IconButton({
+  label,
+  Icon,
+  onClick,
+  shortcut,
+  disabled,
+  pressed,
+  tipSide,
+}: IconButtonProps) {
   const editor = useEditor();
   return (
     <Tip label={label} {...(shortcut === undefined ? {} : { shortcut })} side={tipSide ?? 'top'}>
@@ -29,6 +39,7 @@ export function IconButton({ label, Icon, onClick, shortcut, disabled, tipSide }
         aria-label={label}
         {...(shortcut === undefined ? {} : { 'aria-keyshortcuts': shortcutText(shortcut) })}
         disabled={disabled}
+        {...(pressed === undefined ? {} : { 'aria-pressed': pressed })}
         onClick={(event) => {
           onClick();
           if (event.detail > 0) editor.focus();

@@ -1,4 +1,4 @@
-import { Minus, Plus } from 'lucide-react';
+import { Grid3x3, Minus, Plus } from 'lucide-react';
 import { DropdownMenu } from 'radix-ui';
 import type { EditAction } from '../core/editActions';
 import { MAX_ZOOM, MIN_ZOOM } from '../core/camera';
@@ -18,6 +18,7 @@ const ZOOM_ITEMS: readonly { action: EditAction; label: string; shortcut: string
 export function ZoomControls() {
   const editor = useEditor();
   const zoom = useEditorState((state) => state.camera.zoom);
+  const gridVisible = useEditorState((state) => state.gridVisible);
   const percent = `${String(Math.round(zoom * 100))}%`;
 
   return (
@@ -70,6 +71,16 @@ export function ZoomControls() {
         disabled={zoom >= MAX_ZOOM}
         onClick={() => {
           editor.perform('zoomIn');
+        }}
+      />
+      <span className={styles.divider} aria-hidden="true" />
+      <IconButton
+        label="Grid"
+        Icon={Grid3x3}
+        shortcut="Mod+'"
+        pressed={gridVisible}
+        onClick={() => {
+          editor.perform('toggleGrid');
         }}
       />
     </div>

@@ -53,6 +53,8 @@ export type EditorState = {
   readonly toolLocked: boolean;
   /** The keyboard shortcuts dialog (?). */
   readonly helpOpen: boolean;
+  /** A grid behind the shapes (Ctrl / ⌘ + '); a view setting, never exported. */
+  readonly gridVisible: boolean;
 };
 
 export type EditorStore = StoreApi<EditorState>;
@@ -79,6 +81,7 @@ export function createEditorStore(initial: Partial<EditorState> = {}): EditorSto
     theme: 'light',
     toolLocked: false,
     helpOpen: false,
+    gridVisible: false,
     ...initial,
   }));
 }

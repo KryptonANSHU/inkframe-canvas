@@ -33,6 +33,7 @@ import { createFileActions, type FileActions } from './files';
 import { createExportClient } from './exportClient';
 import { createFileReaderClient } from './fileWorkerClient';
 import { createIndexedDbStorage } from './indexedDbStorage';
+import { bindGridPreference } from './gridPreference';
 import { watchThemeMode } from './themeMode';
 import { observeCanvasSurface } from './canvasSurface';
 import { createCanvasTextMeasurer } from './canvasTextMeasurer';
@@ -81,6 +82,7 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
   const unbindIndex = bindSpatialIndex(store, index);
   const unwatchInvariants = watchInvariantsInDev(store, index, options.reportError);
   const unwatchTheme = watchThemeMode(store);
+  const unbindGrid = bindGridPreference(store);
   const measurer = createCanvasTextMeasurer();
   const textLayouts = createTextLayoutCache(measurer);
   const renderer = createRenderer(context, (shape) => textLayouts.layout(shape));
@@ -179,6 +181,7 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
     },
     dispose: () => {
       unwatchTheme();
+      unbindGrid();
       unbindClipboard();
       unbindFlush();
       void persistence.flush();

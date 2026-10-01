@@ -1,6 +1,7 @@
 import { assertNever } from './assertNever';
 import { DEFAULT_CAMERA, worldToDeviceTransform } from './camera';
 import { createPoint } from './geometry/point';
+import { drawGrid } from './grid';
 import { drawSelectionOverlay } from './selection/drawSelection';
 import { ARROW_HEAD_SIDES, arrowHeadWing, isFilled, shapeBox } from './shapeGeometry';
 import type { Box } from './geometry/bounds';
@@ -71,6 +72,9 @@ export function createRenderer(context: RenderContext, layoutText: LayoutText): 
     draw(state, viewport) {
       context.setTransform(1, 0, 0, 1, 0, 0);
       context.clearRect(0, 0, viewport.pixelWidth, viewport.pixelHeight);
+      if (state.gridVisible) {
+        drawGrid(context, state.camera, viewport, canvasTheme(state.theme));
+      }
 
       const t = worldToDeviceTransform(state.camera, viewport.devicePixelRatio, transform);
       context.setTransform(t.a, t.b, t.c, t.d, t.e, t.f);

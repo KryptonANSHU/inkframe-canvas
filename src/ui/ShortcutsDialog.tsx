@@ -73,6 +73,7 @@ const GROUPS: readonly Group[] = [
       ['Zoom out', 'Mod+-'],
       ['Zoom to 100%', 'Mod+0'],
       ['Zoom to fit', 'Shift+1'],
+      ['Show or hide the grid', "Mod+'"],
     ],
   },
   {

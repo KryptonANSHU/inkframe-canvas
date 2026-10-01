@@ -7,6 +7,8 @@ export type CanvasTheme = {
   readonly selection: string;
   /** Handle centers: the panel surface, so they stand out on any shape. */
   readonly handleFill: string;
+  readonly gridMinor: string;
+  readonly gridMajor: string;
   /** The color to draw for a stored shape color in this theme. */
   readonly shapeColor: (stored: string) => string;
 };
@@ -25,12 +27,16 @@ const themes: Readonly<Record<ThemeName, CanvasTheme>> = {
     name: 'light',
     selection: colors.light.select,
     handleFill: colors.light.surface,
+    gridMinor: colors.light.gridMinor,
+    gridMajor: colors.light.gridMajor,
     shapeColor: (stored) => stored,
   },
   dark: {
     name: 'dark',
     selection: colors.dark.select,
     handleFill: colors.dark.surface,
+    gridMinor: colors.dark.gridMinor,
+    gridMajor: colors.dark.gridMajor,
     shapeColor: (stored) => DARK_SHAPE_COLORS.get(stored.toLowerCase()) ?? stored,
   },
 };

@@ -409,3 +409,12 @@ A log of real design decisions: what we chose, why, and what we rejected.
 - **Clear canvas:** a main-menu item in the danger color, disabled on an empty canvas. It removes everything as one undo step, then a toast says "Canvas cleared. Press ⌘Z / Ctrl+Z to undo." instead of asking for confirmation first.
   **Why:** User requests. An undoable clear with a clear way back is kinder than an "Are you sure?" that users click through by habit. Toasts gained an info kind for this, announced politely; errors stay assertive.
   **Tests:** none added, at the user's request; one existing test that expected double-clicking empty canvas to do nothing was updated to the new behavior.
+
+## 2026-10-02 — Logo, favicon, and grid view
+
+**Decision:**
+
+- **Assets:** the brand files moved from `public/fonts/logos` to `public/logos`. The wordmark sits next to the menu button, `logo-light.svg` (dark ink) in the light theme and `logo-dark.svg` in the dark one, following the theme the canvas draws in. `index.html` links the SVG favicon, the Apple touch icon, and an Open Graph preview image.
+- **Grid view:** a toggle in the bottom-left bar (and Ctrl / ⌘ + ') draws a grid behind the shapes: 20 world units, every fifth line stronger, spacing growing by fives when lines would be closer than 8 screen pixels. Lines are drawn in device pixels, so they're one crisp pixel at any zoom. Colors are theme tokens at low opacity, so the drawing stays the hero. The setting is remembered per browser, and the grid is never part of an export.
+  **Why:** User requests. The grid view itself is small; snap to grid (the larger part) and connected arrows were added to the PRD as Tier 2 "Editor extras" (2B, milestone M11b), at the user's request.
+  **Tests:** none added, at the user's request.

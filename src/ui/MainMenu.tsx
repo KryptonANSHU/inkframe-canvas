@@ -55,6 +55,8 @@ export function MainMenu() {
   const { files } = editor;
   const hasSelection = useEditorState((state) => state.selectedIds.size > 0);
   const isEmpty = useEditorState((state) => state.document.order.length === 0);
+  // The wordmark for the theme in use: logo-light has dark ink, logo-dark light ink.
+  const drawnTheme = useEditorState((state) => state.theme);
   const [theme, setTheme] = useState(readThemePreference);
   const what = hasSelection ? 'selection' : 'drawing';
 
@@ -66,6 +68,13 @@ export function MainMenu() {
         <DropdownMenu.Trigger className={styles.trigger} aria-label="Menu">
           <Menu size={size.icon} strokeWidth={ICON_STROKE} aria-hidden />
         </DropdownMenu.Trigger>
+        <span className={styles.divider} aria-hidden="true" />
+        <img
+          className={styles.logo}
+          src={`${import.meta.env.BASE_URL}logos/logo-${drawnTheme}.svg`}
+          alt="Inkframe"
+          draggable={false}
+        />
       </div>
       <DropdownMenu.Portal>
         <DropdownMenu.Content

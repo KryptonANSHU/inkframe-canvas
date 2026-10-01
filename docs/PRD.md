@@ -163,6 +163,13 @@ Plugins run untrusted code in a sandboxed iframe, and the host validates and lim
 
 **Done when:** all four plugins behave as above, and the security tests in the testing matrix pass.
 
+### 2B. Editor extras
+
+| Feature | What it does | Done when |
+| --- | --- | --- |
+| Connected arrows | Drawing an arrow, or dragging one of its ends, near a shape snaps the end to one of the shape's anchor points (edge midpoints and center), which show while dragging. The end stays attached: moving, resizing, or rotating the shape re-aims the arrow in the same undo step. Deleting the shape detaches the arrow; copy / paste and duplicate keep attachments within the copied group | Attachments survive save and reload (file format v2, with a migration from v1), and the invariants checker verifies every attachment points to a shape that exists |
+| Snap to grid | While the grid is shown, moving, resizing, and drawing snap to grid lines; holding Ctrl / Cmd turns it off | Snapped positions are exact multiples of the grid spacing |
+
 ## Tier 3 (advanced extension): multiplayer and design system
 
 Tier 3 starts only after Tiers 1 and 2 are stable and live. It needs one small server: a y-websocket relay with no database or business logic.
@@ -230,6 +237,7 @@ Each milestone is built and verified locally before the next one starts. Tier 1 
 
 - [ ] M10. Plugin host: protocol, handshake, lifecycle, capability permissions, limits
 - [ ] M11. Sample plugins, malicious test plugin, security tests
+- [ ] M11b. Editor extras (2B): connected arrows and snap to grid
 - [ ] Gate: Tier 2 verified locally, then redeploy
 
 **Tier 3 milestones:**
