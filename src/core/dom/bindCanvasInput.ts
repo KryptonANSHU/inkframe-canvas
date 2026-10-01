@@ -22,11 +22,15 @@ export function bindCanvasInput(
     altKey: false,
     ctrlKey: false,
     metaKey: false,
+    pressure: 0,
+    pointerType: '',
   };
   const wheelAnchor = createPoint();
 
   const readPointer = (event: PointerEvent) => {
     pointer.pointerId = event.pointerId;
+    pointer.pointerType = event.pointerType;
+    pointer.pressure = event.pressure;
     pointer.shiftKey = event.shiftKey;
     pointer.altKey = event.altKey;
     pointer.ctrlKey = event.ctrlKey;
@@ -62,7 +66,11 @@ export function bindCanvasInput(
   canvas.addEventListener(
     'pointermove',
     (event) => {
-      controller.pointerMove(readPointer(event));
+      // Browsers deliver one move per frame; the pen asks for the ones merged into it.
+      const moves = controller.wantsEveryMove() ? coalescedMoves(event) : [event];
+      for (const move of moves) {
+        controller.pointerMove(readPointer(move));
+      }
       syncCursor();
     },
     { signal },
@@ -71,6 +79,16 @@ export function bindCanvasInput(
     'pointerup',
     (event) => {
       controller.pointerUp(readPointer(event));
+      syncCursor();
+    },
+    { signal },
+  );
+  canvas.addEventListener(
+    'dblclick',
+    (event) => {
+      surface.toScreen(event.clientX, event.clientY, pointer.screen);
+      const { shiftKey, altKey, ctrlKey, metaKey } = event;
+      controller.doubleClick({ ...pointer, shiftKey, altKey, ctrlKey, metaKey });
       syncCursor();
     },
     { signal },
@@ -133,4 +151,11 @@ function bindKeys(
     },
     { signal },
   );
+}
+
+/** The moves merged into this event, oldest first; just the event where unsupported. */
+function coalescedMoves(event: PointerEvent): readonly PointerEvent[] {
+  // Older browsers lack it, though the DOM types always declare it.
+  const merged = 'getCoalescedEvents' in event ? event.getCoalescedEvents() : [];
+  return merged.length > 0 ? merged : [event];
 }

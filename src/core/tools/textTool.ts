@@ -42,7 +42,9 @@ export function createTextTool(store: EditorStore): Tool {
       const finished = state;
       state = { kind: 'idle' };
       if (finished.kind === 'placing') {
-        store.setState({ textEdit: { id: createShapeId(), x: finished.x, y: finished.y } });
+        store.setState({
+          textEdit: { id: createShapeId(), x: finished.x, y: finished.y, original: null },
+        });
       }
     },
 

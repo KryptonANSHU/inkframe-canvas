@@ -34,6 +34,19 @@ export function createShapeCommand(shape: Shape): Command {
 }
 
 /**
+ * Removes shapes. Undo puts each back at its old place in the draw order: inserting
+ * from the bottom up means every zIndex is valid when its shape goes back in.
+ */
+export function deleteShapesCommand(label: string, shapes: readonly Shape[]): Command {
+  const bottomUp = shapes.toSorted((a, b) => a.zIndex - b.zIndex);
+  return {
+    label,
+    do: (document) => bottomUp.reduce((next, shape) => removeShape(next, shape.id), document),
+    undo: (document) => bottomUp.reduce((next, shape) => insertShape(next, shape), document),
+  };
+}
+
+/**
  * Replaces shapes with new versions of themselves: moves, resizes, rotations, nudges,
  * text edits. `before` and `after` must list the same shapes; undo puts `before` back.
  */

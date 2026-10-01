@@ -77,11 +77,13 @@ export function createRenderer(context: RenderContext, layoutText: LayoutText): 
       // Text is never drawn with a fallback font: it waits for the real one (PRD 1B).
       const layout = state.fontsReady ? layoutText : null;
       const { shapes, order } = state.document;
+      // Text being edited is shown by the textarea instead, so it isn't drawn twice.
+      const editing = state.textEdit?.id;
       for (const id of order) {
         // Shapes being moved, resized, or rotated are drawn as their preview versions.
         // Always present while document invariants hold (checked from M5).
         const shape = state.preview?.get(id) ?? shapes.get(id);
-        if (shape !== undefined) {
+        if (shape !== undefined && id !== editing) {
           drawShape(context, shape, layout);
         }
       }

@@ -11,6 +11,8 @@ export type ToolPointerEvent = {
   readonly ctrlKey: boolean;
   /** ⌘ on macOS. Where the PRD says "Ctrl", tools accept either. */
   readonly metaKey: boolean;
+  /** 0–1. A pressed mouse, or a pen without pressure sensing, reports 0.5. */
+  readonly pressure: number;
 };
 
 /**
@@ -26,4 +28,11 @@ export type Tool = {
   hover(event: ToolPointerEvent): void;
   /** Ends the gesture and leaves the document as it was before it. Safe to call when idle. */
   cancel(): void;
+  /** A double-click with no gesture in progress. */
+  doubleClick?(event: ToolPointerEvent): void;
+  /**
+   * True when the tool wants every pointer position the hardware reported, not just
+   * one per frame (browsers coalesce fast moves). Only the pen needs that detail.
+   */
+  readonly wantsEveryMove?: boolean;
 };

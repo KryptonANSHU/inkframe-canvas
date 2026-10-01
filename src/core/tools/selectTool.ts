@@ -11,6 +11,7 @@ import type { Shape, ShapeId } from '../shapes';
 import type { SpatialIndex } from '../spatial/spatialIndex';
 import { EMPTY_SELECTION, type EditorStore } from '../store';
 import type { TextMeasurer } from '../text/layout';
+import { editExisting } from '../text/textShape';
 import { DRAG_THRESHOLD_PX } from './dragShapeTool';
 import type { Tool, ToolPointerEvent } from './tool';
 import { handleGesture, moveGesture, type TransformGesture } from './transformGestures';
@@ -50,8 +51,8 @@ export type SelectToolOptions = {
 /**
  * Click to select, Shift + click to add or remove, Alt + click to cycle through the
  * shapes under the pointer, drag to move, drag a handle to resize or rotate, drag on
- * empty canvas for a marquee (Ctrl / ⌘ selects what it touches). Every drag is one
- * command on release; cancel restores shapes and selection.
+ * empty canvas for a marquee (Ctrl / ⌘ selects what it touches), double-click text to
+ * edit it. Every drag is one command on release; cancel restores shapes and selection.
  */
 export function createSelectTool({ store, index, measurer, reportError }: SelectToolOptions): Tool {
   let state: SelectToolState = { kind: 'idle' };
@@ -135,6 +136,16 @@ export function createSelectTool({ store, index, measurer, reportError }: Select
       } else if (finished.kind === 'marquee') {
         updateMarquee(store, index, finished, toWorld(event), event);
         store.setState({ marquee: null });
+      }
+    },
+
+    doubleClick(event) {
+      const { document, camera, textEdit } = store.getState();
+      const hit = textEdit === null ? hitTest(document, index, toWorld(event), camera.zoom) : null;
+      const shape = hit === null ? undefined : document.shapes.get(hit);
+      if (shape?.type === 'text') {
+        // Deselected while editing so handles don't sit on the textarea; the commit reselects.
+        store.setState({ textEdit: editExisting(shape), selectedIds: EMPTY_SELECTION });
       }
     },
 

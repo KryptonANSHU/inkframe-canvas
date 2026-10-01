@@ -3,9 +3,14 @@ import { nudgeSelection } from '../selection/selectedShapes';
 import { EMPTY_SELECTION, type EditorStore } from '../store';
 import type { Tool, ToolPointerEvent } from '../tools/tool';
 import { TOOL_SHORTCUTS, type ToolId } from '../tools/toolIds';
+import { createTouchTracker } from './pinch';
 import { applyWheel, type WheelInput } from './wheel';
 
-export type PointerInput = ToolPointerEvent & { readonly pointerId: number };
+export type PointerInput = ToolPointerEvent & {
+  readonly pointerId: number;
+  /** PointerEvent.pointerType: 'mouse', 'pen', or 'touch'. */
+  readonly pointerType: string;
+};
 
 export type KeyInput = {
   /** KeyboardEvent.key, e.g. ' ', 'Escape', 'r'. */
@@ -26,6 +31,12 @@ const NUDGE: Readonly<Record<string, readonly [number, number]>> = {
 const SHIFT_NUDGE_FACTOR = 10;
 
 /**
+ * Ctrl / ⌘ + key combos the editor owns, claimed now so the browser never bookmarks
+ * (D) or saves the page (S). Duplicate arrives in M5 and save in M6.
+ */
+const EDITOR_SHORTCUTS = new Set(['d', 's']);
+
+/**
  * Turns raw input into tool gestures. DOM-free, so the whole input path
  * (pointer → tool → command → store) is testable without a browser.
  */
@@ -36,6 +47,9 @@ export type InputController = {
   pointerUp(input: PointerInput): void;
   /** pointercancel, lost pointer capture, or Escape: the gesture leaves no trace. */
   cancelGesture(): void;
+  doubleClick(input: ToolPointerEvent): void;
+  /** True when the current gesture wants every coalesced pointer move, not one per frame. */
+  wantsEveryMove(): boolean;
   /** Returns true when the key was handled, so the caller should preventDefault. */
   keyDown(input: KeyInput): boolean;
   keyUp(key: string): void;
@@ -58,21 +72,49 @@ export function createInputController(
   let spaceHeld = false;
   // The tool is locked in at pointerdown, so releasing space mid-pan doesn't switch tools.
   let gesture: { readonly pointerId: number; readonly tool: Tool } | null = null;
+  const touches = createTouchTracker();
+  const busy = () => gesture !== null || touches.pinching();
 
   const toolForNextGesture = () =>
     spaceHeld ? tools.pan : tools.byId[store.getState().activeTool];
 
-  const cancelGesture = () => {
+  const cancelToolGesture = () => {
     const cancelled = gesture;
     gesture = null;
     cancelled?.tool.cancel();
+  };
+  const cancelGesture = () => {
+    touches.reset();
+    cancelToolGesture();
+  };
+
+  const startGesture = (input: PointerInput) => {
+    if (busy()) {
+      return false;
+    }
+    gesture = { pointerId: input.pointerId, tool: toolForNextGesture() };
+    gesture.tool.pointerDown(input);
+    return true;
+  };
+  // A second finger drops whatever the first one started, and the pair pans and zooms.
+  const touchDown = (input: PointerInput) => {
+    const role = touches.down(input.pointerId, input.screen, store.getState().camera);
+    if (role === 'second') {
+      cancelToolGesture();
+      return true;
+    }
+    if (role === 'first' && startGesture(input)) {
+      return true;
+    }
+    touches.up(input.pointerId);
+    return false;
   };
 
   // Leaves browser and OS shortcuts (Ctrl/Cmd/Alt + key) alone, and never switches
   // tools in the middle of a gesture.
   const switchToolByShortcut = (input: KeyInput) => {
     const tool = TOOL_SHORTCUTS[input.key.toLowerCase()];
-    if (tool === undefined || gesture !== null || input.ctrlKey || input.metaKey || input.altKey) {
+    if (tool === undefined || busy() || input.ctrlKey || input.metaKey || input.altKey) {
       return false;
     }
     store.setState({ activeTool: tool });
@@ -81,13 +123,7 @@ export function createInputController(
 
   const nudge = (input: KeyInput) => {
     const direction = NUDGE[input.key];
-    if (
-      direction === undefined ||
-      gesture !== null ||
-      input.ctrlKey ||
-      input.metaKey ||
-      input.altKey
-    ) {
+    if (direction === undefined || busy() || input.ctrlKey || input.metaKey || input.altKey) {
       return false;
     }
     const step = input.shiftKey ? SHIFT_NUDGE_FACTOR : 1;
@@ -96,8 +132,13 @@ export function createInputController(
     return true;
   };
 
+  const claimEditorShortcut = (input: KeyInput) =>
+    (input.ctrlKey || input.metaKey) &&
+    !input.altKey &&
+    EDITOR_SHORTCUTS.has(input.key.toLowerCase());
+
   const escape = () => {
-    if (gesture !== null) {
+    if (busy()) {
       cancelGesture();
       return true;
     }
@@ -110,23 +151,23 @@ export function createInputController(
 
   return {
     pointerDown(input) {
-      // One gesture at a time; multi-touch pan and zoom arrive in M4.
-      if (gesture !== null) {
-        return false;
-      }
-      gesture = { pointerId: input.pointerId, tool: toolForNextGesture() };
-      gesture.tool.pointerDown(input);
-      return true;
+      // One gesture at a time, except that a second finger turns into a pinch.
+      return input.pointerType === 'touch' ? touchDown(input) : startGesture(input);
     },
     pointerMove(input) {
-      if (gesture === null) {
+      const camera = touches.move(input.pointerId, input.screen);
+      if (camera !== null) {
+        store.setState({ camera });
+      } else if (touches.pinching()) {
+        return;
+      } else if (gesture === null) {
         toolForNextGesture().hover(input);
       } else if (gesture.pointerId === input.pointerId) {
         gesture.tool.pointerMove(input);
       }
     },
     pointerUp(input) {
-      if (gesture?.pointerId !== input.pointerId) {
+      if (touches.up(input.pointerId) || gesture?.pointerId !== input.pointerId) {
         return;
       }
       const { tool } = gesture;
@@ -134,6 +175,12 @@ export function createInputController(
       tool.pointerUp(input);
     },
     cancelGesture,
+    doubleClick(input) {
+      if (!busy()) {
+        toolForNextGesture().doubleClick?.(input);
+      }
+    },
+    wantsEveryMove: () => gesture?.tool.wantsEveryMove === true,
     keyDown(input) {
       if (input.key === ' ') {
         spaceHeld = true;
@@ -142,7 +189,7 @@ export function createInputController(
       if (input.key === 'Escape') {
         return escape();
       }
-      return nudge(input) || switchToolByShortcut(input);
+      return claimEditorShortcut(input) || nudge(input) || switchToolByShortcut(input);
     },
     keyUp(key) {
       if (key === ' ') {

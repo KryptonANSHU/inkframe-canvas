@@ -252,3 +252,36 @@ A log of real design decisions: what we chose, why, and what we rejected.
 **Decision:** `createEditor` focuses the canvas on mount with `focus({ preventScroll: true, focusVisible: false })`. Shortcuts stay canvas-only, as CLAUDE.md requires.
 **Why:** Reported by the user: shapes "vanished on release" and took 2–3 tries. Nothing had focus on load, so the first tool key was ignored and the drag that followed was a select-tool marquee, which disappears on release. `focusVisible: false` avoids a ring around the whole window for a focus the user didn't move; browsers without the option show the ring, which is still correct.
 **Alternatives rejected:** listening for keys page-wide (skipping text fields): fixes the same bug but breaks the "canvas or toolbar has focus" rule, and would steal Space and Enter from future toolbar buttons. Leaving the active tool invisible until M7 remains a known gap: after drawing a rectangle, ellipse, line, or arrow, the next drag is a selection (the cursor is the only cue). The M7 toolbar fixes that.
+
+## 2026-10-01 — Editing existing text
+
+**Decision:** Double-clicking text with the select tool reopens the same textarea, holding the text, matched to the shape's width, font size, and rotation; the shape itself isn't drawn meanwhile. The commit is one command: `Edit text` (re-measured height) when it changed, nothing when it didn't, and `Delete text` when it was cleared. The text is deselected while editing so handles don't sit on the textarea, and selected again afterwards. `textEdit` gained `original: TextShape | null` (null for new text).
+**Why:** Clearing the text and keeping an empty shape would leave an invisible, selectable box. Deleting needs `deleteShapesCommand` now; M5 adds the Delete key and its UI on top of it.
+**Alternatives rejected:** a separate editor for existing text (two code paths for one textarea).
+
+## 2026-10-01 — Pen pressure sets one width per stroke
+
+**Decision:** The pen's stroke width is the default width × 2 × the stroke's average pressure, clamped to 0.25–2× the default. A mouse reports 0.5, so mouse strokes keep the default width.
+**Why:** Meets the PRD with no change to the shape format or renderer.
+**Alternatives rejected:** width varying along the stroke (per-point pressure, drawn as a filled outline): closer to real ink but ~3× the work and a new point format; a candidate for later.
+
+## 2026-10-01 — Every pointer move, only for the pen
+
+**Decision:** Tools may set `wantsEveryMove`; while such a gesture runs, `pointermove` replays `getCoalescedEvents()` (falling back to the event itself where unsupported). Only the pen sets it.
+**Why:** Browsers deliver one move per frame, so fast strokes turned angular. The select tool and shape tools only need the latest position; replaying every move would recompute previews for nothing.
+
+## 2026-10-01 — Touch: one finger gestures, two fingers pinch
+
+**Decision:** A touch tracker in `input/pinch.ts` sits in front of the tools. The first finger is an ordinary gesture; a second finger cancels it (so a half-drawn shape vanishes) and the pair pans and zooms. The camera is computed from the pinch's start every move (`zoomAt` at the start midpoint, then `panBy` to the current midpoint), so nothing drifts. A third finger is ignored; when one finger of a pinch lifts, the other does nothing until it lifts too.
+**Why:** Matches the PRD and common touch canvases; computing from the start avoids accumulating rounding over a long pinch. A property test checks the world point between the fingers stays between them.
+**Alternatives rejected:** letting the leftover finger continue as a pan (surprising jumps when it was mid-pinch).
+
+## 2026-10-01 — Ctrl / ⌘ + D and S are claimed now
+
+**Decision:** The controller claims Ctrl / ⌘ + D and S (not with Alt), so `preventDefault` stops the browser from bookmarking or saving the page, before duplicate (M5) and save (M6) exist.
+**Why:** PRD keyboard row; claiming them early means the browser never gets them in between.
+
+## 2026-10-01 — Text tests deselect only once the text is drawn
+
+**Decision:** e2e tests that commit text wait until it is drawn before pressing Escape to deselect (`deselectOnceDrawn`).
+**Why:** Root cause of the "long text wraps" flake (about 1 run in 100, and more often in the new edit test). Text committed in the first few hundred ms after load waits for the store's `fontsReady`, which trails the FontFace's `loaded` status. An Escape in that window finds nothing selected; the text then appears selected and its handles count as ink. Logging showed the second Escape went unclaimed in every failure. A person can't press Escape that fast after load, so the app is unchanged.

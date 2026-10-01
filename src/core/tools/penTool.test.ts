@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { EMPTY_DOCUMENT } from '../document';
-import { MAX_PEN_POINTS, type PenShape } from '../shapes';
+import { DEFAULT_SHAPE_STYLE, MAX_PEN_POINTS, type PenShape } from '../shapes';
 import { createEditorStore } from '../store';
 import { pointerAt, testShapeId } from '../testing/factories';
-import { createPenTool } from './penTool';
+import { createPenTool, pressureWidth } from './penTool';
 
 function setup(camera = { x: 0, y: 0, zoom: 1 }) {
   const store = createEditorStore({ camera });
@@ -114,5 +114,23 @@ describe('pen tool', () => {
     spy.mockRestore();
     expect(store.getState().document.order).toHaveLength(1);
     expect(reportError).toHaveBeenCalledWith(expect.objectContaining({ name: 'CommandError' }));
+  });
+
+  it('sets the width from the average pressure; a mouse keeps the default', () => {
+    const widthAfter = (pressures: readonly number[]) => {
+      const { store, tool } = setup();
+      pressures.forEach((pressure, i) => {
+        const event = pointerAt(i * 10, 0, 1, { pressure });
+        if (i === 0) tool.pointerDown(event);
+        else tool.pointerMove(event);
+      });
+      tool.pointerUp(pointerAt(100, 0, 1, { pressure: 0 }));
+      return committed(store).style.strokeWidth;
+    };
+    expect(widthAfter([0.5, 0.5])).toBe(DEFAULT_SHAPE_STYLE.strokeWidth);
+    expect(widthAfter([0.75, 1, 1, 1])).toBe(pressureWidth(15 / 16));
+    expect(pressureWidth(1)).toBe(DEFAULT_SHAPE_STYLE.strokeWidth * 2);
+    // Very light strokes stay visible.
+    expect(pressureWidth(0)).toBe(DEFAULT_SHAPE_STYLE.strokeWidth / 4);
   });
 });

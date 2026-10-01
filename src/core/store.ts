@@ -3,6 +3,7 @@ import { DEFAULT_CAMERA, type Camera } from './camera';
 import { EMPTY_DOCUMENT, type DocumentState } from './document';
 import type { Bounds } from './geometry/bounds';
 import type { Shape, ShapeId } from './shapes';
+import type { TextEdit } from './text/textShape';
 import { DEFAULT_TOOL, type ToolId } from './tools/toolIds';
 
 export type EditorState = {
@@ -24,8 +25,8 @@ export type EditorState = {
   readonly marquee: Bounds | null;
   /** The tool the next gesture uses (unless space is held for panning). */
   readonly activeTool: ToolId;
-  /** Where a new text box is being typed (world point), or null when not editing text. */
-  readonly textEdit: { readonly id: ShapeId; readonly x: number; readonly y: number } | null;
+  /** The text box being typed in (new or existing text), or null when not editing text. */
+  readonly textEdit: TextEdit | null;
   /** False until the text font has loaded; text is neither drawn nor placed before then. */
   readonly fontsReady: boolean;
 };

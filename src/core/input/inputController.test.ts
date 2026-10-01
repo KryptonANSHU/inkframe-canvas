@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_CAMERA } from '../camera';
-import { EMPTY_DOCUMENT } from '../document';
+import { EMPTY_DOCUMENT, insertShape } from '../document';
 import { createEditorStore } from '../store';
 import { pointerAt } from '../testing/factories';
-import { fakeMeasurer } from '../testing/factories';
+import { fakeMeasurer, makeText } from '../testing/factories';
 import { createDragShapeTool } from '../tools/dragShapeTool';
 import { createPanTool } from '../tools/panTool';
 import { createPenTool } from '../tools/penTool';
@@ -249,5 +249,44 @@ describe('input controller', () => {
     expect(controller.cursor()).toBe('ns-resize');
     controller.pointerMove(pointerAt(500, 500));
     expect(controller.cursor()).toBe('default');
+  });
+
+  it('a second finger drops what the first one was drawing, and the pair pinches', () => {
+    const { store, controller } = setup();
+    const touch = { pointerType: 'touch' };
+    controller.pointerDown(pointerAt(50, 50, 1, touch));
+    controller.pointerMove(pointerAt(90, 90, 1, touch));
+    expect(store.getState().draft).not.toBeNull();
+
+    controller.pointerMove(pointerAt(50, 50, 1, touch));
+    expect(controller.pointerDown(pointerAt(150, 50, 2, touch))).toBe(true);
+    expect(store.getState().draft).toBeNull();
+    // A third finger is ignored.
+    expect(controller.pointerDown(pointerAt(300, 300, 3, touch))).toBe(false);
+    controller.pointerMove(pointerAt(250, 50, 2, touch));
+    expect(store.getState().camera.zoom).toBe(2);
+
+    controller.pointerUp(pointerAt(250, 50, 2, touch));
+    controller.pointerMove(pointerAt(10, 10, 1, touch));
+    controller.pointerUp(pointerAt(10, 10, 1, touch));
+    expect(store.getState().camera.zoom).toBe(2);
+    expect(store.getState().document).toBe(EMPTY_DOCUMENT);
+  });
+
+  it('claims Ctrl / ⌘ + D and S so the browser never bookmarks or saves the page', () => {
+    const { controller } = setup();
+    expect(controller.keyDown(key('d', { ctrlKey: true }))).toBe(true);
+    expect(controller.keyDown(key('S', { metaKey: true, shiftKey: true }))).toBe(true);
+    expect(controller.keyDown(key('d', { ctrlKey: true, altKey: true }))).toBe(false);
+  });
+
+  it('double-clicking text with the select tool opens it for editing', () => {
+    const { store, controller } = setup();
+    const text = makeText({ x: 0, y: 0 });
+    store.setState({ activeTool: 'select', document: insertShape(EMPTY_DOCUMENT, text) });
+    controller.doubleClick(pointerAt(500, 500));
+    expect(store.getState().textEdit).toBeNull();
+    controller.doubleClick(pointerAt(10, 10));
+    expect(store.getState().textEdit).toEqual({ id: text.id, x: 0, y: 0, original: text });
   });
 });

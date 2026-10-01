@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CommandError,
   createShapeCommand,
+  deleteShapesCommand,
   executeCommand,
   updateShapesCommand,
   type Command,
@@ -79,5 +80,26 @@ describe('updateShapesCommand', () => {
 
   it('refuses mismatched before and after lists', () => {
     expect(() => updateShapesCommand('Move', [existing], [])).toThrow(/same shapes/);
+  });
+});
+
+describe('deleteShapesCommand', () => {
+  const top = makeRect({ id: testShapeId('top'), zIndex: 2 });
+  const middle = makeRect({ id: testShapeId('middle'), zIndex: 1 });
+  const three = insertShape(insertShape(start, middle), top);
+
+  it('removes the shapes and renumbers the rest', () => {
+    const after = deleteShapesCommand('Delete', [existing]).do(three);
+    expect(after.order).toEqual(['middle', 'top']);
+    expect(after.shapes.get(testShapeId('top'))?.zIndex).toBe(1);
+  });
+
+  it('do → undo → redo restores the exact same documents, in any listed order', () => {
+    const command = deleteShapesCommand('Delete', [top, existing]);
+    const afterDo = command.do(three);
+    const afterUndo = command.undo(afterDo);
+    expect(afterDo.order).toEqual(['middle']);
+    expect(afterUndo).toEqual(three);
+    expect(command.do(afterUndo)).toEqual(afterDo);
   });
 });

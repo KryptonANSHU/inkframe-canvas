@@ -83,15 +83,17 @@ export const fakeMeasurer: TextMeasurer = {
   metrics: () => ({ ascent: 16, lineHeight: 20 }),
 };
 
-export type Modifiers = {
+export type PointerOptions = {
   readonly shiftKey?: boolean;
   readonly altKey?: boolean;
   readonly ctrlKey?: boolean;
   readonly metaKey?: boolean;
+  readonly pressure?: number;
+  readonly pointerType?: string;
 };
 
 /** A fresh pointer input at a screen position (the real controller reuses one object). */
-export function pointerAt(x: number, y: number, pointerId = 1, modifiers: Modifiers = {}) {
+export function pointerAt(x: number, y: number, pointerId = 1, options: PointerOptions = {}) {
   return {
     pointerId,
     screen: { x, y },
@@ -99,6 +101,8 @@ export function pointerAt(x: number, y: number, pointerId = 1, modifiers: Modifi
     altKey: false,
     ctrlKey: false,
     metaKey: false,
-    ...modifiers,
+    pressure: 0.5,
+    pointerType: 'mouse',
+    ...options,
   };
 }

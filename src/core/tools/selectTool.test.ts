@@ -4,7 +4,13 @@ import { DEFAULT_SHAPE_STYLE, type Shape } from '../shapes';
 import { createSpatialIndex } from '../spatial/spatialIndex';
 import { bindSpatialIndex } from '../spatial/syncIndex';
 import { createEditorStore } from '../store';
-import { makeLine, makeRect, pointerAt, testShapeId, type Modifiers } from '../testing/factories';
+import {
+  makeLine,
+  makeRect,
+  pointerAt,
+  testShapeId,
+  type PointerOptions,
+} from '../testing/factories';
 import { selectionFrame } from '../selection/selectionFrame';
 import { fakeMeasurer } from '../testing/factories';
 import { createSelectTool } from './selectTool';
@@ -46,7 +52,7 @@ function click(
   tool: ReturnType<typeof setup>['tool'],
   x: number,
   y: number,
-  modifiers: Modifiers = {},
+  modifiers: PointerOptions = {},
 ) {
   tool.pointerDown(pointerAt(x, y, 1, modifiers));
   tool.pointerUp(pointerAt(x, y, 1, modifiers));
@@ -56,7 +62,7 @@ function drag(
   tool: ReturnType<typeof setup>['tool'],
   from: readonly [number, number],
   to: readonly [number, number],
-  modifiers: Modifiers = {},
+  modifiers: PointerOptions = {},
 ) {
   tool.pointerDown(pointerAt(...from, 1, modifiers));
   tool.pointerMove(pointerAt((from[0] + to[0]) / 2, (from[1] + to[1]) / 2, 1, modifiers));

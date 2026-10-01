@@ -14,6 +14,9 @@ import type { Tool } from './tool';
 
 /** Screen pixels the pointer must move before another point is recorded. */
 export const MIN_POINT_SPACING_PX = 1;
+/** Stroke width range, as a multiple of the default width, that pressure can reach. */
+const MIN_PRESSURE_SCALE = 0.25;
+const MAX_PRESSURE_SCALE = 2;
 
 type Stroke = {
   readonly id: ShapeId;
@@ -22,14 +25,22 @@ type Stroke = {
   readonly points: PathPoint[];
   /** Screen position of the last recorded point, for the spacing filter. */
   readonly lastScreen: Point;
+  /** Sum of the pressures of the recorded points; their average sets the width. */
+  pressureSum: number;
 };
 
-/** Freehand drawing. A press with no movement draws nothing, like the other tools. */
+/**
+ * Freehand drawing. A press with no movement draws nothing, like the other tools.
+ * Pen pressure sets the stroke's width: one width per stroke, from its average.
+ */
 export function createPenTool(store: EditorStore, reportError: (error: Error) => void): Tool {
   let stroke: Stroke | null = null;
   const world = createPoint();
 
   return {
+    // Fast strokes would otherwise lose the points between frames and turn angular.
+    wantsEveryMove: true,
+
     getCursor: () => 'crosshair',
 
     hover() {
@@ -43,6 +54,7 @@ export function createPenTool(store: EditorStore, reportError: (error: Error) =>
         origin,
         points: [{ x: 0, y: 0 }],
         lastScreen: { ...event.screen },
+        pressureSum: event.pressure,
       };
     },
 
@@ -57,6 +69,7 @@ export function createPenTool(store: EditorStore, reportError: (error: Error) =>
       stroke.points.push({ x: world.x - stroke.origin.x, y: world.y - stroke.origin.y });
       stroke.lastScreen.x = event.screen.x;
       stroke.lastScreen.y = event.screen.y;
+      stroke.pressureSum += event.pressure;
       store.setState({ draft: draftOf(stroke) });
     },
 
@@ -95,9 +108,18 @@ function draftOf(stroke: Stroke): PenShape {
     y: stroke.origin.y,
     points: stroke.points,
     rotation: 0,
-    style: DEFAULT_SHAPE_STYLE,
+    style: {
+      ...DEFAULT_SHAPE_STYLE,
+      strokeWidth: pressureWidth(stroke.pressureSum / stroke.points.length),
+    },
     zIndex: 0,
   };
+}
+
+/** The default width at 0.5 pressure, which is what a mouse reports. */
+export function pressureWidth(averagePressure: number): number {
+  const scale = Math.min(MAX_PRESSURE_SCALE, Math.max(MIN_PRESSURE_SCALE, averagePressure * 2));
+  return DEFAULT_SHAPE_STYLE.strokeWidth * scale;
 }
 
 /** Copies the points, shifted so (x, y) is the top-left of their box. */
