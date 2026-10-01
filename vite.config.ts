@@ -27,7 +27,8 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/**/*.test.{ts,tsx}', 'src/**/testing/**'],
+      // src/core/dom is browser glue, covered by Playwright (e2e/) rather than unit tests.
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/**/testing/**', 'src/core/dom/**'],
       thresholds: {
         'src/core/**': { lines: 90 },
       },

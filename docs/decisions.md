@@ -90,3 +90,28 @@ A log of real design decisions: what we chose, why, and what we rejected.
 **Decision:** `createEditorStore()` makes a new Zustand vanilla store per editor (no module singleton). `createRenderLoop(draw, scheduler)` takes the frame scheduler, and `createRenderer(context)` takes a narrow `RenderContext` (the subset of `CanvasRenderingContext2D` it uses).
 **Why:** Tests run in Node with a manual frame scheduler and a recording context, so "ten changes → one draw", "idle → zero frames" and draw order are checked without a browser. Real canvas output is checked in Playwright (M2c).
 **Rejected:** jsdom plus a canvas polyfill (a heavy dependency that still doesn't render real pixels).
+
+## 2026-10-01 — DOM-free input controller; browser glue in core/dom
+
+**Decision:** `core/input/inputController.ts` turns plain inputs (`{ pointerId, screen }`, key names, wheel deltas) into tool gestures. It locks one tool per gesture, ignores extra pointers, and cancels on pointercancel, lost capture, Escape, or window blur. `core/dom/` holds the only code that touches the DOM: listeners (removed with one `AbortController`), `ResizeObserver`, the DPR watcher, and `createEditor`.
+**Why:** The full input path (pointer → tool → command → store) is tested in Node against the real tools, fast and deterministic. The DOM layer is a thin translation and is tested where it actually runs: Playwright.
+**Rejected:** jsdom integration tests (an extra dependency that lacks PointerEvent capture, ResizeObserver, matchMedia and canvas, so most of it would be stubs).
+**Cost:** `src/core/dom/**` is excluded from the unit-coverage figure; Playwright covers it instead (drawing, cancel, zoom, pan, 2× DPR, idle frames). Core unit coverage is reported for everything else.
+
+## 2026-10-01 — Trust devicePixelContentBoxSize only when it agrees with the DPR
+
+**Decision:** `chooseBackingStoreSize` uses the browser's exact device-pixel size only when it is within 1 px of `round(cssSize × devicePixelRatio)`; otherwise it uses the rounded size.
+**Why:** The renderer scales by `devicePixelRatio`, so the backing store must match it. Chromium with an emulated device scale factor (Playwright `deviceScaleFactor: 2`) reports `devicePixelRatio = 2` but a CSS-pixel `devicePixelContentBoxSize`, which drew everything at half resolution. The exact size exists only to fix sub-pixel rounding, so a bigger disagreement means the report is wrong.
+**Note:** The e2e 2× test therefore exercises the rounding path. The exact path runs on real high-DPI screens; check it manually on a Retina display.
+
+## 2026-10-01 — Wheel and pinch tuning
+
+**Decision:** Plain wheel / two-finger scroll pans by the pixel delta (lines × 16, pages × canvas height). Ctrl + wheel and pinch zoom by `exp(−delta × 0.01)` around the cursor, with the delta capped at ±10 px per event.
+**Why:** A mouse notch is ~100 px and a pinch step a few px. The cap makes one notch ≈ 10% while pinch stays proportional and smooth.
+**Rejected:** a fixed step per event (pinch feels jumpy); no cap (one notch jumps 2.7×).
+
+## 2026-10-01 — Canvas is a focusable role="application"
+
+**Decision:** The canvas has `tabIndex={0}`, `role="application"` and `aria-label="Drawing canvas"`. Keys (Space, Escape) are handled only on the canvas, so they work only while it has focus; clicking the canvas focuses it.
+**Why:** ARIA's application role tells screen readers to pass keys through to the page, which is what a drawing surface needs, and ARIA expects such elements to be focusable. jsx-a11y classes the role as non-interactive, so that one rule is disabled on that line with this reason.
+**Rejected:** listening for keys on `window` (would fire while typing in future inputs, against CLAUDE.md).
