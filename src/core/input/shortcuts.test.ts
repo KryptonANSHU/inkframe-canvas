@@ -21,6 +21,7 @@ describe('editActionFor', () => {
     [key('d', { meta: true }), 'duplicate'],
     [key('c', { ctrl: true }), 'copy'],
     [key('v', { ctrl: true }), 'paste'],
+    [key('o', { meta: true }), 'open'],
     [key('s', { ctrl: true }), 'save'],
     [key('Delete'), 'delete'],
     [key('Backspace'), 'delete'],

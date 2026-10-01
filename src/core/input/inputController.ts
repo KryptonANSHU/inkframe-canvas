@@ -1,4 +1,4 @@
-import { createShapeClipboard, performEditAction } from '../editActions';
+import { createShapeClipboard, performEditAction, type FileCommands } from '../editActions';
 import type { Point } from '../geometry/point';
 import { nudgeSelection } from '../selection/selectedShapes';
 import { EMPTY_SELECTION, type EditorStore } from '../store';
@@ -66,6 +66,7 @@ export function createInputController(
   store: EditorStore,
   tools: ControllerTools,
   reportError: (error: Error) => void,
+  files?: FileCommands,
 ): InputController {
   let spaceHeld = false;
   // The tool is locked in at pointerdown, so releasing space mid-pan doesn't switch tools.
@@ -136,7 +137,7 @@ export function createInputController(
   const editShortcut = (input: KeyInput) => {
     const action = editActionFor(input);
     if (action !== null && !busy()) {
-      performEditAction(action, store, clipboard, reportError);
+      performEditAction(action, store, clipboard, reportError, files);
     }
     return action !== null;
   };

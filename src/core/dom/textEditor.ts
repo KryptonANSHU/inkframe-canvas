@@ -2,6 +2,7 @@ import { worldToScreen, type Camera } from '../camera';
 import { DEFAULT_SHAPE_STYLE } from '../shapes';
 import type { EditorStore } from '../store';
 import { commitTextEdit } from '../text/commitTextEdit';
+import { whenFontsReady } from '../text/whenFontsReady';
 import { DEFAULT_FONT_SIZE, DEFAULT_TEXT_WIDTH, fontString } from '../text/font';
 import type { TextMeasurer } from '../text/layout';
 import type { TextEdit } from '../text/textShape';
@@ -134,21 +135,4 @@ function placeTextarea(
   const rotation = edit.original?.rotation ?? 0;
   style.transformOrigin = `${String(width / 2)}px ${String(height / 2)}px`;
   style.transform = rotation === 0 ? '' : `rotate(${String(rotation)}rad)`;
-}
-
-/**
- * Runs `action` now if the text font is ready, otherwise as soon as it is. Text typed
- * before the font loads is measured with the real font, so its stored height is right.
- */
-function whenFontsReady(store: EditorStore, action: () => void): void {
-  if (store.getState().fontsReady) {
-    action();
-    return;
-  }
-  const unsubscribe = store.subscribe((state) => {
-    if (state.fontsReady) {
-      unsubscribe();
-      action();
-    }
-  });
 }

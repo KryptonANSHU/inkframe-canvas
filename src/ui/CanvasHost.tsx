@@ -1,10 +1,15 @@
 import { useEffect, useRef } from 'react';
-import { createEditor } from '../core/dom/createEditor';
+import { createEditor, type Editor } from '../core/dom/createEditor';
 import styles from './CanvasHost.module.css';
 import { reportError } from './reportError';
 
+type CanvasHostProps = {
+  /** Receives the editor once it exists, and null once it is disposed. */
+  readonly onEditorChange: (editor: Editor | null) => void;
+};
+
 /** Owns the one <canvas>: hands it to the editor core on mount, disposes it on unmount. */
-export function CanvasHost() {
+export function CanvasHost({ onEditorChange }: CanvasHostProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -16,10 +21,12 @@ export function CanvasHost() {
       reportError,
       textEditorClassName: styles.textEditor ?? '',
     });
+    onEditorChange(editor);
     return () => {
+      onEditorChange(null);
       editor.dispose();
     };
-  }, []);
+  }, [onEditorChange]);
 
   return (
     <canvas

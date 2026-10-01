@@ -1,4 +1,5 @@
 import { createInputController } from '../input/inputController';
+import { startPersistence } from '../persistence/autosave';
 import { createRenderLoop, type FrameScheduler } from '../renderLoop';
 import { createRenderer } from '../renderer';
 import { createSpatialIndex, type SpatialIndex } from '../spatial/spatialIndex';
@@ -17,6 +18,9 @@ import {
 import { createTextTool } from '../tools/textTool';
 import { createTextLayoutCache } from '../text/layout';
 import { bindCanvasInput } from './bindCanvasInput';
+import { createFileActions, type FileActions } from './files';
+import { createFileReaderClient } from './fileWorkerClient';
+import { createIndexedDbStorage } from './indexedDbStorage';
 import { observeCanvasSurface } from './canvasSurface';
 import { createCanvasTextMeasurer } from './canvasTextMeasurer';
 import { loadTextFont } from './fonts';
@@ -33,6 +37,10 @@ export type Editor = {
   readonly store: EditorStore;
   /** Always in sync with the store's document; hit-testing reads it (M3b). */
   readonly index: SpatialIndex;
+  /** Open and Save, for the file bar. */
+  readonly files: FileActions;
+  /** Gives the canvas keyboard focus back, e.g. after a file bar button was used. */
+  readonly focus: () => void;
   /** Removes every listener and observer and stops drawing. */
   readonly dispose: () => void;
 };
@@ -65,6 +73,15 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
   const unsubscribe = store.subscribe(loop.invalidate);
 
   const { reportError } = options;
+  const reader = createFileReaderClient();
+  const files = createFileActions({ store, reader, measurer, reportError });
+  const persistence = startPersistence({
+    store,
+    storage: createIndexedDbStorage(),
+    readFileText: (text) => reader.read(text),
+    reportError,
+  });
+  const unbindFlush = flushWhenHidden(() => void persistence.flush());
   const controller = createInputController(
     store,
     {
@@ -80,6 +97,7 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
       pan: createPanTool(store),
     },
     reportError,
+    files,
   );
   const unbindInput = bindCanvasInput(canvas, controller, surface);
   canvas.style.cursor = controller.cursor();
@@ -106,7 +124,15 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
   return {
     store,
     index,
+    files,
+    focus: () => {
+      canvas.focus({ preventScroll: true });
+    },
     dispose: () => {
+      unbindFlush();
+      void persistence.flush();
+      persistence.dispose();
+      reader.dispose();
       unbindTextEditor();
       unbindInput();
       unsubscribe();
@@ -170,5 +196,21 @@ function watchInvariantsInDev(
   return () => {
     disposed = true;
     unwatch?.();
+  };
+}
+
+/**
+ * Saves a pending change as soon as the tab is hidden: the last chance before it may be
+ * closed or discarded, rather than waiting out the autosave delay.
+ */
+function flushWhenHidden(flush: () => void): () => void {
+  const onChange = () => {
+    if (document.visibilityState === 'hidden') {
+      flush();
+    }
+  };
+  document.addEventListener('visibilitychange', onChange);
+  return () => {
+    document.removeEventListener('visibilitychange', onChange);
   };
 }

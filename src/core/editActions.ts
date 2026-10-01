@@ -13,7 +13,13 @@ import { selectedShapes } from './selection/selectedShapes';
 import { createShapeId, type Shape } from './shapes';
 import { EMPTY_SELECTION, type EditorStore } from './store';
 
-export type EditAction = 'undo' | 'redo' | 'delete' | 'duplicate' | 'copy' | 'paste' | 'save';
+export type EditAction =
+  'undo' | 'redo' | 'delete' | 'duplicate' | 'copy' | 'paste' | 'open' | 'save';
+
+/** Opening and saving files need the browser; the DOM layer supplies them. */
+export type FileCommands = { open(): void; save(): void };
+
+const NO_FILE_COMMANDS: FileCommands = { open: () => undefined, save: () => undefined };
 
 /** World units between a shape and its duplicate, and between successive pastes. */
 export const COPY_OFFSET = 10;
@@ -53,6 +59,7 @@ export function performEditAction(
   store: EditorStore,
   clipboard: ShapeClipboard,
   reportError: (error: Error) => void,
+  files: FileCommands = NO_FILE_COMMANDS,
 ): void {
   switch (action) {
     case 'undo':
@@ -73,8 +80,11 @@ export function performEditAction(
     case 'paste':
       clipboard.paste(store, reportError);
       return;
+    case 'open':
+      files.open();
+      return;
     case 'save':
-      // Claimed so the browser never saves the page; saving arrives in M6.
+      files.save();
       return;
     default:
       assertNever(action);

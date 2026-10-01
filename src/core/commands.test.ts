@@ -6,6 +6,7 @@ import {
   deleteShapesCommand,
   executeCommand,
   redo,
+  replaceDocumentCommand,
   undo,
   updateShapesCommand,
   type Command,
@@ -181,5 +182,14 @@ describe('undo and redo', () => {
       executeCommand(store, createShapeCommand(makeRect({ id: testShapeId(`r${String(i)}`) })));
     }
     expect(store.getState().history.past).toHaveLength(MAX_HISTORY);
+  });
+});
+
+describe('replaceDocumentCommand', () => {
+  it('swaps the document; do → undo → redo is exact', () => {
+    const opened = insertShape(EMPTY_DOCUMENT, makeRect({ id: testShapeId('opened') }));
+    const command = replaceDocumentCommand('Open', start, opened);
+    expect(command.do(start)).toBe(opened);
+    expect(command.undo(opened)).toBe(start);
   });
 });

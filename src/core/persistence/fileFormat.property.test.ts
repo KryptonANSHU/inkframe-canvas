@@ -2,7 +2,8 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { shapeArbitrary } from '../testing/arbitraries';
 import { testShapeId } from '../testing/factories';
-import { documentFromShapes, readFileText, toFile } from './fileFormat';
+import { documentFromShapes, toFile } from './fileFormat';
+import { readFileText } from './readFile';
 
 const shapes = fc
   .array(fc.nat(), { maxLength: 30 })

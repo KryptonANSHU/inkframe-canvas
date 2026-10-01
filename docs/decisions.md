@@ -321,3 +321,15 @@ A log of real design decisions: what we chose, why, and what we rejected.
 **Decision:** Paths over the point limit drop, one at a time, the point whose triangle with its neighbors has the least area, until they fit (heap-based, O(n log n)).
 **Why:** Fits the limit exactly with no tolerance search, and removes the least visible detail first.
 **Alternatives rejected:** Ramer–Douglas–Peucker with a growing tolerance: O(n²) on paths where every point matters (a 30,000-point zigzag took over 15 s in a test).
+
+## 2026-10-01 — Autosave and recovery
+
+**Decision:** `startPersistence` (core, DOM-free) restores the newest readable snapshot on start (current, then backup), then saves each document change 500 ms after the last one. Snapshots hold the same JSON as a saved file plus a counter that keeps rising across sessions. The IndexedDB adapter writes in one transaction: the old current becomes the backup and the new one becomes current, so a save cut short by a closed tab leaves the last complete snapshot. Saves never overlap. A pending save is flushed when the tab is hidden. If storage fails to open or save, `autosave` becomes `unavailable`: a banner says so and offers "Save a copy", and the editor keeps working in memory. A restored snapshot doesn't replace anything drawn while it was loading.
+**Why:** PRD 1D. Snapshots reuse the file format, so recovery runs through the same validation and migrations as opening a file. Writes are issued from the read's success callback rather than after an `await`, so the transaction is certainly still active.
+**Alternatives rejected:** the `idb` wrapper (a dependency for ~60 lines); fake-indexeddb for unit tests (autosave logic is tested over an in-memory storage, and real IndexedDB in e2e, including a reload).
+
+## 2026-10-01 — Open and Save
+
+**Decision:** Open (file bar or Ctrl / ⌘ + O) reads the file in a worker with progress, measures text heights again with the real font (heights in a file are untrusted), and replaces the drawing as one undoable step. Save as JSON (Ctrl / ⌘ + S) downloads `inkframe-YYYY-MM-DD.json`. Files over 20 MB are refused before being read. Errors show in the file bar with the reason. The file bar is a stop-gap styled with CSS system colors until the M7 toolbar.
+**Why:** An undoable Open means opening the wrong file never loses work, with no confirm dialog. zod runs only in the file worker: the reading code lives in `readFile.ts`, which the main thread never imports, so the main bundle grew by only ~3 KB gzipped for persistence and its UI.
+**Alternatives rejected:** a confirm-before-replace dialog (an extra click every time, and still loses work when confirmed by habit).

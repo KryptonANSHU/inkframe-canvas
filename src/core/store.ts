@@ -7,6 +7,15 @@ import type { Shape, ShapeId } from './shapes';
 import type { TextEdit } from './text/textShape';
 import { DEFAULT_TOOL, type ToolId } from './tools/toolIds';
 
+/** Opening or exporting a file: progress, or why it failed, for the file bar. */
+export type FileStatus =
+  | { readonly kind: 'idle' }
+  | { readonly kind: 'busy'; readonly label: string; readonly progress: number | null }
+  | { readonly kind: 'error'; readonly message: string };
+
+/** 'starting' until the autosaved drawing is restored; 'unavailable' if storage fails. */
+export type AutosaveStatus = 'starting' | 'on' | 'unavailable';
+
 export type EditorState = {
   readonly document: DocumentState;
   readonly camera: Camera;
@@ -32,6 +41,8 @@ export type EditorState = {
   readonly textEdit: TextEdit | null;
   /** False until the text font has loaded; text is neither drawn nor placed before then. */
   readonly fontsReady: boolean;
+  readonly autosave: AutosaveStatus;
+  readonly fileStatus: FileStatus;
 };
 
 export type EditorStore = StoreApi<EditorState>;
@@ -51,6 +62,8 @@ export function createEditorStore(initial: Partial<EditorState> = {}): EditorSto
     activeTool: DEFAULT_TOOL,
     textEdit: null,
     fontsReady: false,
+    autosave: 'starting',
+    fileStatus: { kind: 'idle' },
     ...initial,
   }));
 }

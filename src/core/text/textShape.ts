@@ -39,6 +39,11 @@ export function createTextShape(
   return withText(empty, typed, measurer);
 }
 
+/** Text from a file, re-measured with this browser's font; null if it is blank. */
+export function remeasured(shape: TextShape, measurer: TextMeasurer): TextShape | null {
+  return withText(shape, shape.text, measurer);
+}
+
 /**
  * `shape` holding `typed`, re-measured at its width and font size; null when the text
  * is blank. Trailing whitespace is dropped so blank lines at the end add no height.

@@ -1,14 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_PEN_POINTS } from '../shapes';
 import { makePen, makeRect, makeText, testShapeId } from '../testing/factories';
-import {
-  documentFromShapes,
-  MAX_FILE_BYTES,
-  MAX_SHAPES,
-  readFile,
-  readFileText,
-  toFile,
-} from './fileFormat';
+import { documentFromShapes, MAX_FILE_BYTES, MAX_SHAPES, toFile } from './fileFormat';
+import { readFile, readFileText } from './readFile';
 import { CURRENT_VERSION, migrate, type RawFile } from './migrations';
 
 const rect = makeRect({ id: testShapeId('r') });

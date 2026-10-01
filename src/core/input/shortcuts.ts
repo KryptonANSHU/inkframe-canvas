@@ -8,6 +8,7 @@ const WITH_COMMAND_KEY: Readonly<Record<string, EditAction>> = {
   d: 'duplicate',
   c: 'copy',
   v: 'paste',
+  o: 'open',
   s: 'save',
 };
 

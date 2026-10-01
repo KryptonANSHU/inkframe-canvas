@@ -35,6 +35,18 @@ export function createShapeCommand(shape: Shape): Command {
 }
 
 /**
+ * Swaps the whole document, e.g. for an opened file. Undo brings the old drawing
+ * back, so opening a file by mistake loses nothing.
+ */
+export function replaceDocumentCommand(
+  label: string,
+  before: DocumentState,
+  after: DocumentState,
+): Command {
+  return { label, do: () => after, undo: () => before };
+}
+
+/**
  * Puts new shapes on top of the draw order, keeping their order among themselves
  * (the first ends up lowest). Used for duplicate and paste.
  */
