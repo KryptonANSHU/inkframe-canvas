@@ -64,3 +64,29 @@ A log of real design decisions: what we chose, why, and what we rejected.
 **Decision:** The canvas's device-pixel size comes from `ResizeObserver`'s `devicePixelContentBoxSize` where the browser reports it; otherwise `round(cssSize × devicePixelRatio)` (`core/viewport.ts`). DPR changes are detected with a `(resolution: Ndppx)` media query that is re-created after each change.
 **Why:** At fractional DPRs (1.25, 1.5) or fractional CSS sizes, rounding can leave the bitmap a pixel off from the screen, which blurs every line. The browser's exact device-pixel size avoids this.
 **Rejected:** always rounding (blurry at fractional DPRs in browsers that can do better).
+
+## 2026-10-01 — Document = shapes by ID + a draw-order list
+
+**Decision:** `DocumentState = { shapes: ReadonlyMap<ShapeId, Shape>, order: readonly ShapeId[] }`. Each shape also keeps its `zIndex`, which must equal its position in `order`. `insertShape` and `removeShape` (`core/document.ts`) renumber the shapes above the change.
+**Why:** Commands, hit-testing and selection need fast lookup by ID; the renderer needs a ready bottom-to-top list without sorting every frame. `zIndex` on the shape is what CLAUDE.md requires and what gets saved to files.
+**Rejected:** shapes only in a Map, sorted by zIndex when drawing (sorting 10k shapes per frame); shapes only in an array (O(n) lookup by ID during multi-shape drags).
+**Cost:** `zIndex` and `order` can disagree if code bypasses `document.ts`. The M5 invariants checker verifies they match after every command.
+
+## 2026-10-01 — Commands are pure functions over the document
+
+**Decision:** `Command = { label, do(document) → document, undo(document) → document }`. `executeCommand` builds the new document first and stores it in one `setState`; if `do` throws, nothing is stored and a `CommandError` is returned as a `Result`.
+**Why:** This makes every command transactional by construction (PRD 1D), with no rollback code. Pure functions are also trivial to test for exact do → undo → redo equality.
+**Rejected:** commands that mutate the store directly and roll back on error (every command needs its own rollback, which is easy to get wrong).
+**Next:** M5 adds the history stack, selection in undo/redo, and the invariants check after each command.
+
+## 2026-10-01 — The shape being drawn lives outside the document
+
+**Decision:** The store has a `draft: Shape | null` that the renderer draws on top. The tool updates the draft while dragging, then commits one `createShapeCommand` on release.
+**Why:** Cancelling a gesture only clears the draft, so the document is never touched until the gesture succeeds, and one gesture is exactly one undo step.
+**Rejected:** inserting the shape on pointerdown and updating it on every move (cancel would need an undo, and history would fill with intermediate states).
+
+## 2026-10-01 — Store is per editor, render loop and renderer take their dependencies
+
+**Decision:** `createEditorStore()` makes a new Zustand vanilla store per editor (no module singleton). `createRenderLoop(draw, scheduler)` takes the frame scheduler, and `createRenderer(context)` takes a narrow `RenderContext` (the subset of `CanvasRenderingContext2D` it uses).
+**Why:** Tests run in Node with a manual frame scheduler and a recording context, so "ten changes → one draw", "idle → zero frames" and draw order are checked without a browser. Real canvas output is checked in Playwright (M2c).
+**Rejected:** jsdom plus a canvas polyfill (a heavy dependency that still doesn't render real pixels).
