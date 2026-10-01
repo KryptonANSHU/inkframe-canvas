@@ -1,5 +1,6 @@
 import { assertNever } from './assertNever';
 import { inflateBox, rotatedBoxBounds, type Bounds, type Box } from './geometry/bounds';
+import type { Point } from './geometry/point';
 import type { ArrowShape, PathShape, Shape } from './shapes';
 
 /** Half-angle between the arrow shaft and each side of the head. */
@@ -56,6 +57,25 @@ export function arrowHeadLength(shape: ArrowShape): number {
   const [start, end] = shape.points;
   const shaft = Math.hypot(end.x - start.x, end.y - start.y);
   return Math.min(shaft / 2, 8 + shape.style.strokeWidth * 3);
+}
+
+export const ARROW_HEAD_SIDES = [-1, 1] as const;
+
+/**
+ * End of one side of the arrowhead, in the same frame as the shape's points. The
+ * renderer and hit-test both use this, so what you click is exactly what is drawn.
+ */
+export function arrowHeadWing(
+  shape: ArrowShape,
+  side: (typeof ARROW_HEAD_SIDES)[number],
+  out: Point,
+): Point {
+  const [start, end] = shape.points;
+  const length = arrowHeadLength(shape);
+  const angle = Math.atan2(end.y - start.y, end.x - start.x) + Math.PI + side * ARROW_HEAD_ANGLE;
+  out.x = end.x + Math.cos(angle) * length;
+  out.y = end.y + Math.sin(angle) * length;
+  return out;
 }
 
 /**

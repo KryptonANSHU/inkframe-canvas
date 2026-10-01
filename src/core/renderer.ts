@@ -1,8 +1,12 @@
 import { assertNever } from './assertNever';
 import { DEFAULT_CAMERA, worldToDeviceTransform } from './camera';
-import { ARROW_HEAD_ANGLE, arrowHeadLength, isFilled, shapeBox } from './shapeGeometry';
+import { createPoint } from './geometry/point';
+import { ARROW_HEAD_SIDES, arrowHeadWing, isFilled, shapeBox } from './shapeGeometry';
 import type { ArrowShape, PathPoint, Shape } from './shapes';
 import type { EditorState } from './store';
+
+// Scratch point for arrowhead wings, so drawing allocates nothing per shape.
+const wing = createPoint();
 
 /** The part of CanvasRenderingContext2D the renderer uses, so tests can pass a fake. */
 export type RenderContext = Pick<
@@ -145,15 +149,11 @@ function traceArrowHead(
   offsetX: number,
   offsetY: number,
 ): void {
-  const [start, end] = shape.points;
-  const length = arrowHeadLength(shape);
-  const shaftAngle = Math.atan2(end.y - start.y, end.x - start.x);
-  const tipX = end.x + offsetX;
-  const tipY = end.y + offsetY;
-  for (const side of [-1, 1]) {
-    const angle = shaftAngle + Math.PI + side * ARROW_HEAD_ANGLE;
-    context.moveTo(tipX, tipY);
-    context.lineTo(tipX + Math.cos(angle) * length, tipY + Math.sin(angle) * length);
+  const tip = shape.points[1];
+  for (const side of ARROW_HEAD_SIDES) {
+    arrowHeadWing(shape, side, wing);
+    context.moveTo(tip.x + offsetX, tip.y + offsetY);
+    context.lineTo(wing.x + offsetX, wing.y + offsetY);
   }
 }
 

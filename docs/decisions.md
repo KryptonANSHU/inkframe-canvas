@@ -133,3 +133,25 @@ A log of real design decisions: what we chose, why, and what we rejected.
 ## 2026-10-01 — Renderer draws all path shapes from M3a
 
 **Decision:** Ellipse, line, arrow, and pen drawing landed with their types in M3a (planned for M3c), because the renderer's exhaustive `switch` must handle every member of `Shape`. Rectangles use mitered joins; everything else uses round joins and caps. Pen strokes curve through the midpoints between captured points. Paths are never filled.
+
+## 2026-10-01 — Hit-testing: index candidates, exact test in the shape's frame
+
+**Decision:** `core/hitTest.ts` queries the spatial index with a box of radius `6 / zoom` around the point, then runs an exact test per candidate after un-rotating the point around the shape's center. A stroke is hit within `6 / zoom + strokeWidth / 2` world units. Filled rectangles and ellipses are also hit anywhere inside; unfilled shapes and all paths only near their stroke. `hitTest` returns the topmost hit (highest zIndex); `hitTestAll` returns every hit, topmost first, for Alt + click cycling in M4. Pen strokes are tested against the polyline through their points, not the smoothed curve that is drawn. The curve cuts inside sharp corners by about a quarter of the corner's size: negligible for dense input, but a fast stroke with points ~100 units apart and a right-angle turn is off by ~9 units there, beyond the 6 px tolerance at 100%. Hit-testing the curve itself is a follow-up if this shows up in practice.
+**Why:** The index keeps a hit-test to a handful of candidates even at 10k shapes; un-rotating one point is cheaper than rotating the shape. Tolerance in screen pixels means thin lines are equally easy to click at any zoom.
+**Rejected:** pixel-based picking with a hidden color-ID canvas (needs a second render of every shape and can't do a 6 px tolerance cleanly).
+
+## 2026-10-01 — Ellipse distance by fixed iteration
+
+**Decision:** `distanceToEllipse` refines the nearest-point guess 4 times using the ellipse's local center of curvature, with no trigonometry.
+**Why:** There is no closed form. Measured worst error is 3.7e-6 of the larger radius at aspect ratios up to 1000:1 (against 200,000-point outline sampling) — far below a pixel at any zoom.
+**Rejected:** sampling the outline (slow and less accurate); approximating with the normalized radius `|√((x/a)² + (y/b)²) − 1| · min(a, b)` (badly wrong for thin ellipses).
+
+## 2026-10-01 — Arrowhead geometry shared by renderer and hit-test
+
+**Decision:** `arrowHeadWing` in `shapeGeometry.ts` computes each side of the arrowhead; both the renderer and the hit-test call it.
+**Why:** If the two computed it separately, a change to one would make clicks miss what is drawn.
+
+## 2026-10-01 — Brute-force hit-test check: 5 × 10,000 points per run
+
+**Decision:** The property test builds random documents (1–150 shapes of every type, rotation, fill, and stroke width), then compares `hitTest` and `hitTestAll` with an every-shape brute force on 10,000 points each: half uniform, half inside a random shape's bounds. Points come from a seeded PRNG driven by fast-check, so a failure is reproducible. 5 runs per `npm run test:property` (about 1.5 s); a one-off 30-run pass also passed.
+**Verified:** A deliberately broken query (ignoring the tolerance) fails it immediately.
