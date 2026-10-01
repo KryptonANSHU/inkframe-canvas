@@ -17,6 +17,17 @@ const textbox = (page: Page) => page.getByRole('textbox', { name: 'Text' });
 /** Ink in the first line of a text box placed at (200, 200). */
 const firstLineInk = (page: Page) => inkedPixels(page, 200, 200, 200, 26);
 
+/**
+ * Committed text is selected, so its frame and handles would count as ink. Text
+ * committed in the first moments after load waits for the font before it exists (and
+ * is selected), so deselect only once it is drawn, then wait for that frame.
+ */
+async function deselectOnceDrawn(page: Page) {
+  await expect.poll(() => firstLineInk(page)).toBeGreaterThan(20);
+  await page.keyboard.press('Escape');
+  await nextFrame(page);
+}
+
 test('loads Instrument Sans with the FontFace API', async ({ page }) => {
   await expect
     .poll(() =>
@@ -70,15 +81,37 @@ test('long text wraps inside the 240-unit box', async ({ page }) => {
   await page.mouse.click(200, 200);
   await page.keyboard.type('The quick brown fox jumps over the lazy dog');
   await page.keyboard.press('Control+Enter');
-  // The new text is selected; deselect so its handles don't count as ink.
-  await page.keyboard.press('Escape');
-  await nextFrame(page);
+  await deselectOnceDrawn(page);
 
-  await expect.poll(() => firstLineInk(page)).toBeGreaterThan(100);
+  expect(await firstLineInk(page)).toBeGreaterThan(100);
   // A second line exists below the first...
   expect(await inkedPixels(page, 200, 230, 240, 20)).toBeGreaterThan(50);
   // ...and nothing runs past the right edge of the box.
   expect(await inkedPixels(page, 442, 195, 200, 60)).toBe(0);
+});
+
+test('double-click edits text; clearing it deletes the shape', async ({ page }) => {
+  await page.mouse.click(200, 200);
+  await page.keyboard.type('Hi');
+  await page.keyboard.press('Escape');
+  await deselectOnceDrawn(page);
+  // Past the end of "Hi", where " there" will go.
+  const tail = () => inkedPixels(page, 240, 200, 80, 26);
+  expect(await tail()).toBe(0);
+
+  await page.mouse.dblclick(210, 210);
+  await expect(textbox(page)).toHaveValue('Hi');
+  await page.keyboard.type(' there');
+  await page.keyboard.press('Escape');
+  await expect(textbox(page)).toHaveCount(0);
+  await deselectOnceDrawn(page);
+  expect(await tail()).toBeGreaterThan(20);
+
+  await page.mouse.dblclick(210, 210);
+  await page.keyboard.press('ControlOrMeta+A');
+  await page.keyboard.press('Backspace');
+  await page.keyboard.press('Escape');
+  await expect.poll(() => firstLineInk(page)).toBe(0);
 });
 
 test.describe('with a slow font', () => {
