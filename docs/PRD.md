@@ -220,7 +220,7 @@ Each milestone is built and verified locally before the next one starts. Tier 1 
 - [x] M3. Spatial index and hit-testing, all shape tools, text measurement
 - [x] M4. Interaction model: selection, drag with capture and cancel, resize, rotate, multi-selection, keyboard
 - [x] M5. Commands, undo / redo, invariants checker, property-based tests
-- [ ] M6. Persistence: versioned format, migrations, autosave and recovery, import limits, export in a worker
+- [x] M6. Persistence: versioned format, migrations, autosave and recovery, import limits, export in a worker
 - [ ] M7. Style panel, layers, snapping and guides, tokens and themes, baseline accessibility, error boundaries
 - [ ] M8. Performance pass and benchmark suite at 1k / 5k / 10k shapes
 - [ ] Gate: Tier 1 verified locally

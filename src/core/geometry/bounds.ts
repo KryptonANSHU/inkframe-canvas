@@ -55,3 +55,13 @@ export function isFiniteBounds(bounds: Bounds): boolean {
     Number.isFinite(bounds.maxY)
   );
 }
+
+/** The smallest bounds holding both. */
+export function unionBounds(a: Bounds, b: Bounds): Bounds {
+  return {
+    minX: Math.min(a.minX, b.minX),
+    minY: Math.min(a.minY, b.minY),
+    maxX: Math.max(a.maxX, b.maxX),
+    maxY: Math.max(a.maxY, b.maxY),
+  };
+}

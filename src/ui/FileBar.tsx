@@ -11,18 +11,45 @@ type FileBarProps = { readonly editor: Editor };
 export function FileBar({ editor }: FileBarProps) {
   const status = useStore(editor.store, (state) => state.fileStatus);
   // Focus goes back to the canvas afterwards, so shortcuts keep working.
-  const run = (action: 'open' | 'save' | 'dismissStatus') => () => {
-    editor.files[action]();
+  const run = (action: () => unknown) => () => {
+    void action();
     editor.focus();
   };
+  const { files } = editor;
   return (
     <div className={styles.bar}>
       <div className={styles.buttons} role="toolbar" aria-label="File">
-        <button type="button" className={styles.button} onClick={run('open')}>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={run(() => {
+            files.open();
+          })}
+        >
           Open…
         </button>
-        <button type="button" className={styles.button} onClick={run('save')}>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={run(() => {
+            files.save();
+          })}
+        >
           Save as JSON
+        </button>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={run(() => files.exportImage('png'))}
+        >
+          Export PNG
+        </button>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={run(() => files.exportImage('svg'))}
+        >
+          Export SVG
         </button>
       </div>
       {status.kind === 'busy' && (
@@ -34,7 +61,13 @@ export function FileBar({ editor }: FileBarProps) {
       {status.kind === 'error' && (
         <p className={styles.error} role="alert">
           {status.message}{' '}
-          <button type="button" className={styles.button} onClick={run('dismissStatus')}>
+          <button
+            type="button"
+            className={styles.button}
+            onClick={run(() => {
+              files.dismissStatus();
+            })}
+          >
             Dismiss
           </button>
         </p>

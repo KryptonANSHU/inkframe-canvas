@@ -1,6 +1,7 @@
 import { TEXT_FONT_FAMILY } from '../text/font';
 
-const FONT_URL = `${import.meta.env.BASE_URL}fonts/instrument-sans-latin-400-normal.woff2`;
+/** The text font file, served from `public/` (OFL). Exports embed or load it too. */
+export const FONT_URL = `${import.meta.env.BASE_URL}fonts/instrument-sans-latin-400-normal.woff2`;
 
 /**
  * Loads the canvas text font with the FontFace API. Fonts added to `document.fonts`

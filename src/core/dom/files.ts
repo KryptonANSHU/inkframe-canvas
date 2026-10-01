@@ -1,4 +1,5 @@
 import { executeCommand, replaceDocumentCommand } from '../commands';
+import { exportBounds, shapesToExport } from '../export/exportArea';
 import type { FileCommands } from '../editActions';
 import {
   documentFromShapes,
@@ -11,10 +12,14 @@ import { EMPTY_SELECTION, type EditorStore } from '../store';
 import type { TextMeasurer } from '../text/layout';
 import { remeasured } from '../text/textShape';
 import { whenFontsReady } from '../text/whenFontsReady';
+import type { ExportFormat } from '../../workers/exportProtocol';
 import { downloadBlob } from './download';
+import type { ExportClient } from './exportClient';
 import type { FileReaderClient } from './fileWorkerClient';
 
 export type FileActions = FileCommands & {
+  /** The selection, or the whole drawing when nothing is selected, as PNG or SVG. */
+  exportImage(format: ExportFormat): Promise<void>;
   /** Opens a file the user picked or dropped. Errors land in `fileStatus`. */
   openFile(file: File): Promise<void>;
   dismissStatus(): void;
@@ -23,13 +28,15 @@ export type FileActions = FileCommands & {
 export type FileActionsOptions = {
   readonly store: EditorStore;
   readonly reader: FileReaderClient;
+  readonly exporter: ExportClient;
   readonly measurer: TextMeasurer;
   readonly reportError: (error: Error) => void;
 };
 
 /**
- * Open and Save for whole drawings, as versioned JSON. Opening replaces the drawing as
- * one undo step, so a file opened by mistake is one Ctrl / ⌘ + Z away from gone.
+ * Open and Save for whole drawings as versioned JSON, and PNG / SVG export. Opening
+ * replaces the drawing as one undo step, so a file opened by mistake is one
+ * Ctrl / ⌘ + Z away from gone.
  */
 export function createFileActions(options: FileActionsOptions): FileActions {
   const { store } = options;
@@ -65,7 +72,27 @@ export function createFileActions(options: FileActionsOptions): FileActions {
     });
   };
 
+  const exportImage = async (format: ExportFormat) => {
+    const shapes = shapesToExport(store.getState());
+    const area = exportBounds(shapes);
+    if (area === null) {
+      const message = 'There is nothing to export yet. Draw something first.';
+      store.setState({ fileStatus: { kind: 'error', message } });
+      return;
+    }
+    const label = `Exporting ${format.toUpperCase()}`;
+    store.setState({ fileStatus: { kind: 'busy', label, progress: null } });
+    const result = await options.exporter.render(format, shapes, area);
+    if (result.ok) {
+      store.setState({ fileStatus: { kind: 'idle' } });
+      downloadBlob(result.value, `${drawingName()}.${format}`);
+    } else {
+      store.setState({ fileStatus: { kind: 'error', message: result.error.message } });
+    }
+  };
+
   return {
+    exportImage,
     open: () => {
       picker.click();
     },

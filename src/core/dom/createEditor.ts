@@ -19,6 +19,7 @@ import { createTextTool } from '../tools/textTool';
 import { createTextLayoutCache } from '../text/layout';
 import { bindCanvasInput } from './bindCanvasInput';
 import { createFileActions, type FileActions } from './files';
+import { createExportClient } from './exportClient';
 import { createFileReaderClient } from './fileWorkerClient';
 import { createIndexedDbStorage } from './indexedDbStorage';
 import { observeCanvasSurface } from './canvasSurface';
@@ -74,7 +75,8 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
 
   const { reportError } = options;
   const reader = createFileReaderClient();
-  const files = createFileActions({ store, reader, measurer, reportError });
+  const exporter = createExportClient();
+  const files = createFileActions({ store, reader, exporter, measurer, reportError });
   const persistence = startPersistence({
     store,
     storage: createIndexedDbStorage(),
@@ -133,6 +135,7 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
       void persistence.flush();
       persistence.dispose();
       reader.dispose();
+      exporter.dispose();
       unbindTextEditor();
       unbindInput();
       unsubscribe();

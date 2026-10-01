@@ -1,11 +1,10 @@
 import { fontString } from '../text/font';
 import type { FontMetrics, TextMeasurer } from '../text/layout';
 
-/**
- * Measures with a private 2D context: width from measureText, line height from the
- * font's own bounding-box metrics. Results are cached until reset (call it when fonts
- * load, since widths measured with a fallback font are wrong).
- */
+/** The part of a 2D context (on-screen or offscreen, as in workers) used to measure. */
+export type MeasuringContext = Pick<CanvasRenderingContext2D, 'font' | 'measureText'>;
+
+/** A measurer over a private on-screen canvas, for the editor. */
 export function createCanvasTextMeasurer(): TextMeasurer & { reset(): void } {
   const context = document.createElement('canvas').getContext('2d');
   if (context === null) {
@@ -13,6 +12,17 @@ export function createCanvasTextMeasurer(): TextMeasurer & { reset(): void } {
       "This browser can't measure text on a canvas. Open Inkframe in a recent browser.",
     );
   }
+  return createContextTextMeasurer(context);
+}
+
+/**
+ * Measures with a 2D context: width from measureText, line height from the font's own
+ * bounding-box metrics. Results are cached until reset (call it when fonts load, since
+ * widths measured with a fallback font are wrong).
+ */
+export function createContextTextMeasurer(
+  context: MeasuringContext,
+): TextMeasurer & { reset(): void } {
   let widths = new Map<string, number>();
   let metrics = new Map<number, FontMetrics>();
 
