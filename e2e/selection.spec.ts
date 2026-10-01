@@ -92,6 +92,8 @@ test('arrow keys nudge the selection, Shift + arrow by 10', async ({ page }) => 
   await page.keyboard.press('Shift+ArrowDown');
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Escape');
+  // Until the deselect is drawn, the rotation handle (24 px above the edge) covers y 200.
+  await nextFrame(page);
   // 21 units down: the top edge is now at y 221.
   await expect.poll(() => alphaAt(page, 300, 221)).toBeGreaterThan(0);
   expect(await alphaAt(page, 300, 200)).toBe(EMPTY);
