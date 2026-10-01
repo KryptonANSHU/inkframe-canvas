@@ -53,6 +53,7 @@ function key(name: string, modifiers: Partial<Omit<KeyInput, 'key'>> = {}): KeyI
     metaKey: false,
     altKey: false,
     shiftKey: false,
+    repeat: false,
     ...modifiers,
   };
 }
@@ -288,5 +289,38 @@ describe('input controller', () => {
     expect(store.getState().textEdit).toBeNull();
     controller.doubleClick(pointerAt(10, 10));
     expect(store.getState().textEdit).toEqual({ id: text.id, x: 0, y: 0, original: text });
+  });
+
+  it('Ctrl / ⌘ + Z undoes a drawn shape and Shift redoes it, selection included', () => {
+    const { store, controller } = setup();
+    drag(controller);
+    const drawn = store.getState();
+    expect(controller.keyDown(key('z', { metaKey: true }))).toBe(true);
+    expect(store.getState().document).toEqual(EMPTY_DOCUMENT);
+    controller.keyDown(key('z', { metaKey: true, shiftKey: true }));
+    expect(store.getState().document).toEqual(drawn.document);
+    expect(store.getState().selectedIds).toEqual(drawn.selectedIds);
+  });
+
+  it('a held arrow key is one undo step', () => {
+    const { store, controller } = setup();
+    drag(controller);
+    const drawn = store.getState().document;
+    controller.keyDown(key('ArrowRight'));
+    controller.keyDown(key('ArrowRight', { repeat: true }));
+    controller.keyDown(key('ArrowRight', { repeat: true }));
+    controller.keyDown(key('z', { ctrlKey: true }));
+    expect(store.getState().document).toEqual(drawn);
+  });
+
+  it('ignores edit shortcuts mid-gesture, but still claims them', () => {
+    const { store, controller } = setup();
+    drag(controller);
+    controller.pointerDown(pointerAt(300, 300));
+    controller.pointerMove(pointerAt(350, 350));
+    expect(controller.keyDown(key('z', { ctrlKey: true }))).toBe(true);
+    expect(controller.keyDown(key('Delete'))).toBe(true);
+    controller.pointerUp(pointerAt(350, 350));
+    expect(store.getState().document.order).toHaveLength(1);
   });
 });

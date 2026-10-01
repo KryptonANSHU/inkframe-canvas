@@ -1,17 +1,11 @@
-import {
-  createShapeCommand,
-  deleteShapesCommand,
-  executeCommand,
-  updateShapesCommand,
-  type Command,
-} from '../commands';
-import type { EditorStore } from '../store';
-import { selectCreated } from '../tools/selectCreated';
+import { deleteShapesCommand, executeCommand, updateShapesCommand } from '../commands';
+import { EMPTY_SELECTION, type EditorStore } from '../store';
+import { createAndSelect } from '../tools/selectCreated';
 import type { TextMeasurer } from './layout';
 import { createTextShape, withText, type TextEdit } from './textShape';
 
 /**
- * Ends a text edit as one command: new text creates a shape, changed text updates it,
+ * Ends a text edit as one undo step: new text creates a shape, changed text updates it,
  * cleared text deletes it, and untouched text changes nothing. The text ends up
  * selected, unless it was deleted.
  */
@@ -26,9 +20,7 @@ export function commitTextEdit(
   if (original === null) {
     const shape = createTextShape(edit, typed, measurer);
     if (shape !== null) {
-      run(store, createShapeCommand(shape), reportError, () => {
-        selectCreated(store, shape.id);
-      });
+      createAndSelect(store, shape, reportError);
     }
     return;
   }
@@ -37,30 +29,19 @@ export function commitTextEdit(
   if (current?.type !== 'text') {
     return;
   }
+  // Selected again first, so undoing the edit restores the text as selected.
+  store.setState({ selectedIds: new Set([current.id]) });
   if (current.text === typed.trimEnd()) {
-    store.setState({ selectedIds: new Set([current.id]) });
     return;
   }
   const updated = withText(current, typed, measurer);
-  const command =
+  const result =
     updated === null
-      ? deleteShapesCommand('Delete text', [current])
-      : updateShapesCommand('Edit text', [current], [updated]);
-  run(store, command, reportError, () => {
-    store.setState({ selectedIds: new Set(updated === null ? [] : [current.id]) });
-  });
-}
-
-function run(
-  store: EditorStore,
-  command: Command,
-  reportError: (error: Error) => void,
-  onSuccess: () => void,
-): void {
-  const result = executeCommand(store, command);
-  if (result.ok) {
-    onSuccess();
-  } else {
+      ? executeCommand(store, deleteShapesCommand('Delete text', [current]), {
+          select: EMPTY_SELECTION,
+        })
+      : executeCommand(store, updateShapesCommand('Edit text', [current], [updated]));
+  if (!result.ok) {
     reportError(result.error);
   }
 }

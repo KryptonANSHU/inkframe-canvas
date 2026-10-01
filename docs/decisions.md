@@ -285,3 +285,26 @@ A log of real design decisions: what we chose, why, and what we rejected.
 
 **Decision:** e2e tests that commit text wait until it is drawn before pressing Escape to deselect (`deselectOnceDrawn`).
 **Why:** Root cause of the "long text wraps" flake (about 1 run in 100, and more often in the new edit test). Text committed in the first few hundred ms after load waits for the store's `fontsReady`, which trails the FontFace's `loaded` status. An Escape in that window finds nothing selected; the text then appears selected and its handles count as ink. Logging showed the second Escape went unclaimed in every failure. A person can't press Escape that fast after load, so the app is unchanged.
+
+## 2026-10-01 — Undo history lives in the store, with the selection
+
+**Decision:** `executeCommand` records every command as a history entry holding the selection before and after it (`select` option sets the after-selection in the same store update). `undo` / `redo` replay the command and restore the matching selection. New commands clear the redo stack; history keeps the last 200 steps. A `group` option joins a command to the previous step: a held arrow key's repeats (`KeyboardEvent.repeat`) join the first press, so holding an arrow key is one undo step. Edit shortcuts do nothing mid-gesture (but are still claimed).
+**Why:** The PRD requires undo / redo to restore the selection exactly. Recording it at execute time is the only point where both sides are known. Merging by key repeat is deterministic, unlike a time window.
+**Alternatives rejected:** a history object outside the store (every caller would need a second handle); merging nudges within a time window (flaky to test, surprising when two separate taps merge).
+
+## 2026-10-01 — Delete, duplicate, copy, paste
+
+**Decision:** Delete / Backspace delete the selection; undo restores the same shapes with the same IDs and draw order. Ctrl / ⌘ + D duplicates with new IDs, 10 units right and down, on top, selected. Ctrl / ⌘ + C / V use an in-editor clipboard; each paste lands 10 units further than the last, and copying again starts over. Ctrl / ⌘ + Shift + Z and Ctrl + Y redo.
+**Why:** PRD feature table. The system clipboard needs permission prompts and async reads, and cross-app paste needs the M6 file format anyway.
+**Alternatives rejected:** `navigator.clipboard` now (permission prompts for an in-app copy); pasting at the pointer (needs a tracked pointer position; offset pastes are what the PRD asks for).
+
+## 2026-10-01 — Invariants checker
+
+**Decision:** `core/invariants.ts` checks: unique IDs and an order matching the scene, zIndex equal to draw position, selected IDs exist, every number finite, rotation in [0, 2π), box shapes (rectangle, ellipse, text) at least 1 × 1, pen strokes at least 2 points, and the spatial index equal to a full rebuild. Dev builds check after every document or selection change and report violations as errors; e2e tests fail on any console error, so every e2e run also checks invariants. A fast-check test runs 1,000 random sequences of create, select, move, resize, rotate, nudge, delete, duplicate, copy, paste, undo, and redo, checking invariants after every step, that undoing everything gives the empty document, and that redoing it all gives back the same document and selection.
+**Why:** PRD 1D. The PRD's "passes its zod schema" check joins in M6: zod is a new dependency and the schema belongs with the versioned file format.
+**Resolved from M3:** "at least 1 world unit" applies to stored sizes. Paths have none (a straight horizontal line is legitimately 0 tall), so lines may be any length; a zero-length line stays selectable through the hit tolerance.
+
+## 2026-10-01 — Sides under 1e-9 units are flat when resizing
+
+**Decision:** Resizing treats a frame side thinner than 1e-9 world units like a zero side: that axis keeps scale 1.
+**Why:** Found by the history property test (the counterexample is kept as a unit test in `resize.test.ts`): a line 5e-324 tall made `1 / size` overflow to Infinity, and the resize wrote NaN into the shape. Near-zero sides also come from float noise after rotating a flat line.

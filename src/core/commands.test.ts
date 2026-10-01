@@ -2,11 +2,15 @@ import { describe, expect, it } from 'vitest';
 import {
   CommandError,
   createShapeCommand,
+  createShapesCommand,
   deleteShapesCommand,
   executeCommand,
+  redo,
+  undo,
   updateShapesCommand,
   type Command,
 } from './commands';
+import { MAX_HISTORY } from './history';
 import { EMPTY_DOCUMENT, insertShape } from './document';
 import { createEditorStore } from './store';
 import { makeRect, testShapeId } from './testing/factories';
@@ -101,5 +105,81 @@ describe('deleteShapesCommand', () => {
     expect(afterDo.order).toEqual(['middle']);
     expect(afterUndo).toEqual(three);
     expect(command.do(afterUndo)).toEqual(afterDo);
+  });
+});
+
+describe('createShapesCommand', () => {
+  it('stacks the shapes on top in the given order; do → undo → redo is exact', () => {
+    const a = makeRect({ id: testShapeId('a') });
+    const b = makeRect({ id: testShapeId('b') });
+    const command = createShapesCommand('Paste', [a, b]);
+    const afterDo = command.do(start);
+    expect(afterDo.order).toEqual(['existing', 'a', 'b']);
+    expect(command.undo(afterDo)).toEqual(start);
+    expect(command.do(command.undo(afterDo))).toEqual(afterDo);
+  });
+});
+
+describe('undo and redo', () => {
+  const a = makeRect({ id: testShapeId('a') });
+  const b = makeRect({ id: testShapeId('b') });
+
+  function twoSteps() {
+    const store = createEditorStore();
+    executeCommand(store, createShapeCommand(a), { select: new Set([a.id]) });
+    executeCommand(store, createShapeCommand(b), { select: new Set([b.id]) });
+    return store;
+  }
+
+  it('step back and forth through documents and selections exactly', () => {
+    const store = twoSteps();
+    const end = store.getState();
+    undo(store);
+    expect(store.getState().document.order).toEqual(['a']);
+    expect([...store.getState().selectedIds]).toEqual(['a']);
+    undo(store);
+    expect(store.getState().document).toEqual(EMPTY_DOCUMENT);
+    expect(store.getState().selectedIds.size).toBe(0);
+    expect(undo(store)).toBeNull();
+    redo(store);
+    redo(store);
+    expect(store.getState().document).toEqual(end.document);
+    expect(store.getState().selectedIds).toEqual(end.selectedIds);
+    expect(redo(store)).toBeNull();
+  });
+
+  it('forgets undone steps once a new command runs', () => {
+    const store = twoSteps();
+    undo(store);
+    executeCommand(store, createShapeCommand(makeRect({ id: testShapeId('c') })));
+    expect(store.getState().history.future).toEqual([]);
+    expect(redo(store)).toBeNull();
+  });
+
+  it('joins grouped commands into one step, and starts a new one when told to', () => {
+    const store = createEditorStore({ document: start });
+    const nudge = (x: number, continues: boolean) => {
+      const before = store.getState().document.shapes.get(existing.id) ?? existing;
+      executeCommand(store, updateShapesCommand('Nudge', [before], [{ ...before, x }]), {
+        group: { key: 'nudge', continues },
+      });
+    };
+    nudge(1, false);
+    nudge(2, true);
+    nudge(3, true);
+    nudge(4, false);
+    expect(store.getState().history.past).toHaveLength(2);
+    undo(store);
+    expect(store.getState().document.shapes.get(existing.id)?.x).toBe(3);
+    undo(store);
+    expect(store.getState().document).toEqual(start);
+  });
+
+  it(`keeps at most ${String(MAX_HISTORY)} steps`, () => {
+    const store = createEditorStore();
+    for (let i = 0; i <= MAX_HISTORY; i++) {
+      executeCommand(store, createShapeCommand(makeRect({ id: testShapeId(`r${String(i)}`) })));
+    }
+    expect(store.getState().history.past).toHaveLength(MAX_HISTORY);
   });
 });

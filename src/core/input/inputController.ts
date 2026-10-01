@@ -1,9 +1,11 @@
+import { createShapeClipboard, performEditAction } from '../editActions';
 import type { Point } from '../geometry/point';
 import { nudgeSelection } from '../selection/selectedShapes';
 import { EMPTY_SELECTION, type EditorStore } from '../store';
 import type { Tool, ToolPointerEvent } from '../tools/tool';
 import { TOOL_SHORTCUTS, type ToolId } from '../tools/toolIds';
 import { createTouchTracker } from './pinch';
+import { editActionFor } from './shortcuts';
 import { applyWheel, type WheelInput } from './wheel';
 
 export type PointerInput = ToolPointerEvent & {
@@ -19,6 +21,8 @@ export type KeyInput = {
   readonly metaKey: boolean;
   readonly altKey: boolean;
   readonly shiftKey: boolean;
+  /** True for the automatic repeats of a held key. */
+  readonly repeat: boolean;
 };
 
 /** Arrow keys nudge the selection by 1 world unit, or 10 with Shift (PRD 1C). */
@@ -29,12 +33,6 @@ const NUDGE: Readonly<Record<string, readonly [number, number]>> = {
   ArrowDown: [0, 1],
 };
 const SHIFT_NUDGE_FACTOR = 10;
-
-/**
- * Ctrl / ⌘ + key combos the editor owns, claimed now so the browser never bookmarks
- * (D) or saves the page (S). Duplicate arrives in M5 and save in M6.
- */
-const EDITOR_SHORTCUTS = new Set(['d', 's']);
 
 /**
  * Turns raw input into tool gestures. DOM-free, so the whole input path
@@ -73,6 +71,7 @@ export function createInputController(
   // The tool is locked in at pointerdown, so releasing space mid-pan doesn't switch tools.
   let gesture: { readonly pointerId: number; readonly tool: Tool } | null = null;
   const touches = createTouchTracker();
+  const clipboard = createShapeClipboard();
   const busy = () => gesture !== null || touches.pinching();
 
   const toolForNextGesture = () =>
@@ -127,15 +126,20 @@ export function createInputController(
       return false;
     }
     const step = input.shiftKey ? SHIFT_NUDGE_FACTOR : 1;
-    nudgeSelection(store, direction[0] * step, direction[1] * step, reportError);
+    nudgeSelection(store, direction[0] * step, direction[1] * step, reportError, input.repeat);
     // Claimed even with nothing selected, so arrow keys never scroll the page.
     return true;
   };
 
-  const claimEditorShortcut = (input: KeyInput) =>
-    (input.ctrlKey || input.metaKey) &&
-    !input.altKey &&
-    EDITOR_SHORTCUTS.has(input.key.toLowerCase());
+  // Claimed (so the browser never bookmarks or saves the page) even mid-gesture, when
+  // they do nothing: undoing under a drag would pull the document out from under it.
+  const editShortcut = (input: KeyInput) => {
+    const action = editActionFor(input);
+    if (action !== null && !busy()) {
+      performEditAction(action, store, clipboard, reportError);
+    }
+    return action !== null;
+  };
 
   const escape = () => {
     if (busy()) {
@@ -189,7 +193,7 @@ export function createInputController(
       if (input.key === 'Escape') {
         return escape();
       }
-      return claimEditorShortcut(input) || nudge(input) || switchToolByShortcut(input);
+      return editShortcut(input) || nudge(input) || switchToolByShortcut(input);
     },
     keyUp(key) {
       if (key === ' ') {

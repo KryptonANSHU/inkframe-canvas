@@ -1,4 +1,5 @@
 import { createInputController } from '../input/inputController';
+import { watchInvariants } from '../invariants';
 import { createRenderLoop, type FrameScheduler } from '../renderLoop';
 import { createRenderer } from '../renderer';
 import { createSpatialIndex, type SpatialIndex } from '../spatial/spatialIndex';
@@ -53,6 +54,10 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
   const store = createEditorStore();
   const index = createSpatialIndex();
   const unbindIndex = bindSpatialIndex(store, index);
+  // Subscribed after the index, so it checks the index already synced to each change.
+  const unwatchInvariants = import.meta.env.DEV
+    ? watchInvariants(store, index, options.reportError)
+    : () => undefined;
   const measurer = createCanvasTextMeasurer();
   const textLayouts = createTextLayoutCache(measurer);
   const renderer = createRenderer(context, (shape) => textLayouts.layout(shape));
@@ -109,6 +114,7 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
       unbindTextEditor();
       unbindInput();
       unsubscribe();
+      unwatchInvariants();
       unbindIndex();
       surface.dispose();
       loop.dispose();

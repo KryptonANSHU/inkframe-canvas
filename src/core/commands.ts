@@ -1,6 +1,7 @@
 import { insertShape, removeShape, replaceShapes, type DocumentState } from './document';
+import { pushHistory, type HistoryEntry, type HistoryGroup } from './history';
 import type { Result } from './result';
-import type { Shape } from './shapes';
+import type { Shape, ShapeId } from './shapes';
 import type { EditorStore } from './store';
 
 /**
@@ -30,6 +31,22 @@ export function createShapeCommand(shape: Shape): Command {
     label: 'Create shape',
     do: (document) => insertShape(document, { ...shape, zIndex: document.order.length }),
     undo: (document) => removeShape(document, shape.id),
+  };
+}
+
+/**
+ * Puts new shapes on top of the draw order, keeping their order among themselves
+ * (the first ends up lowest). Used for duplicate and paste.
+ */
+export function createShapesCommand(label: string, shapes: readonly Shape[]): Command {
+  return {
+    label,
+    do: (document) =>
+      shapes.reduce(
+        (next, shape) => insertShape(next, { ...shape, zIndex: next.order.length }),
+        document,
+      ),
+    undo: (document) => shapes.reduce((next, shape) => removeShape(next, shape.id), document),
   };
 }
 
@@ -67,18 +84,76 @@ export function updateShapesCommand(
   };
 }
 
+export type ExecuteOptions = {
+  /** The selection once the command has run; defaults to the current one. */
+  readonly select?: ReadonlySet<ShapeId>;
+  /** Joins this command to the previous undo step (see HistoryGroup). */
+  readonly group?: HistoryGroup;
+};
+
 /**
- * Runs a command against the store. The new document is built first and stored in
- * one step; if building it throws, the store is untouched and the error is returned.
- * Undo history arrives in M5.
+ * Runs a command against the store and records it as an undo step. The new document
+ * is built first and stored in one step, together with the selection and history; if
+ * building it throws, the store is untouched and the error is returned.
  */
 export function executeCommand(
   store: EditorStore,
   command: Command,
+  options: ExecuteOptions = {},
 ): Result<DocumentState, CommandError> {
-  const result = tryRun(() => command.do(store.getState().document), command.label);
+  const state = store.getState();
+  const result = tryRun(() => command.do(state.document), command.label);
   if (result.ok) {
-    store.setState({ document: result.value });
+    const entry: HistoryEntry = {
+      command,
+      selectionBefore: state.selectedIds,
+      selectionAfter: options.select ?? state.selectedIds,
+      groupKey: options.group?.key ?? null,
+    };
+    store.setState({
+      document: result.value,
+      selectedIds: entry.selectionAfter,
+      history: pushHistory(state.history, entry, options.group ?? null),
+    });
+  }
+  return result;
+}
+
+/**
+ * Undoes the most recent step and restores the selection from before it. Returns
+ * null when there is nothing to undo.
+ */
+export function undo(store: EditorStore): Result<DocumentState, CommandError> | null {
+  const { history, document } = store.getState();
+  const entry = history.past.at(-1);
+  if (entry === undefined) {
+    return null;
+  }
+  const result = tryRun(() => entry.command.undo(document), `Undo ${entry.command.label}`);
+  if (result.ok) {
+    store.setState({
+      document: result.value,
+      selectedIds: entry.selectionBefore,
+      history: { past: history.past.slice(0, -1), future: [...history.future, entry] },
+    });
+  }
+  return result;
+}
+
+/** Redoes the most recently undone step and its selection. Null when there is none. */
+export function redo(store: EditorStore): Result<DocumentState, CommandError> | null {
+  const { history, document } = store.getState();
+  const entry = history.future.at(-1);
+  if (entry === undefined) {
+    return null;
+  }
+  const result = tryRun(() => entry.command.do(document), `Redo ${entry.command.label}`);
+  if (result.ok) {
+    store.setState({
+      document: result.value,
+      selectedIds: entry.selectionAfter,
+      history: { past: [...history.past, entry], future: history.future.slice(0, -1) },
+    });
   }
   return result;
 }

@@ -20,13 +20,17 @@ export function nudgeSelection(
   dx: number,
   dy: number,
   reportError: (error: Error) => void,
+  /** True for a held key's repeats, which join the first press's undo step. */
+  repeat = false,
 ): void {
   const before = selectedShapes(store.getState());
   if (before.length === 0) {
     return;
   }
   const after = before.map((shape) => ({ ...shape, x: shape.x + dx, y: shape.y + dy }));
-  const result = executeCommand(store, updateShapesCommand('Nudge', before, after));
+  const result = executeCommand(store, updateShapesCommand('Nudge', before, after), {
+    group: { key: 'nudge', continues: repeat },
+  });
   if (!result.ok) {
     reportError(result.error);
   }

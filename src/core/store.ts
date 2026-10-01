@@ -2,6 +2,7 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 import { DEFAULT_CAMERA, type Camera } from './camera';
 import { EMPTY_DOCUMENT, type DocumentState } from './document';
 import type { Bounds } from './geometry/bounds';
+import { EMPTY_HISTORY, type History } from './history';
 import type { Shape, ShapeId } from './shapes';
 import type { TextEdit } from './text/textShape';
 import { DEFAULT_TOOL, type ToolId } from './tools/toolIds';
@@ -14,8 +15,10 @@ export type EditorState = {
    * a gesture only clears it and never has to undo a document change.
    */
   readonly draft: Shape | null;
-  /** Selected shapes. Not part of the document; undo restores it from M5. */
+  /** Selected shapes. Not part of the document, but undo and redo restore it. */
   readonly selectedIds: ReadonlySet<ShapeId>;
+  /** Undo and redo steps. Only executeCommand, undo, and redo change it. */
+  readonly history: History;
   /**
    * New versions of shapes being moved, resized, or rotated, drawn in place of the
    * document's versions until the gesture ends. Like `draft`, cancel just clears it.
@@ -42,6 +45,7 @@ export function createEditorStore(initial: Partial<EditorState> = {}): EditorSto
     camera: DEFAULT_CAMERA,
     draft: null,
     selectedIds: EMPTY_SELECTION,
+    history: EMPTY_HISTORY,
     preview: null,
     marquee: null,
     activeTool: DEFAULT_TOOL,
