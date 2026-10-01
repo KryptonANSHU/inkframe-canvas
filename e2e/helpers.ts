@@ -118,10 +118,15 @@ export async function nextFrame(page: Page): Promise<void> {
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
 }
 
-/** Opens the main menu and picks an item, e.g. /Export .* as PNG/. */
+/**
+ * Opens the main menu and picks an item, e.g. /Export .* as PNG/. Waits until the menu
+ * has handed focus back to the canvas, as it does once it has closed.
+ */
 export async function chooseMenuItem(page: Page, name: string | RegExp): Promise<void> {
   await page.getByRole('button', { name: 'Menu' }).click();
   await page.getByRole('menuitem', { name }).click();
+  await expect(page.getByRole('menu')).toHaveCount(0);
+  await expect(canvas(page)).toBeFocused();
 }
 
 /** The toast region, where errors and file progress appear. */

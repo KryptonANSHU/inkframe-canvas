@@ -76,3 +76,14 @@ describe('edit actions', () => {
     expect(reportError).not.toHaveBeenCalled();
   });
 });
+
+describe('select all', () => {
+  it('selects every shape, as plain UI state (not an undo step)', () => {
+    const { store, perform } = setup();
+    store.setState({ selectedIds: new Set() });
+    const history = store.getState().history;
+    perform('selectAll');
+    expect([...store.getState().selectedIds]).toEqual(['a', 'b']);
+    expect(store.getState().history).toBe(history);
+  });
+});

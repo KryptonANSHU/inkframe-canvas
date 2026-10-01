@@ -4,6 +4,7 @@ import type { Point } from '../geometry/point';
 import { rotatedBoxCorners } from '../geometry/transform';
 import type { RenderContext } from '../renderer';
 import { shapeBox } from '../shapeGeometry';
+import type { Guide } from '../snapping';
 import type { EditorState } from '../store';
 import { canvasTheme } from '../theme';
 import {
@@ -32,7 +33,7 @@ export function drawSelectionOverlay(
   devicePixelRatio: number,
 ): void {
   const shapes = selectedShapes(state);
-  if (shapes.length === 0 && state.marquee === null) {
+  if (shapes.length === 0 && state.marquee === null && state.guides.length === 0) {
     return;
   }
   const lineWidth = Math.max(1, Math.round(devicePixelRatio));
@@ -72,6 +73,33 @@ export function drawSelectionOverlay(
   if (state.marquee !== null) {
     drawMarquee(context, project(marqueeCorners(state.marquee), true), theme.selection);
   }
+  for (const guide of state.guides) {
+    const ends = guideEnds(guide);
+    strokeLine(context, project(ends, true));
+  }
+}
+
+/** A guide's two ends in world space: vertical guides run along y, horizontal along x. */
+function guideEnds(guide: Guide): Point[] {
+  return guide.axis === 'x'
+    ? [
+        { x: guide.at, y: guide.from },
+        { x: guide.at, y: guide.to },
+      ]
+    : [
+        { x: guide.from, y: guide.at },
+        { x: guide.to, y: guide.at },
+      ];
+}
+
+function strokeLine(context: RenderContext, [from, to]: readonly Readonly<Point>[]): void {
+  if (from === undefined || to === undefined) {
+    return;
+  }
+  context.beginPath();
+  context.moveTo(from.x, from.y);
+  context.lineTo(to.x, to.y);
+  context.stroke();
 }
 
 function frameCorners(frame: SelectionFrame): Point[] {

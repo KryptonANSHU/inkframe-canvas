@@ -16,7 +16,6 @@ import { ICON_STROKE, size } from '../design/tokens';
 import { useEditor, useEditorState } from './EditorContext';
 import styles from './MainMenu.module.css';
 import { shortcutText } from './shortcutLabel';
-import { Tip } from './Tip';
 import { applyThemePreference, readThemePreference, type ThemePreference } from './themePreference';
 
 const THEMES: readonly { value: ThemePreference; label: string; Icon: LucideIcon }[] = [
@@ -50,14 +49,14 @@ export function MainMenu() {
   const [theme, setTheme] = useState(readThemePreference);
   const what = hasSelection ? 'selection' : 'drawing';
 
+  // Non-modal: a menu button needs no focus trap, and nothing else gets aria-hidden.
   return (
-    <DropdownMenu.Root>
+    <DropdownMenu.Root modal={false}>
       <div className={styles.bar}>
-        <Tip label="Menu">
-          <DropdownMenu.Trigger className={styles.trigger} aria-label="Menu">
-            <Menu size={size.icon} strokeWidth={ICON_STROKE} aria-hidden />
-          </DropdownMenu.Trigger>
-        </Tip>
+        {/* No tooltip: the menu explains itself, and a focus tooltip would outlive it. */}
+        <DropdownMenu.Trigger className={styles.trigger} aria-label="Menu">
+          <Menu size={size.icon} strokeWidth={ICON_STROKE} aria-hidden />
+        </DropdownMenu.Trigger>
       </div>
       <DropdownMenu.Portal>
         <DropdownMenu.Content

@@ -383,3 +383,20 @@ A log of real design decisions: what we chose, why, and what we rejected.
 - **Shared looks:** come through CSS-module `composes`, so each element keeps one class. In Vite dev, a composed file's edits can leave stale copies until the dev server restarts; production builds are correct.
   **Bundle:** the main JS grew from 65.3 to 114.0 KB gzipped (+48.7 KB, above the 30–40 KB estimate). Lazy-loading the shortcuts dialog saved under 1 KB (it shares focus and scroll handling with the menus), so it was reverted; bundle work is M8's.
   **Alternatives rejected:** a separate layers list panel (the PRD asks for order controls; a list joins the Tier 3 shape list); a free-form color picker (any color would have no tuned dark-theme counterpart; a curated palette reads well in both themes).
+
+## 2026-10-02 — M7c: snapping, select all, accessibility checks
+
+**Decision:**
+
+- **Snapping:** moving a selection snaps its box's edges and center to nearby shapes' edges and centers. The threshold is 6 screen pixels, each axis snaps on its own to the closest line, and targets come from the spatial index within 1,200 screen pixels, excluding the moving shapes. Guide lines are drawn in selection blue, one per aligned line, spanning every shape on it. Ctrl / ⌘ held moves freely. Guides are transient store state, like `preview`, cleared on release and cancel.
+- **Select all:** Ctrl / ⌘ + A, as plain UI state (not an undo step).
+- **Accessibility checks:** `@axe-core/playwright` (dev only, approved) scans the empty canvas, a selection with the style panel, the open menu, and the shortcuts dialog in both themes, failing on any critical or serious WCAG 2.1 A/AA issue. The scans run with reduced motion, so colors are measured settled, not mid-animation.
+- **Keyboard-only test:**
+  - open a file, select all, recolor through the style panel, and nudge, duplicate, delete, and undo;
+  - check the saved JSON exactly;
+  - switch to the dark theme through the menu, then open and close the shortcuts dialog, with focus back on the canvas.
+    **Fixes the scans and the keyboard test found:**
+- **Modal menus:** Radix's modal dropdown set `aria-hidden` on the app while its focusable controls stayed reachable (axe `aria-hidden-focus`), so both dropdown menus are now non-modal, as a menu button needs no focus trap.
+- **Dialog focus:** the shortcuts dialog didn't take focus (Escape and Tab still acted on the canvas behind it); it now focuses itself through a ref.
+- **Lingering tooltip:** a tooltip opened by keyboard focus on a menu trigger outlived the menu and swallowed the next Escape, so menu triggers have no tooltip (the menu explains itself).
+  **Not covered:** snapping while resizing or drawing (the PRD names moves; it can follow); a measured Lighthouse score (axe covers the automated checks; Lighthouse joins the Tier 1 gate's manual pass).

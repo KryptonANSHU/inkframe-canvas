@@ -1,4 +1,5 @@
 import { X } from 'lucide-react';
+import { useRef } from 'react';
 import { Dialog } from 'radix-ui';
 import { ICON_STROKE, size } from '../design/tokens';
 import { useEditor, useEditorState } from './EditorContext';
@@ -37,6 +38,7 @@ const GROUPS: readonly Group[] = [
   {
     title: 'Selection',
     rows: [
+      ['Select all', 'Mod+A'],
       ['Add or remove', 'Shift+Click'],
       ['Shape underneath', 'Alt+Click'],
       ['Select touched shapes', 'Mod+Drag'],
@@ -85,6 +87,7 @@ const GROUPS: readonly Group[] = [
 export function ShortcutsDialog() {
   const editor = useEditor();
   const open = useEditorState((state) => state.helpOpen);
+  const content = useRef<HTMLDivElement>(null);
   return (
     <Dialog.Root
       open={open}
@@ -97,9 +100,10 @@ export function ShortcutsDialog() {
         <Dialog.Content
           className={styles.dialog}
           // Focus the dialog itself, not its close button: no ring until the user tabs.
+          ref={content}
           onOpenAutoFocus={(event) => {
             event.preventDefault();
-            (event.currentTarget as HTMLElement | null)?.focus();
+            content.current?.focus();
           }}
           onCloseAutoFocus={(event) => {
             event.preventDefault();

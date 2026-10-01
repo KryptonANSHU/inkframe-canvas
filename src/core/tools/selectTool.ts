@@ -8,8 +8,9 @@ import { shapesInMarquee } from '../selection/marquee';
 import { selectedShapes } from '../selection/selectedShapes';
 import { frameContains, selectionFrame, type SelectionFrame } from '../selection/selectionFrame';
 import type { Shape, ShapeId } from '../shapes';
+import { shapeGeometryBounds } from '../shapeGeometry';
 import type { SpatialIndex } from '../spatial/spatialIndex';
-import { EMPTY_SELECTION, type EditorStore } from '../store';
+import { EMPTY_SELECTION, NO_GUIDES, type EditorStore } from '../store';
 import type { TextMeasurer } from '../text/layout';
 import { editExisting } from '../text/textShape';
 import { DRAG_THRESHOLD_PX } from './dragShapeTool';
@@ -65,6 +66,14 @@ export function createSelectTool({ store, index, measurer, reportError }: Select
   const select = (ids: Iterable<ShapeId>) => {
     store.setState({ selectedIds: new Set(ids) });
   };
+  // Shapes near `area`, from the spatial index, minus the ones being moved.
+  const snapTargets = (area: Bounds) => {
+    const { document, selectedIds } = store.getState();
+    return index.query(area).flatMap((id) => {
+      const shape = selectedIds.has(id) ? undefined : document.shapes.get(id);
+      return shape === undefined ? [] : [shapeGeometryBounds(shape)];
+    });
+  };
 
   const startDrag = (
     pressing: Extract<SelectToolState, { kind: 'pressing' }>,
@@ -86,7 +95,10 @@ export function createSelectTool({ store, index, measurer, reportError }: Select
             zoom: store.getState().camera.zoom,
             measurer,
           })
-        : moveGesture(originals, startWorld);
+        : moveGesture(originals, startWorld, {
+            targets: snapTargets,
+            zoom: store.getState().camera.zoom,
+          });
     return { kind: 'transforming', gesture };
   };
 
@@ -119,7 +131,8 @@ export function createSelectTool({ store, index, measurer, reportError }: Select
         state = startDrag(state, event);
       }
       if (state.kind === 'transforming') {
-        store.setState({ preview: byId(state.gesture.apply(toWorld(event), event)) });
+        const { shapes, guides } = state.gesture.apply(toWorld(event), event);
+        store.setState({ preview: byId(shapes), guides });
       } else if (state.kind === 'marquee') {
         updateMarquee(store, index, state, toWorld(event), event);
       }
@@ -132,7 +145,7 @@ export function createSelectTool({ store, index, measurer, reportError }: Select
         clickSelect(store, index, finished.target, finished.startWorld, event, select);
       } else if (finished.kind === 'transforming') {
         const { gesture } = finished;
-        commitTransform(store, gesture, gesture.apply(toWorld(event), event), reportError);
+        commitTransform(store, gesture, gesture.apply(toWorld(event), event).shapes, reportError);
       } else if (finished.kind === 'marquee') {
         updateMarquee(store, index, finished, toWorld(event), event);
         store.setState({ marquee: null });
@@ -151,7 +164,12 @@ export function createSelectTool({ store, index, measurer, reportError }: Select
 
     cancel() {
       if (state.kind !== 'idle') {
-        store.setState({ preview: null, marquee: null, selectedIds: selectionBefore });
+        store.setState({
+          preview: null,
+          guides: NO_GUIDES,
+          marquee: null,
+          selectedIds: selectionBefore,
+        });
       }
       state = { kind: 'idle' };
     },
@@ -266,7 +284,7 @@ function commitTransform(
   after: readonly Shape[],
   reportError: (error: Error) => void,
 ): void {
-  store.setState({ preview: null });
+  store.setState({ preview: null, guides: NO_GUIDES });
   const unchanged = after.every(
     (shape, i) => JSON.stringify(shape) === JSON.stringify(gesture.originals[i]),
   );

@@ -6,6 +6,7 @@ const WITH_COMMAND_KEY: Readonly<Record<string, EditAction>> = {
   z: 'undo',
   y: 'redo',
   d: 'duplicate',
+  a: 'selectAll',
   o: 'open',
   s: 'save',
   '=': 'zoomIn',

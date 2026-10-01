@@ -5,7 +5,6 @@ import { MAX_ZOOM, MIN_ZOOM } from '../core/camera';
 import { useEditor, useEditorState } from './EditorContext';
 import { IconButton } from './IconButton';
 import { shortcutText } from './shortcutLabel';
-import { Tip } from './Tip';
 import styles from './ZoomControls.module.css';
 
 const ZOOM_ITEMS: readonly { action: EditAction; label: string; shortcut: string }[] = [
@@ -32,12 +31,12 @@ export function ZoomControls() {
           editor.perform('zoomOut');
         }}
       />
-      <DropdownMenu.Root>
-        <Tip label="Zoom options" side="top">
-          <DropdownMenu.Trigger className={styles.level} aria-label={`Zoom ${percent}`}>
-            {percent}
-          </DropdownMenu.Trigger>
-        </Tip>
+      {/* Non-modal: a menu button needs no focus trap, and nothing else is aria-hidden. */}
+      <DropdownMenu.Root modal={false}>
+        {/* No tooltip: the menu explains itself, and a focus tooltip would outlive it. */}
+        <DropdownMenu.Trigger className={styles.level} aria-label={`Zoom ${percent}`}>
+          {percent}
+        </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
           <DropdownMenu.Content
             className={styles.menu}

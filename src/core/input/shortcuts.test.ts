@@ -19,6 +19,7 @@ describe('editActionFor', () => {
     [key('Z', { meta: true, shift: true }), 'redo'],
     [key('y', { ctrl: true }), 'redo'],
     [key('d', { meta: true }), 'duplicate'],
+    [key('a', { ctrl: true }), 'selectAll'],
     // Left to the browser, which then fires copy and paste events.
     [key('c', { ctrl: true }), null],
     [key('v', { meta: true }), null],

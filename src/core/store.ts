@@ -5,6 +5,7 @@ import type { Bounds } from './geometry/bounds';
 import type { ThemeName } from '../design/tokens';
 import { EMPTY_HISTORY, type History } from './history';
 import type { Shape, ShapeId } from './shapes';
+import type { Guide } from './snapping';
 import type { TextEdit } from './text/textShape';
 import { DEFAULT_TOOL, type ToolId } from './tools/toolIds';
 
@@ -36,6 +37,8 @@ export type EditorState = {
   readonly preview: ReadonlyMap<ShapeId, Shape> | null;
   /** The marquee being dragged, in world units. */
   readonly marquee: Bounds | null;
+  /** Snap guides to draw while a move is snapped. Transient, like `preview`. */
+  readonly guides: readonly Guide[];
   /** The tool the next gesture uses (unless space is held for panning). */
   readonly activeTool: ToolId;
   /** The text box being typed in (new or existing text), or null when not editing text. */
@@ -55,6 +58,7 @@ export type EditorState = {
 export type EditorStore = StoreApi<EditorState>;
 
 export const EMPTY_SELECTION: ReadonlySet<ShapeId> = new Set();
+export const NO_GUIDES: readonly Guide[] = [];
 
 /** One store per editor instance, so tests and multiple editors never share state. */
 export function createEditorStore(initial: Partial<EditorState> = {}): EditorStore {
@@ -66,6 +70,7 @@ export function createEditorStore(initial: Partial<EditorState> = {}): EditorSto
     history: EMPTY_HISTORY,
     preview: null,
     marquee: null,
+    guides: NO_GUIDES,
     activeTool: DEFAULT_TOOL,
     textEdit: null,
     fontsReady: false,

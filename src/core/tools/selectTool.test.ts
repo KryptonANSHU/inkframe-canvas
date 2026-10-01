@@ -120,11 +120,13 @@ describe('select tool: moving', () => {
     store.subscribe((state, previous) => {
       if (state.document !== previous.document) documentChanges();
     });
+    // Ctrl moves freely: this is about one command per drag, not snapping.
+    const free = { ctrlKey: true };
     tool.pointerDown(pointerAt(25, 25));
-    tool.pointerMove(pointerAt(60, 45));
+    tool.pointerMove(pointerAt(60, 45, 1, free));
     expect(store.getState().preview?.get(testShapeId('a'))).toMatchObject({ x: 35, y: 20 });
     expect(shape('a')).toBe(a);
-    tool.pointerUp(pointerAt(125, 75));
+    tool.pointerUp(pointerAt(125, 75, 1, free));
 
     expect(shape('a')).toMatchObject({ x: 100, y: 50 });
     expect(store.getState().preview).toBeNull();
@@ -400,5 +402,32 @@ describe('select tool: handles', () => {
     tool.pointerDown(pointerAt(50, -24));
     tool.pointerMove(pointerAt(80, -10));
     expect(tool.getCursor()).toBe('grabbing');
+  });
+});
+
+describe('select tool: snapping', () => {
+  const near = { ...far, zIndex: 1 };
+  it("snaps a moved shape to a neighbor's line, shows a guide, and commits there", () => {
+    const { store, tool, shape } = setup([a, near]);
+    tool.pointerDown(pointerAt(25, 25));
+    // a's top would land at y 20; far's center line (y 25) is within 6 px, so it snaps.
+    tool.pointerMove(pointerAt(60, 45));
+    expect(store.getState().preview?.get(a.id)).toMatchObject({ x: 35, y: 25 });
+    expect(store.getState().guides).toContainEqual({ axis: 'y', at: 25, from: 35, to: 450 });
+    tool.pointerUp(pointerAt(60, 45));
+    expect(shape('a')).toMatchObject({ x: 35, y: 25 });
+    expect(store.getState().guides).toEqual([]);
+  });
+
+  it('moves freely with Ctrl / ⌘ held, and cancel clears the guides', () => {
+    const { store, tool } = setup([a, near]);
+    tool.pointerDown(pointerAt(25, 25));
+    tool.pointerMove(pointerAt(60, 45, 1, { metaKey: true }));
+    expect(store.getState().preview?.get(a.id)).toMatchObject({ y: 20 });
+    expect(store.getState().guides).toEqual([]);
+    tool.pointerMove(pointerAt(60, 45));
+    expect(store.getState().guides).not.toEqual([]);
+    tool.cancel();
+    expect(store.getState().guides).toEqual([]);
   });
 });

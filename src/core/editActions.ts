@@ -24,6 +24,7 @@ export type EditAction =
   | 'redo'
   | 'delete'
   | 'duplicate'
+  | 'selectAll'
   | 'open'
   | 'save'
   | 'zoomIn'
@@ -107,6 +108,9 @@ export function performEditAction(
       return;
     case 'duplicate':
       addCopies(store, 'Duplicate', selectedShapes(store.getState()), COPY_OFFSET, reportError);
+      return;
+    case 'selectAll':
+      store.setState({ selectedIds: new Set(store.getState().document.order) });
       return;
     case 'open':
       hooks.open();
