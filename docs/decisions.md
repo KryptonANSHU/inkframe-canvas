@@ -46,3 +46,21 @@ A log of real design decisions: what we chose, why, and what we rejected.
 **Decision:** E2E tests run in Chromium only, starting with one smoke test (app loads, no console errors or warnings).
 **Why:** The definition of done requires `e2e` to pass every milestone. One browser keeps local and CI runs fast.
 **Rejected:** all three engines now; worth adding before the Tier 1 gate if time allows.
+
+## 2026-10-01 — Camera stores the world point at the screen origin
+
+**Decision:** `Camera = { x, y, zoom }`, where `(x, y)` is the world point at the canvas's top-left. `screen = (world − camera) × zoom`. All conversions, including the renderer's world → device transform, live in `core/camera.ts`.
+**Why:** Pan is a plain subtraction in world units, and zooming around the cursor is two lines (`anchorWorld − anchor / newZoom`). Keeping the device transform in the same file means no other module ever does coordinate math.
+**Rejected:** storing a screen-space offset (`screen = world × zoom + offset`), which has the same precision but makes "where am I in the world" a derived value; a full matrix (rotation of the camera is not a feature).
+
+## 2026-10-01 — Coordinate precision is guaranteed within ±1e6 world units
+
+**Decision:** The 1e-9 round-trip guarantee is tested for world coordinates and camera positions up to ±1e6, zoom 10%–400%. Checked with 100 runs per test, plus a one-off 200,000-run stress pass.
+**Why:** At 1e6, the gap between neighbouring doubles is about 1.2e-10, so a few rounding steps already approach 1e-9. An absolute tolerance can't hold on an unbounded canvas. ±1e6 units is about 1,000 screen widths at 100%.
+**Rejected:** a relative tolerance (weaker than what the PRD asks for); rebasing the camera origin (complexity with no user-visible need yet).
+
+## 2026-10-01 — Backing-store size prefers devicePixelContentBoxSize
+
+**Decision:** The canvas's device-pixel size comes from `ResizeObserver`'s `devicePixelContentBoxSize` where the browser reports it; otherwise `round(cssSize × devicePixelRatio)` (`core/viewport.ts`). DPR changes are detected with a `(resolution: Ndppx)` media query that is re-created after each change.
+**Why:** At fractional DPRs (1.25, 1.5) or fractional CSS sizes, rounding can leave the bitmap a pixel off from the screen, which blurs every line. The browser's exact device-pixel size avoids this.
+**Rejected:** always rounding (blurry at fractional DPRs in browsers that can do better).
