@@ -1,4 +1,4 @@
-import { createShapeClipboard, performEditAction, type FileCommands } from '../editActions';
+import { performEditAction, type FileCommands } from '../editActions';
 import type { Point } from '../geometry/point';
 import { nudgeSelection } from '../selection/selectedShapes';
 import { EMPTY_SELECTION, type EditorStore } from '../store';
@@ -72,7 +72,6 @@ export function createInputController(
   // The tool is locked in at pointerdown, so releasing space mid-pan doesn't switch tools.
   let gesture: { readonly pointerId: number; readonly tool: Tool } | null = null;
   const touches = createTouchTracker();
-  const clipboard = createShapeClipboard();
   const busy = () => gesture !== null || touches.pinching();
 
   const toolForNextGesture = () =>
@@ -137,7 +136,7 @@ export function createInputController(
   const editShortcut = (input: KeyInput) => {
     const action = editActionFor(input);
     if (action !== null && !busy()) {
-      performEditAction(action, store, clipboard, reportError, files);
+      performEditAction(action, store, reportError, files);
     }
     return action !== null;
   };

@@ -13,8 +13,11 @@ import { selectedShapes } from './selection/selectedShapes';
 import { createShapeId, type Shape } from './shapes';
 import { EMPTY_SELECTION, type EditorStore } from './store';
 
-export type EditAction =
-  'undo' | 'redo' | 'delete' | 'duplicate' | 'copy' | 'paste' | 'open' | 'save';
+/**
+ * Actions bound to keys. Copy, cut, and paste aren't here: they run from the
+ * browser's clipboard events (see dom/clipboard.ts), which come with clipboard access.
+ */
+export type EditAction = 'undo' | 'redo' | 'delete' | 'duplicate' | 'open' | 'save';
 
 /** Opening and saving files need the browser; the DOM layer supplies them. */
 export type FileCommands = { open(): void; save(): void };
@@ -25,31 +28,37 @@ const NO_FILE_COMMANDS: FileCommands = { open: () => undefined, save: () => unde
 export const COPY_OFFSET = 10;
 
 /**
- * Copied shapes, kept inside the editor (not the system clipboard, which needs
- * permissions and async reads). Each paste lands one offset further than the last.
+ * Remembers what was copied, so pasting the same shapes again lands one offset further
+ * each time. The shapes themselves travel through the system clipboard.
  */
 export type ShapeClipboard = {
-  copy(store: EditorStore): void;
-  paste(store: EditorStore, reportError: (error: Error) => void): void;
+  /** The selection, now remembered as copied; empty when nothing is selected. */
+  copy(store: EditorStore): readonly Shape[];
+  /** Adds copies of `shapes` (read back from the clipboard) with new IDs, selected. */
+  paste(store: EditorStore, shapes: readonly Shape[], reportError: (error: Error) => void): void;
 };
 
 export function createShapeClipboard(): ShapeClipboard {
-  let copied: readonly Shape[] = [];
+  let copiedIds = '';
   let pastes = 0;
+  const idsOf = (shapes: readonly Shape[]) => shapes.map((shape) => shape.id).join('\n');
   return {
     copy(store) {
       const shapes = selectedShapes(store.getState());
       if (shapes.length > 0) {
-        copied = shapes;
+        copiedIds = idsOf(shapes);
         pastes = 0;
       }
+      return shapes;
     },
-    paste(store, reportError) {
-      if (copied.length === 0) {
-        return;
+    paste(store, shapes, reportError) {
+      // Shapes copied elsewhere (another tab) start a new cascade.
+      if (idsOf(shapes) !== copiedIds) {
+        copiedIds = idsOf(shapes);
+        pastes = 0;
       }
       pastes += 1;
-      addCopies(store, 'Paste', copied, COPY_OFFSET * pastes, reportError);
+      addCopies(store, 'Paste', shapes, COPY_OFFSET * pastes, reportError);
     },
   };
 }
@@ -57,7 +66,6 @@ export function createShapeClipboard(): ShapeClipboard {
 export function performEditAction(
   action: EditAction,
   store: EditorStore,
-  clipboard: ShapeClipboard,
   reportError: (error: Error) => void,
   files: FileCommands = NO_FILE_COMMANDS,
 ): void {
@@ -74,12 +82,6 @@ export function performEditAction(
     case 'duplicate':
       addCopies(store, 'Duplicate', selectedShapes(store.getState()), COPY_OFFSET, reportError);
       return;
-    case 'copy':
-      clipboard.copy(store);
-      return;
-    case 'paste':
-      clipboard.paste(store, reportError);
-      return;
     case 'open':
       files.open();
       return;
@@ -91,7 +93,7 @@ export function performEditAction(
   }
 }
 
-function deleteSelection(store: EditorStore, reportError: (error: Error) => void): void {
+export function deleteSelection(store: EditorStore, reportError: (error: Error) => void): void {
   const shapes = selectedShapes(store.getState());
   if (shapes.length > 0) {
     report(

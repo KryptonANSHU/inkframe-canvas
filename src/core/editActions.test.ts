@@ -15,10 +15,9 @@ const b = makeEllipse({ id: testShapeId('b'), x: 100 });
 function setup() {
   const store = createEditorStore();
   executeCommand(store, createShapesCommand('Setup', [a, b]), { select: new Set([a.id, b.id]) });
-  const clipboard = createShapeClipboard();
   const reportError = vi.fn();
   const perform = (action: EditAction) => {
-    performEditAction(action, store, clipboard, reportError);
+    performEditAction(action, store, reportError);
   };
   const shapes = () => [...store.getState().document.shapes.values()];
   return { store, perform, shapes, reportError };
@@ -48,24 +47,29 @@ describe('edit actions', () => {
     expect(copies.map((shape) => shape.id)).not.toContain(a.id);
   });
 
-  it('each paste lands one offset further from what was copied', () => {
-    const { store, perform, shapes } = setup();
-    perform('copy');
-    perform('paste');
-    perform('paste');
+  it('each paste of the same shapes lands one offset further', () => {
+    const { store, shapes, reportError } = setup();
+    const clipboard = createShapeClipboard();
+    const copied = clipboard.copy(store);
+    clipboard.paste(store, copied, reportError);
+    clipboard.paste(store, copied, reportError);
     expect(shapes().map((shape) => shape.x)).toEqual([0, 100, 10, 110, 20, 120]);
-    // Copying again starts over from the new selection.
-    store.setState({ selectedIds: new Set([a.id]) });
-    perform('copy');
-    perform('paste');
-    expect(shapes().at(-1)?.x).toBe(COPY_OFFSET);
+    expect([...store.getState().selectedIds]).toEqual(
+      shapes()
+        .slice(4)
+        .map((shape) => shape.id),
+    );
+    // Shapes copied elsewhere (another tab) start again one offset away.
+    clipboard.paste(store, [makeRect({ id: testShapeId('other'), x: 50 })], reportError);
+    expect(shapes().at(-1)?.x).toBe(50 + COPY_OFFSET);
   });
 
-  it('does nothing without a selection or a copy', () => {
+  it('does nothing without a selection', () => {
     const { store, perform, reportError } = setup();
     store.setState({ selectedIds: new Set() });
     const before = store.getState().history;
-    for (const action of ['delete', 'duplicate', 'copy', 'paste', 'save'] as const) {
+    expect(createShapeClipboard().copy(store)).toEqual([]);
+    for (const action of ['delete', 'duplicate', 'save'] as const) {
       perform(action);
     }
     expect(store.getState().history).toBe(before);

@@ -9,7 +9,7 @@ import {
   type Command,
 } from './commands';
 import { EMPTY_DOCUMENT } from './document';
-import { createShapeClipboard, performEditAction } from './editActions';
+import { createShapeClipboard, performEditAction, type ShapeClipboard } from './editActions';
 import { invariantViolations } from './invariants';
 import { selectedShapes, nudgeSelection } from './selection/selectedShapes';
 import { selectionFrame } from './selection/selectionFrame';
@@ -103,7 +103,9 @@ function transformSelection(
   }
 }
 
-function run(store: EditorStore, s: Step, clipboard: ReturnType<typeof createShapeClipboard>) {
+type Clipboard = { readonly clipboard: ShapeClipboard; copied: readonly Shape[] };
+
+function run(store: EditorStore, s: Step, clip: Clipboard) {
   switch (s.kind) {
     case 'create':
       executeCommand(store, createShapeCommand(s.shape), { select: new Set([s.shape.id]) });
@@ -139,8 +141,14 @@ function run(store: EditorStore, s: Step, clipboard: ReturnType<typeof createSha
     case 'nudge':
       nudgeSelection(store, 1, 0, fail, s.repeat);
       return;
+    case 'copy':
+      clip.copied = clip.clipboard.copy(store);
+      return;
+    case 'paste':
+      clip.clipboard.paste(store, clip.copied, fail);
+      return;
     default:
-      performEditAction(s.kind, store, clipboard, fail);
+      performEditAction(s.kind, store, fail);
   }
 }
 
@@ -151,7 +159,7 @@ describe('history properties', () => {
         const store = createEditorStore();
         const index = createSpatialIndex();
         bindSpatialIndex(store, index);
-        const clipboard = createShapeClipboard();
+        const clipboard: Clipboard = { clipboard: createShapeClipboard(), copied: [] };
         for (const s of steps) {
           run(store, s, clipboard);
           expect(invariantViolations(store.getState(), index)).toEqual([]);

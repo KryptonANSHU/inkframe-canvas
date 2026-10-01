@@ -340,3 +340,8 @@ A log of real design decisions: what we chose, why, and what we rejected.
 **Why:** PRD feature table. Reusing the renderer means a PNG can't drift from the canvas. Text is escaped and colors are schema-checked hex, so user content can't inject markup into the SVG.
 **Alternatives rejected:** rendering PNGs on the main thread (blocks input on large drawings); SVG text without the embedded font (other viewers would substitute a font and break lines differently).
 **Note:** Workers need `FontFace` in workers (Chrome, Firefox, and Safari 16.4+ as far as we know; not verified on Safari). If it is missing, exports with text fail with a message instead of silently using another font.
+
+## 2026-10-01 — Copy and paste through the system clipboard
+
+**Decision:** Copy, cut, and paste use the browser's `copy` / `cut` / `paste` events while the canvas has focus: copied shapes go on the clipboard as Inkframe file JSON, and pasted Inkframe JSON is validated in the file worker, then added with new IDs, offset and selected. Pasting the same shapes again cascades the offset; shapes from elsewhere (another tab) start one offset away. Ctrl / ⌘ + C / X / V are no longer claimed on keydown, since claiming them would stop those events. Other pasted text is ignored for now. Replaces the in-editor clipboard from M5.
+**Why:** Clipboard events grant access without a permission prompt (unlike `navigator.clipboard.readText`), and pasting into another tab is what users expect. Reusing the file format and its worker validation means pasted data is held to the same rules as opened files.

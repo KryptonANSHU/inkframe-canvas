@@ -17,7 +17,9 @@ import {
 } from '../tools/shapeBuilders';
 import { createTextTool } from '../tools/textTool';
 import { createTextLayoutCache } from '../text/layout';
+import { createShapeClipboard } from '../editActions';
 import { bindCanvasInput } from './bindCanvasInput';
+import { bindClipboard } from './clipboard';
 import { createFileActions, type FileActions } from './files';
 import { createExportClient } from './exportClient';
 import { createFileReaderClient } from './fileWorkerClient';
@@ -84,6 +86,13 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
     reportError,
   });
   const unbindFlush = flushWhenHidden(() => void persistence.flush());
+  const unbindClipboard = bindClipboard({
+    canvas,
+    store,
+    clipboard: createShapeClipboard(),
+    reader,
+    reportError,
+  });
   const controller = createInputController(
     store,
     {
@@ -131,6 +140,7 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
       canvas.focus({ preventScroll: true });
     },
     dispose: () => {
+      unbindClipboard();
       unbindFlush();
       void persistence.flush();
       persistence.dispose();
