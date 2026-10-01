@@ -87,3 +87,33 @@ export async function inkedPixels(
     [x, y, width, height] as const,
   );
 }
+
+/** RGBA of one backing-store pixel. */
+export async function pixelAt(page: Page, x: number, y: number): Promise<number[]> {
+  return page.evaluate(
+    ([px, py]) => {
+      const source = document.querySelector('canvas');
+      const copy = document.createElement('canvas');
+      copy.width = 1;
+      copy.height = 1;
+      const context = copy.getContext('2d', { willReadFrequently: true });
+      if (source === null || context === null) {
+        throw new Error('No canvas on the page.');
+      }
+      context.drawImage(source, px, py, 1, 1, 0, 0, 1, 1);
+      return [...context.getImageData(0, 0, 1, 1).data];
+    },
+    [x, y] as const,
+  );
+}
+
+/** Whether a pixel shows the selection blue (#3d5afe) rather than ink (#1e2430). */
+export async function isSelectionBlue(page: Page, x: number, y: number): Promise<boolean> {
+  const [r = 0, , b = 0, a = 0] = await pixelAt(page, x, y);
+  return a > 0 && b > 200 && r < 120;
+}
+
+/** Waits for the next frame to be drawn. */
+export async function nextFrame(page: Page): Promise<void> {
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+}

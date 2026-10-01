@@ -63,6 +63,7 @@ export function bindCanvasInput(
     'pointermove',
     (event) => {
       controller.pointerMove(readPointer(event));
+      syncCursor();
     },
     { signal },
   );
@@ -108,8 +109,8 @@ function bindKeys(
   canvas.addEventListener(
     'keydown',
     (event) => {
-      const { key, ctrlKey, metaKey, altKey } = event;
-      if (controller.keyDown({ key, ctrlKey, metaKey, altKey })) {
+      const { key, ctrlKey, metaKey, altKey, shiftKey } = event;
+      if (controller.keyDown({ key, ctrlKey, metaKey, altKey, shiftKey })) {
         event.preventDefault();
       }
       syncCursor();

@@ -17,9 +17,22 @@ async function useTool(page: Page, shortcut: string) {
   await page.keyboard.press(shortcut);
 }
 
+/**
+ * Drawing selects the new shape; Escape clears it so the selection outline
+ * doesn't cover the pixels these tests inspect.
+ */
+async function drawAndDeselect(
+  page: Page,
+  from: readonly [number, number],
+  to: readonly [number, number],
+) {
+  await drag(page, from, to);
+  await page.keyboard.press('Escape');
+}
+
 test('O draws an ellipse: on its outline, not in the box corners', async ({ page }) => {
   await useTool(page, 'o');
-  await drag(page, [200, 200], [400, 300]);
+  await drawAndDeselect(page, [200, 200], [400, 300]);
 
   await expect.poll(() => alphaAt(page, 300, 200)).toBeGreaterThan(200);
   expect(await alphaAt(page, 400, 250)).toBeGreaterThan(200);
@@ -30,7 +43,7 @@ test('O draws an ellipse: on its outline, not in the box corners', async ({ page
 
 test('L draws a line from the press point to the release point', async ({ page }) => {
   await useTool(page, 'l');
-  await drag(page, [200, 200], [400, 300]);
+  await drawAndDeselect(page, [200, 200], [400, 300]);
 
   await expect.poll(() => alphaAt(page, 300, 250)).toBeGreaterThan(200);
   expect(await alphaAt(page, 300, 200)).toBe(EMPTY);
@@ -43,7 +56,7 @@ const WING_PIXEL = [391, 295] as const;
 
 test('A draws an arrow with a head at the release end', async ({ page }) => {
   await useTool(page, 'a');
-  await drag(page, [200, 300], [400, 300]);
+  await drawAndDeselect(page, [200, 300], [400, 300]);
 
   await expect.poll(() => alphaAt(page, 300, 300)).toBeGreaterThan(200);
   expect(await alphaAt(page, ...WING_PIXEL)).toBeGreaterThan(0);
@@ -53,7 +66,7 @@ test('A draws an arrow with a head at the release end', async ({ page }) => {
 
 test('a line drawn the same way has no head', async ({ page }) => {
   await useTool(page, 'l');
-  await drag(page, [200, 300], [400, 300]);
+  await drawAndDeselect(page, [200, 300], [400, 300]);
 
   await expect.poll(() => alphaAt(page, 300, 300)).toBeGreaterThan(200);
   expect(await alphaAt(page, ...WING_PIXEL)).toBe(EMPTY);
@@ -76,7 +89,7 @@ test('P draws a freehand stroke that follows the pointer', async ({ page }) => {
 test('R switches back to rectangles after another tool', async ({ page }) => {
   await useTool(page, 'o');
   await useTool(page, 'r');
-  await drag(page, [200, 200], [400, 300]);
+  await drawAndDeselect(page, [200, 200], [400, 300]);
 
   // The corner pixel: inked by a rectangle, empty for an ellipse.
   await expect.poll(() => alphaAt(page, 200, 200)).toBeGreaterThan(200);

@@ -191,3 +191,28 @@ A log of real design decisions: what we chose, why, and what we rejected.
 **Decision:** The text tool only records where to type (`textEdit` in the store). `core/dom/textEditor.ts` opens a `<textarea>` there, sized and fonted to match the canvas at the current zoom, follows camera changes, and commits one shape on blur, Escape, or Ctrl/Cmd + Enter. Blank text creates nothing; trailing whitespace is dropped. Focus returns to the canvas afterwards. A click while editing only ends the edit. The textarea's static look is a CSS-module class passed in from `CanvasHost`.
 **Why:** The browser handles caret, selection, IME, and accessibility for free. Keeping it out of React means no re-render per keystroke and no plumbing from React back into the editor.
 **Known limitation:** the textarea wraps with the browser's rules (`overflow-wrap: break-word`), our layout with its own. Normal text matches (checked visually); very long words may shift slightly on commit. Agreed not to build a custom text input.
+
+## 2026-10-01 — Select is the default tool; drawing returns to it
+
+**Decision:** The select tool (V) is active at start. After a rectangle, ellipse, line, arrow, or text is created it becomes the selection and the select tool returns (`selectCreated`). The pen stays active so stroke after stroke can follow. (Agreed with the user.)
+
+## 2026-10-01 — Selection, preview, and marquee live in the store, outside the document
+
+**Decision:** `selectedIds: ReadonlySet<ShapeId>`, `preview: ReadonlyMap<ShapeId, Shape> | null`, and `marquee: Bounds | null` are store state. While a move is in progress the renderer draws `preview` versions in place of the document's; on release one `updateShapesCommand` (replace shapes, undo puts the old versions back) changes the document once.
+**Why:** Same reasoning as the drawing `draft`: cancel only clears transient state, the spatial index isn't re-synced on every pointermove, and one gesture is exactly one command.
+**Rejected:** writing to the document on every move (index sync per move, and cancel would need its own undo).
+
+## 2026-10-01 — Select tool semantics
+
+**Decision:** The press target decides the gesture: a shape (topmost hit), empty space inside the current selection's frame (drags the selection — so an unfilled rectangle can be dragged from its middle), or empty canvas (marquee). An unselected shape is selected on press so a drag moves it immediately. A click without a drag resolves on release: Alt cycles through `hitTestAll` (wrapping), Shift toggles, a plain click on part of a multi-selection narrows to that shape, empty canvas clears unless Shift is held. Cancel restores the shapes and the selection from before the gesture. Escape cancels a gesture first, otherwise clears the selection.
+**Marquee:** "inside" compares against tight geometry bounds (`shapeGeometryBounds`: exact for rotated ellipses and rotated paths), so a shape that visibly fits is selected. "Touching" (Ctrl / ⌘) tests the real geometry: rotated-box SAT for rectangles and text, a circumscribed 48-gon for ellipses (never misses a real touch), segment clipping for paths. Selection updates live while dragging; Shift adds to the earlier selection.
+
+## 2026-10-01 — Selection overlay in device pixels
+
+**Decision:** The overlay is drawn after shapes with an identity transform. Line width is `max(1, round(devicePixelRatio))` device pixels; axis-aligned edges are snapped so the line covers whole pixels (odd widths on pixel centers). A multi-selection outlines each shape plus one axis-aligned frame. Selection blue (`#3d5afe`) is a constant until theme tokens arrive in M7.
+**Why:** A world-space outline would thicken when zooming in and blur at fractional positions.
+
+## 2026-10-01 — Arrow-key nudge is one command per key press, for now
+
+**Decision:** Arrow keys move the selection 1 world unit (10 with Shift) via `updateShapesCommand('Nudge', …)`. Arrow keys are claimed even with nothing selected so the page never scrolls; Ctrl / ⌘ / Alt + arrow are left to the browser.
+**Changed from the plan:** "a held key is one undo step" needs undo history, which arrives in M5; M5's history will merge consecutive nudges.

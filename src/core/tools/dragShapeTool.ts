@@ -2,6 +2,7 @@ import { screenToWorld } from '../camera';
 import { createShapeCommand, executeCommand } from '../commands';
 import { createPoint, distance, type Point } from '../geometry/point';
 import { createShapeId, type ShapeId } from '../shapes';
+import { selectCreated } from './selectCreated';
 import type { EditorStore } from '../store';
 import type { DragShapeBuilder } from './shapeBuilders';
 import type { Tool, ToolPointerEvent } from './tool';
@@ -66,7 +67,9 @@ export function createDragShapeTool(
       const shape = shapeTo(event, finished.startWorld, finished.id);
       store.setState({ draft: null });
       const result = executeCommand(store, createShapeCommand(shape));
-      if (!result.ok) {
+      if (result.ok) {
+        selectCreated(store, shape.id);
+      } else {
         reportError(result.error);
       }
     },

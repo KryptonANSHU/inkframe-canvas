@@ -7,6 +7,7 @@ import { createEditorStore, type EditorStore } from '../store';
 import { createDragShapeTool } from '../tools/dragShapeTool';
 import { createPanTool } from '../tools/panTool';
 import { createPenTool } from '../tools/penTool';
+import { createSelectTool } from '../tools/selectTool';
 import {
   arrowBetween,
   ellipseBetween,
@@ -63,17 +64,22 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
   const unsubscribe = store.subscribe(loop.invalidate);
 
   const { reportError } = options;
-  const controller = createInputController(store, {
-    byId: {
-      rectangle: createDragShapeTool(store, reportError, rectangleBetween),
-      ellipse: createDragShapeTool(store, reportError, ellipseBetween),
-      line: createDragShapeTool(store, reportError, lineBetween),
-      arrow: createDragShapeTool(store, reportError, arrowBetween),
-      pen: createPenTool(store, reportError),
-      text: createTextTool(store),
+  const controller = createInputController(
+    store,
+    {
+      byId: {
+        select: createSelectTool(store, index, reportError),
+        rectangle: createDragShapeTool(store, reportError, rectangleBetween),
+        ellipse: createDragShapeTool(store, reportError, ellipseBetween),
+        line: createDragShapeTool(store, reportError, lineBetween),
+        arrow: createDragShapeTool(store, reportError, arrowBetween),
+        pen: createPenTool(store, reportError),
+        text: createTextTool(store),
+      },
+      pan: createPanTool(store),
     },
-    pan: createPanTool(store),
-  });
+    reportError,
+  );
   const unbindInput = bindCanvasInput(canvas, controller, surface);
   canvas.style.cursor = controller.cursor();
   const unbindTextEditor = bindTextEditor({

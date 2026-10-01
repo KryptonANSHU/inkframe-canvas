@@ -35,6 +35,7 @@ function createRecordingContext() {
     translate: record('translate'),
     rotate: record('rotate'),
     beginPath: record('beginPath'),
+    closePath: record('closePath'),
     rect: record('rect'),
     ellipse: record('ellipse'),
     moveTo: record('moveTo'),
@@ -213,5 +214,61 @@ describe('createRenderer', () => {
     const { context, calls } = createRecordingContext();
     createRenderer(context).draw(createEditorStore({ draft: makeText() }).getState(), viewport);
     expect(calls.some((c) => c.startsWith('fillText('))).toBe(false);
+  });
+
+  it('draws moved shapes from the preview, in their place in the draw order', () => {
+    const { context, calls } = createRecordingContext();
+    const bottom = makeRect({ id: testShapeId('bottom'), width: 10, zIndex: 0 });
+    const top = makeRect({ id: testShapeId('top'), width: 20, zIndex: 1 });
+    const document = [bottom, top].reduce(insertShape, EMPTY_DOCUMENT);
+    const preview = new Map([[bottom.id, { ...bottom, x: 500 }]]);
+    createRenderer(context).draw(createEditorStore({ document, preview }).getState(), viewport);
+    expect(calls.filter((c) => c.startsWith('translate('))).toEqual([
+      'translate(505,25)',
+      'translate(10,25)',
+    ]);
+  });
+
+  it('draws the selection overlay last, in device pixels, on pixel centers', () => {
+    const { context, calls } = createRecordingContext();
+    const rect = makeRect({ x: 10, y: 20, width: 100, height: 50 });
+    const document = insertShape(EMPTY_DOCUMENT, rect);
+    const state = createEditorStore({ document, selectedIds: new Set([rect.id]) }).getState();
+    createRenderer(context).draw(state, { ...viewport, devicePixelRatio: 1 });
+
+    const overlay = calls.slice(calls.lastIndexOf('setTransform(1,0,0,1,0,0)'));
+    expect(overlay).toEqual([
+      'setTransform(1,0,0,1,0,0)',
+      'beginPath()',
+      'moveTo(10.5,20.5)',
+      'lineTo(110.5,20.5)',
+      'lineTo(110.5,70.5)',
+      'lineTo(10.5,70.5)',
+      'closePath()',
+      'stroke()',
+    ]);
+    expect(context.strokeStyle).toBe('#3d5afe');
+    expect(context.lineWidth).toBe(1);
+  });
+
+  it('outlines each shape and the shared frame for a multi-selection, plus the marquee', () => {
+    const { context, calls } = createRecordingContext();
+    const a = makeRect({ id: testShapeId('a'), zIndex: 0 });
+    const b = makeRect({ id: testShapeId('b'), x: 200, zIndex: 1 });
+    const document = [a, b].reduce(insertShape, EMPTY_DOCUMENT);
+    const marquee = { minX: 0, minY: 0, maxX: 50, maxY: 50 };
+    const state = createEditorStore({
+      document,
+      selectedIds: new Set([a.id, b.id]),
+      marquee,
+    }).getState();
+    createRenderer(context).draw(state, viewport);
+
+    // Two shape outlines + one frame are stroked; the marquee is filled and stroked.
+    const overlay = calls.slice(calls.lastIndexOf('setTransform(1,0,0,1,0,0)'));
+    expect(overlay.filter((c) => c === 'stroke()')).toHaveLength(4);
+    expect(overlay.filter((c) => c === 'fill()')).toHaveLength(1);
+    // At DPR 2 the line is 2 device pixels wide, so edges sit on pixel boundaries.
+    expect(overlay).toContain('moveTo(0,0)');
   });
 });

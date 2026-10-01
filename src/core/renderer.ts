@@ -1,6 +1,7 @@
 import { assertNever } from './assertNever';
 import { DEFAULT_CAMERA, worldToDeviceTransform } from './camera';
 import { createPoint } from './geometry/point';
+import { drawSelectionOverlay } from './selection/drawSelection';
 import { ARROW_HEAD_SIDES, arrowHeadWing, isFilled, shapeBox } from './shapeGeometry';
 import type { Box } from './geometry/bounds';
 import type { ArrowShape, PathPoint, Shape, TextShape } from './shapes';
@@ -21,6 +22,7 @@ export type RenderContext = Pick<
   | 'translate'
   | 'rotate'
   | 'beginPath'
+  | 'closePath'
   | 'rect'
   | 'ellipse'
   | 'moveTo'
@@ -75,8 +77,9 @@ export function createRenderer(context: RenderContext, layoutText: LayoutText): 
       const layout = state.fontsReady ? layoutText : null;
       const { shapes, order } = state.document;
       for (const id of order) {
+        // Shapes being moved, resized, or rotated are drawn as their preview versions.
         // Always present while document invariants hold (checked from M5).
-        const shape = shapes.get(id);
+        const shape = state.preview?.get(id) ?? shapes.get(id);
         if (shape !== undefined) {
           drawShape(context, shape, layout);
         }
@@ -84,6 +87,7 @@ export function createRenderer(context: RenderContext, layoutText: LayoutText): 
       if (state.draft !== null) {
         drawShape(context, state.draft, layout);
       }
+      drawSelectionOverlay(context, state, viewport.devicePixelRatio);
     },
   };
 }

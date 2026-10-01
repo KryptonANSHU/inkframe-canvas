@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { alphaAt, drag, EMPTY, FULL, openEditor } from './helpers';
+import { alphaAt, canvas, drag, EMPTY, FULL, openEditor } from './helpers';
 
 // The default rectangle has a 2-unit stroke centered on its edges. At 100% zoom and
 // DPR 1, the top edge at y = 200 covers y 199–201: pixel rows 199 and 200 are fully
@@ -9,6 +9,9 @@ let consoleProblems: string[] = [];
 
 test.beforeEach(async ({ page }) => {
   consoleProblems = await openEditor(page);
+  // Select is the default tool; these tests draw rectangles.
+  await canvas(page).focus();
+  await page.keyboard.press('r');
 });
 
 test.afterEach(() => {

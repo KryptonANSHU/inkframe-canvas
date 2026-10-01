@@ -134,4 +134,15 @@ describe('drag shape tool', () => {
       ],
     });
   });
+
+  it('selects the new shape and switches back to the select tool', () => {
+    const { store, tool } = setup();
+    store.setState({ activeTool: 'rectangle' });
+    tool.pointerDown(pointerAt(0, 0));
+    tool.pointerMove(pointerAt(40, 40));
+    tool.pointerUp(pointerAt(40, 40));
+    const [id] = store.getState().document.order;
+    expect([...store.getState().selectedIds]).toEqual([id]);
+    expect(store.getState().activeTool).toBe('select');
+  });
 });

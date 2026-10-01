@@ -5,6 +5,7 @@ import type { EditorStore } from '../store';
 import { DEFAULT_FONT_SIZE, DEFAULT_TEXT_WIDTH, fontString } from '../text/font';
 import type { TextMeasurer } from '../text/layout';
 import { createTextShape, type TextPlacement } from '../text/textShape';
+import { selectCreated } from '../tools/selectCreated';
 
 export type TextEditorOptions = {
   readonly store: EditorStore;
@@ -42,7 +43,9 @@ export function bindTextEditor(options: TextEditorOptions): () => void {
     const shape = placement === null ? null : createTextShape(placement, typed, options.measurer);
     if (shape !== null) {
       const result = executeCommand(store, createShapeCommand(shape));
-      if (!result.ok) {
+      if (result.ok) {
+        selectCreated(store, shape.id);
+      } else {
         options.reportError(result.error);
       }
     }

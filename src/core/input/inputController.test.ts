@@ -6,6 +6,9 @@ import { pointerAt } from '../testing/factories';
 import { createDragShapeTool } from '../tools/dragShapeTool';
 import { createPanTool } from '../tools/panTool';
 import { createPenTool } from '../tools/penTool';
+import { createSelectTool } from '../tools/selectTool';
+import { createSpatialIndex } from '../spatial/spatialIndex';
+import { bindSpatialIndex } from '../spatial/syncIndex';
 import { createTextTool } from '../tools/textTool';
 import {
   arrowBetween,
@@ -16,26 +19,41 @@ import {
 import { createInputController, type KeyInput } from './inputController';
 
 // Integration through the real tools: pointer input → tool → command → store.
+// Most cases start with the rectangle tool; select-tool cases switch with V.
 function setup() {
-  const store = createEditorStore();
+  const store = createEditorStore({ activeTool: 'rectangle' });
+  const index = createSpatialIndex();
+  bindSpatialIndex(store, index);
   const errors: Error[] = [];
   const reportError = (error: Error) => errors.push(error);
-  const controller = createInputController(store, {
-    byId: {
-      rectangle: createDragShapeTool(store, reportError, rectangleBetween),
-      ellipse: createDragShapeTool(store, reportError, ellipseBetween),
-      line: createDragShapeTool(store, reportError, lineBetween),
-      arrow: createDragShapeTool(store, reportError, arrowBetween),
-      pen: createPenTool(store, reportError),
-      text: createTextTool(store),
+  const controller = createInputController(
+    store,
+    {
+      byId: {
+        select: createSelectTool(store, index, reportError),
+        rectangle: createDragShapeTool(store, reportError, rectangleBetween),
+        ellipse: createDragShapeTool(store, reportError, ellipseBetween),
+        line: createDragShapeTool(store, reportError, lineBetween),
+        arrow: createDragShapeTool(store, reportError, arrowBetween),
+        pen: createPenTool(store, reportError),
+        text: createTextTool(store),
+      },
+      pan: createPanTool(store),
     },
-    pan: createPanTool(store),
-  });
+    reportError,
+  );
   return { store, controller, errors };
 }
 
 function key(name: string, modifiers: Partial<Omit<KeyInput, 'key'>> = {}): KeyInput {
-  return { key: name, ctrlKey: false, metaKey: false, altKey: false, ...modifiers };
+  return {
+    key: name,
+    ctrlKey: false,
+    metaKey: false,
+    altKey: false,
+    shiftKey: false,
+    ...modifiers,
+  };
 }
 
 function drag(controller: ReturnType<typeof setup>['controller'], pointerId = 1) {
@@ -175,7 +193,57 @@ describe('input controller', () => {
     controller.pointerDown(pointerAt(0, 0));
     expect(controller.keyDown(key('o'))).toBe(false);
     controller.pointerMove(pointerAt(50, 50));
+    // Still the rectangle (not an ellipse), after which the select tool returns.
     controller.pointerUp(pointerAt(50, 50));
-    expect(store.getState().activeTool).toBe('rectangle');
+    const [id] = store.getState().document.order;
+    expect(store.getState().document.shapes.get(id ?? ('' as never))?.type).toBe('rectangle');
+  });
+
+  it('selects a new shape and returns to the select tool after drawing it', () => {
+    const { store, controller } = setup();
+    drag(controller);
+    const [id] = store.getState().document.order;
+    expect([...store.getState().selectedIds]).toEqual([id]);
+    expect(store.getState().activeTool).toBe('select');
+  });
+
+  it('Escape cancels a gesture first, then clears the selection, then does nothing', () => {
+    const { store, controller } = setup();
+    drag(controller);
+    controller.pointerDown(pointerAt(200, 200));
+    controller.pointerMove(pointerAt(260, 260));
+    expect(controller.keyDown(key('Escape'))).toBe(true);
+    expect(store.getState().selectedIds.size).toBe(1);
+    expect(controller.keyDown(key('Escape'))).toBe(true);
+    expect(store.getState().selectedIds.size).toBe(0);
+    expect(controller.keyDown(key('Escape'))).toBe(false);
+  });
+
+  it('nudges the selection by 1, or 10 with Shift, as document changes', () => {
+    const { store, controller } = setup();
+    drag(controller);
+    const [id] = store.getState().document.order;
+    const x = () => store.getState().document.shapes.get(id ?? ('' as never))?.x;
+    expect(controller.keyDown(key('ArrowRight'))).toBe(true);
+    expect(x()).toBe(1);
+    controller.keyDown(key('ArrowLeft', { shiftKey: true }));
+    expect(x()).toBe(-9);
+    controller.keyDown(key('ArrowDown'));
+    expect(store.getState().document.shapes.get(id ?? ('' as never))?.y).toBe(1);
+  });
+
+  it('claims arrow keys without a selection, but leaves Ctrl / ⌘ / Alt + arrow alone', () => {
+    const { controller } = setup();
+    expect(controller.keyDown(key('ArrowUp'))).toBe(true);
+    expect(controller.keyDown(key('ArrowUp', { metaKey: true }))).toBe(false);
+  });
+
+  it('sends hover to the idle tool so the select tool can show a move cursor', () => {
+    const { controller } = setup();
+    drag(controller);
+    controller.pointerMove(pointerAt(50, 0));
+    expect(controller.cursor()).toBe('move');
+    controller.pointerMove(pointerAt(500, 500));
+    expect(controller.cursor()).toBe('default');
   });
 });
