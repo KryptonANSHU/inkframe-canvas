@@ -3,7 +3,14 @@ import { EMPTY_DOCUMENT, insertShape } from './document';
 import { createRenderer, type RenderContext, type Viewport } from './renderer';
 import { DEFAULT_SHAPE_STYLE } from './shapes';
 import { createEditorStore } from './store';
-import { makeRect, testShapeId } from './testing/factories';
+import {
+  makeArrow,
+  makeEllipse,
+  makeLine,
+  makePen,
+  makeRect,
+  testShapeId,
+} from './testing/factories';
 
 /** Records every canvas call as a readable string, in order. */
 function createRecordingContext() {
@@ -22,10 +29,16 @@ function createRecordingContext() {
     rotate: record('rotate'),
     beginPath: record('beginPath'),
     rect: record('rect'),
+    ellipse: record('ellipse'),
+    moveTo: record('moveTo'),
+    lineTo: record('lineTo'),
+    quadraticCurveTo: record('quadraticCurveTo'),
     fill: record('fill'),
     stroke: record('stroke'),
     globalAlpha: 1,
     lineWidth: 1,
+    lineCap: 'butt',
+    lineJoin: 'miter',
     strokeStyle: '',
     fillStyle: '',
   };
@@ -97,5 +110,62 @@ describe('createRenderer', () => {
     expect(context.strokeStyle).toBe('#123456');
     expect(context.lineWidth).toBe(4);
     expect(context.globalAlpha).toBe(0.5);
+  });
+
+  it('draws an ellipse inside its box, centered on the box center', () => {
+    const { context, calls } = createRecordingContext();
+    const draft = makeEllipse({ x: 10, y: 20, width: 60, height: 40 });
+    createRenderer(context).draw(createEditorStore({ draft }).getState(), viewport);
+    expect(calls).toContain('translate(40,40)');
+    expect(calls).toContain(`ellipse(0,0,30,20,0,0,${String(Math.PI * 2)})`);
+  });
+
+  it('draws a line through its points, relative to the box center', () => {
+    const { context, calls } = createRecordingContext();
+    const draft = makeLine({
+      x: 100,
+      y: 100,
+      points: [
+        { x: 0, y: 40 },
+        { x: 80, y: 0 },
+      ],
+    });
+    createRenderer(context).draw(createEditorStore({ draft }).getState(), viewport);
+    expect(calls).toContain('translate(140,120)');
+    expect(calls).toContain('moveTo(-40,20)');
+    expect(calls).toContain('lineTo(40,-20)');
+  });
+
+  it('adds two arrowhead strokes that start at the tip', () => {
+    const { context, calls } = createRecordingContext();
+    const draft = makeArrow({
+      points: [
+        { x: 0, y: 0 },
+        { x: 100, y: 0 },
+      ],
+    });
+    createRenderer(context).draw(createEditorStore({ draft }).getState(), viewport);
+    // Shaft start, plus one move to the tip for each side of the head.
+    expect(calls.filter((c) => c.startsWith('moveTo('))).toEqual([
+      'moveTo(-50,0)',
+      'moveTo(50,0)',
+      'moveTo(50,0)',
+    ]);
+  });
+
+  it('smooths a pen path with one curve per inner point', () => {
+    const { context, calls } = createRecordingContext();
+    createRenderer(context).draw(createEditorStore({ draft: makePen() }).getState(), viewport);
+    expect(calls.filter((c) => c.startsWith('quadraticCurveTo('))).toHaveLength(2);
+    expect(context.lineCap).toBe('round');
+  });
+
+  it('never fills line, arrow, or pen shapes, even with a fill color', () => {
+    const style = { ...DEFAULT_SHAPE_STYLE, fillColor: '#ff0000' };
+    for (const draft of [makeLine({ style }), makeArrow({ style }), makePen({ style })]) {
+      const { context, calls } = createRecordingContext();
+      createRenderer(context).draw(createEditorStore({ draft }).getState(), viewport);
+      expect(calls).not.toContain('fill()');
+    }
   });
 });

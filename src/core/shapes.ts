@@ -15,7 +15,7 @@ export type ShapeStyle = {
 
 type ShapeBase = {
   readonly id: ShapeId;
-  /** Top-left corner of the unrotated box, in world units. */
+  /** Top-left corner of the unrotated bounding box, in world units. */
   readonly x: number;
   readonly y: number;
   /** Radians around the box center, normalized to 0–2π. */
@@ -25,13 +25,37 @@ type ShapeBase = {
   readonly zIndex: number;
 };
 
-export type RectShape = ShapeBase & {
-  readonly type: 'rectangle';
+type BoxShapeBase = ShapeBase & {
   readonly width: number;
   readonly height: number;
 };
 
-export type Shape = RectShape;
+export type RectShape = BoxShapeBase & { readonly type: 'rectangle' };
+
+export type EllipseShape = BoxShapeBase & { readonly type: 'ellipse' };
+
+/** A point relative to the shape's (x, y), so moving a shape never touches its points. */
+export type PathPoint = { readonly x: number; readonly y: number };
+
+export type LineShape = ShapeBase & {
+  readonly type: 'line';
+  readonly points: readonly [PathPoint, PathPoint];
+};
+
+export type ArrowShape = ShapeBase & {
+  readonly type: 'arrow';
+  /** The arrowhead is drawn at the second point. */
+  readonly points: readonly [PathPoint, PathPoint];
+};
+
+export type PenShape = ShapeBase & {
+  readonly type: 'pen';
+  readonly points: readonly PathPoint[];
+};
+
+export type BoxShape = RectShape | EllipseShape;
+export type PathShape = LineShape | ArrowShape | PenShape;
+export type Shape = BoxShape | PathShape;
 
 export const DEFAULT_SHAPE_STYLE: ShapeStyle = {
   strokeColor: '#1e2430',
@@ -42,3 +66,6 @@ export const DEFAULT_SHAPE_STYLE: ShapeStyle = {
 
 /** Smallest width or height a shape may have, in world units. */
 export const MIN_SHAPE_SIZE = 1;
+
+/** Most points a freehand path may have (PRD 1D). */
+export const MAX_PEN_POINTS = 10_000;

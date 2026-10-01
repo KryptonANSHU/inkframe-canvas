@@ -1,0 +1,73 @@
+import { assertNever } from './assertNever';
+import { inflateBox, rotatedBoxBounds, type Bounds, type Box } from './geometry/bounds';
+import type { ArrowShape, PathShape, Shape } from './shapes';
+
+/** Half-angle between the arrow shaft and each side of the head. */
+export const ARROW_HEAD_ANGLE = Math.PI / 7;
+
+// Shapes are immutable, so a box computed once per shape object stays valid.
+const pathBoxes = new WeakMap<PathShape, Box>();
+
+/** The shape's unrotated box in world units. Rotation is around its center. */
+export function shapeBox(shape: Shape): Box {
+  switch (shape.type) {
+    case 'rectangle':
+    case 'ellipse':
+      return shape;
+    case 'line':
+    case 'arrow':
+    case 'pen':
+      return pathBox(shape);
+    default:
+      return assertNever(shape);
+  }
+}
+
+function pathBox(shape: PathShape): Box {
+  const cached = pathBoxes.get(shape);
+  if (cached !== undefined) {
+    return cached;
+  }
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const point of shape.points) {
+    minX = Math.min(minX, point.x);
+    minY = Math.min(minY, point.y);
+    maxX = Math.max(maxX, point.x);
+    maxY = Math.max(maxY, point.y);
+  }
+  const box =
+    minX === Infinity
+      ? { x: shape.x, y: shape.y, width: 0, height: 0 }
+      : { x: shape.x + minX, y: shape.y + minY, width: maxX - minX, height: maxY - minY };
+  pathBoxes.set(shape, box);
+  return box;
+}
+
+/** Only rectangles and ellipses can be filled; paths are always stroke-only. */
+export function isFilled(shape: Shape): boolean {
+  return shape.style.fillColor !== null && (shape.type === 'rectangle' || shape.type === 'ellipse');
+}
+
+/** Length of each side of the arrowhead: grows with stroke width, never more than half the shaft. */
+export function arrowHeadLength(shape: ArrowShape): number {
+  const [start, end] = shape.points;
+  const shaft = Math.hypot(end.x - start.x, end.y - start.y);
+  return Math.min(shaft / 2, 8 + shape.style.strokeWidth * 3);
+}
+
+/**
+ * How far ink can reach past the shape's box. A full stroke width (not half) also
+ * covers mitered rectangle corners, which stick out by half × √2.
+ */
+export function inkMargin(shape: Shape): number {
+  const stroke = shape.style.strokeWidth;
+  return shape.type === 'arrow' ? stroke + arrowHeadLength(shape) : stroke;
+}
+
+/** Axis-aligned world bounds of everything the shape draws, including rotation and stroke. */
+export function shapeBounds(shape: Shape): Bounds {
+  return rotatedBoxBounds(inflateBox(shapeBox(shape), inkMargin(shape)), shape.rotation);
+}

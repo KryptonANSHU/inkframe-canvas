@@ -115,3 +115,21 @@ A log of real design decisions: what we chose, why, and what we rejected.
 **Decision:** The canvas has `tabIndex={0}`, `role="application"` and `aria-label="Drawing canvas"`. Keys (Space, Escape) are handled only on the canvas, so they work only while it has focus; clicking the canvas focuses it.
 **Why:** ARIA's application role tells screen readers to pass keys through to the page, which is what a drawing surface needs, and ARIA expects such elements to be focusable. jsx-a11y classes the role as non-interactive, so that one rule is disabled on that line with this reason.
 **Rejected:** listening for keys on `window` (would fire while typing in future inputs, against CLAUDE.md).
+
+## 2026-10-01 — Shape model: boxes for rect/ellipse, relative points for paths
+
+**Decision:** Rectangles and ellipses store `x, y, width, height`. Lines and arrows store two `points`, pens up to 10,000, all relative to the shape's `(x, y)`. A path's box is derived from its points (`shapeBox`, cached per shape object in a `WeakMap`). Every shape rotates around its box center. Text joins the union in M3d.
+**Why:** Moving a path changes only `x, y`, never the points (cheap for 10k-point pen strokes). Deriving the box instead of storing it means it can never disagree with the points. Immutable shapes make the per-object cache always valid.
+**Rejected:** storing width/height on paths too (two sources of truth); absolute world-space points (moving a pen stroke rewrites every point).
+**Open for M5:** what "at least 1 world unit" means for lines (minimum length rather than width/height, since a horizontal line has zero height).
+
+## 2026-10-01 — Spatial index: uniform grid, synced by reference diff
+
+**Decision:** `core/spatial/spatialIndex.ts` is a uniform grid with 256-unit cells and numeric cell keys (no string allocation). Each shape is filed under the cells its `shapeBounds` touch: the rotated box inflated by a full stroke width (covers mitered corners), plus the head length for arrows. Shapes touching more than 64 cells go in an "oversized" list; queries covering more than 256 cells scan all entries. `syncSpatialIndex` diffs the previous and next document by shape reference and calls `update` / `remove` — the only two ways into the index.
+**Why:** Shapes are immutable, so a changed reference means a changed shape, whichever command (or undo/redo) produced it. Commands don't need to know the index exists, and nothing can forget to update it. The diff is O(n) per document change, which is per gesture, not per frame.
+**Rejected:** a quadtree or R-tree (more code, rebalancing; a grid is enough for 10k shapes of similar size and is trivial to verify against a rebuild); commands returning changed IDs (every command must get it right, and undo paths double the surface).
+**Verified:** a fast-check property applies random create / undo / redo / remove / replace sequences and checks the synced index equals a full rebuild after every step; a second checks `query` against brute force. Both catch a deliberately broken sync (never removing, never updating) with a two-step counterexample.
+
+## 2026-10-01 — Renderer draws all path shapes from M3a
+
+**Decision:** Ellipse, line, arrow, and pen drawing landed with their types in M3a (planned for M3c), because the renderer's exhaustive `switch` must handle every member of `Shape`. Rectangles use mitered joins; everything else uses round joins and caps. Pen strokes curve through the midpoints between captured points. Paths are never filled.

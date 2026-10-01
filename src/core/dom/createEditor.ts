@@ -1,6 +1,8 @@
 import { createInputController } from '../input/inputController';
 import { createRenderLoop, type FrameScheduler } from '../renderLoop';
 import { createRenderer } from '../renderer';
+import { createSpatialIndex, type SpatialIndex } from '../spatial/spatialIndex';
+import { bindSpatialIndex } from '../spatial/syncIndex';
 import { createEditorStore, type EditorStore } from '../store';
 import { createPanTool } from '../tools/panTool';
 import { createRectangleTool } from '../tools/rectangleTool';
@@ -14,6 +16,8 @@ export type EditorOptions = {
 
 export type Editor = {
   readonly store: EditorStore;
+  /** Always in sync with the store's document; hit-testing reads it (M3b). */
+  readonly index: SpatialIndex;
   /** Removes every listener and observer and stops drawing. */
   readonly dispose: () => void;
 };
@@ -32,6 +36,8 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
     throw new Error("This browser can't draw on a canvas. Open Inkframe in a recent browser.");
   }
   const store = createEditorStore();
+  const index = createSpatialIndex();
+  const unbindIndex = bindSpatialIndex(store, index);
   const renderer = createRenderer(context);
   // `surface` is assigned below; draw only ever runs in a later animation frame.
   const loop = createRenderLoop(() => {
@@ -49,9 +55,11 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
 
   return {
     store,
+    index,
     dispose: () => {
       unbindInput();
       unsubscribe();
+      unbindIndex();
       surface.dispose();
       loop.dispose();
     },
