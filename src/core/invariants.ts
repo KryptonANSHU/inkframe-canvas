@@ -1,3 +1,4 @@
+import { describeIssue, shapeSchema } from './persistence/schema';
 import { MIN_SHAPE_SIZE, type Shape } from './shapes';
 import { createSpatialIndex, type SpatialIndex } from './spatial/spatialIndex';
 import type { EditorState, EditorStore } from './store';
@@ -6,8 +7,7 @@ const FULL_TURN = Math.PI * 2;
 
 /**
  * Checks the rules every editor state must keep (PRD 1D) and returns what is broken,
- * or nothing. With `index`, also checks it against a full rebuild. The document's
- * zod schema joins in M6, with the file format.
+ * or nothing. With `index`, also checks it against a full rebuild.
  */
 export function invariantViolations(state: EditorState, index?: SpatialIndex): string[] {
   const { shapes, order } = state.document;
@@ -76,6 +76,11 @@ function shapeViolations(shape: Shape, id: string, position: number): string[] {
   }
   if (shape.type === 'pen' && shape.points.length < 2) {
     problems.push(`${id}: a pen stroke needs at least 2 points.`);
+  }
+  // The same schema that guards files, so the document always holds what a file can.
+  const parsed = shapeSchema.safeParse(shape);
+  if (!parsed.success) {
+    problems.push(`${id} fails the document schema: ${describeIssue(parsed.error)}.`);
   }
   return problems;
 }

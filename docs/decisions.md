@@ -308,3 +308,16 @@ A log of real design decisions: what we chose, why, and what we rejected.
 
 **Decision:** Resizing treats a frame side thinner than 1e-9 world units like a zero side: that axis keeps scale 1.
 **Why:** Found by the history property test (the counterexample is kept as a unit test in `resize.test.ts`): a line 5e-324 tall made `1 / size` overflow to Infinity, and the resize wrote NaN into the shape. Near-zero sides also come from float noise after rotating a flat line.
+
+## 2026-10-01 — zod, and the file format
+
+**Decision:** Added zod 4.6.5 (MIT, no dependencies), approved by the user. Files are `{ format: "inkframe", version: 1, shapes: [...] }` with shapes bottom to top; zIndex is renumbered from that order on open. `readFile` checks the envelope, refuses newer versions with a message, runs migrations (`MIGRATIONS[n]` upgrades n → n + 1; empty while v1 is the only format), then validates every shape with progress. Limits: 20 MB, 20,000 shapes (refused, naming the limit); pen strokes over 10,000 points are simplified to fit. Colors must be hex: they end up in exported SVG markup, so anything else could inject it. Unknown fields are dropped; rotation is normalized rather than refused. The invariants checker validates shapes against the same strict schema.
+**Why:** PRD 1D. One schema for files and for the document means the document can always be saved and opened again; a fast-check property checks save → JSON → open is exact.
+**Bundle:** zod stays out of the main bundle (60.6 KB gzipped before and after). The dev-only invariants checker is loaded with a dynamic import, because bundlers can't drop module-level `z.object(...)` calls; production reads files in a worker (M6b), the only place zod runs. Bundling it in the main thread would cost about 26 KB gzipped.
+**Alternatives rejected:** hand-written validators (two sources of truth for every shape type).
+
+## 2026-10-01 — Simplifying long paths: Visvalingam–Whyatt
+
+**Decision:** Paths over the point limit drop, one at a time, the point whose triangle with its neighbors has the least area, until they fit (heap-based, O(n log n)).
+**Why:** Fits the limit exactly with no tolerance search, and removes the least visible detail first.
+**Alternatives rejected:** Ramer–Douglas–Peucker with a growing tolerance: O(n²) on paths where every point matters (a 30,000-point zigzag took over 15 s in a test).

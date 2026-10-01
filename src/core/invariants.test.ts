@@ -75,3 +75,12 @@ describe('invariantViolations', () => {
     expect(invariantViolations(state, index)).toEqual([]);
   });
 });
+
+describe('invariantViolations with the document schema', () => {
+  it('reports a shape the file format would refuse', () => {
+    const unsafeColor = { ...rect.style, strokeColor: 'red"/><script>' };
+    expect(violations(withShape({ ...rect, style: unsafeColor })).join()).toMatch(
+      /document schema: style\.strokeColor/,
+    );
+  });
+});

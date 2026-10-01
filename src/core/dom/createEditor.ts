@@ -1,5 +1,4 @@
 import { createInputController } from '../input/inputController';
-import { watchInvariants } from '../invariants';
 import { createRenderLoop, type FrameScheduler } from '../renderLoop';
 import { createRenderer } from '../renderer';
 import { createSpatialIndex, type SpatialIndex } from '../spatial/spatialIndex';
@@ -54,10 +53,7 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
   const store = createEditorStore();
   const index = createSpatialIndex();
   const unbindIndex = bindSpatialIndex(store, index);
-  // Subscribed after the index, so it checks the index already synced to each change.
-  const unwatchInvariants = import.meta.env.DEV
-    ? watchInvariants(store, index, options.reportError)
-    : () => undefined;
+  const unwatchInvariants = watchInvariantsInDev(store, index, options.reportError);
   const measurer = createCanvasTextMeasurer();
   const textLayouts = createTextLayoutCache(measurer);
   const renderer = createRenderer(context, (shape) => textLayouts.layout(shape));
@@ -144,4 +140,35 @@ function watchFontLoad(
     );
     ready();
   });
+}
+
+/**
+ * Checks document invariants after every change, in dev builds only. Loaded on demand
+ * so production never bundles the checker or the zod schema it uses. Subscribes after
+ * the spatial index, so it sees the index already synced to each change.
+ */
+function watchInvariantsInDev(
+  store: EditorStore,
+  index: SpatialIndex,
+  reportError: (error: Error) => void,
+): () => void {
+  if (!import.meta.env.DEV) {
+    return () => undefined;
+  }
+  let unwatch: (() => void) | null = null;
+  let disposed = false;
+  import('../invariants').then(
+    ({ watchInvariants }) => {
+      if (!disposed) {
+        unwatch = watchInvariants(store, index, reportError);
+      }
+    },
+    (cause: unknown) => {
+      reportError(new Error('The dev invariants checker failed to load.', { cause }));
+    },
+  );
+  return () => {
+    disposed = true;
+    unwatch?.();
+  };
 }
