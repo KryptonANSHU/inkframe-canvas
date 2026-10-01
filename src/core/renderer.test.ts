@@ -5,6 +5,7 @@ import {
   createRenderer as createRendererWithLayout,
   type RenderContext,
   type Viewport,
+  type VisibleShapes,
 } from './renderer';
 import { createTextLayoutCache } from './text/layout';
 import { DEFAULT_SHAPE_STYLE } from './shapes';
@@ -19,6 +20,11 @@ import {
   makeText,
   testShapeId,
 } from './testing/factories';
+
+/** The per-shape transforms, leaving out resets and the camera transform (no offset). */
+function shapeTransforms(calls: readonly string[]): string[] {
+  return calls.filter((c) => c.startsWith('setTransform(') && !c.endsWith(',0,0)'));
+}
 
 /** Records every canvas call as a readable string, in order. */
 function createRecordingContext() {
@@ -59,8 +65,8 @@ function createRecordingContext() {
 }
 
 const textLayouts = createTextLayoutCache(fakeMeasurer);
-function createRenderer(context: RenderContext) {
-  return createRendererWithLayout(context, (shape) => textLayouts.layout(shape));
+function createRenderer(context: RenderContext, visibleShapes?: VisibleShapes) {
+  return createRendererWithLayout(context, (shape) => textLayouts.layout(shape), visibleShapes);
 }
 
 const viewport: Viewport = { pixelWidth: 1600, pixelHeight: 1200, devicePixelRatio: 2 };
@@ -100,8 +106,12 @@ describe('createRenderer', () => {
     const draft = makeRect({ x: 100, y: 50, width: 40, height: 20, rotation: 0.5 });
     createRenderer(context).draw(createEditorStore({ draft }).getState(), viewport);
 
-    expect(calls).toContain('translate(120,60)');
-    expect(calls).toContain('rotate(0.5)');
+    // One transform per shape: the camera (×2 at DPR 2), then the center (120, 60),
+    // then the rotation by 0.5.
+    const [cos, sin] = [2 * Math.cos(0.5), 2 * Math.sin(0.5)];
+    expect(calls).toContain(
+      `setTransform(${String(cos)},${String(sin)},${String(-sin)},${String(cos)},240,120)`,
+    );
     expect(calls).toContain('rect(-20,-10,40,20)');
   });
 
@@ -120,6 +130,10 @@ describe('createRenderer', () => {
 
   it('applies the shape style before stroking', () => {
     const { context } = createRecordingContext();
+    let alphaWhenStroked = 1;
+    context.stroke = () => {
+      alphaWhenStroked = context.globalAlpha;
+    };
     const style = { strokeColor: '#123456', fillColor: null, strokeWidth: 4, opacity: 0.5 };
     createRenderer(context).draw(
       createEditorStore({ draft: makeRect({ style }) }).getState(),
@@ -127,14 +141,16 @@ describe('createRenderer', () => {
     );
     expect(context.strokeStyle).toBe('#123456');
     expect(context.lineWidth).toBe(4);
-    expect(context.globalAlpha).toBe(0.5);
+    expect(alphaWhenStroked).toBe(0.5);
+    // Reset afterwards, so the selection overlay never inherits a shape's opacity.
+    expect(context.globalAlpha).toBe(1);
   });
 
   it('draws an ellipse inside its box, centered on the box center', () => {
     const { context, calls } = createRecordingContext();
     const draft = makeEllipse({ x: 10, y: 20, width: 60, height: 40 });
     createRenderer(context).draw(createEditorStore({ draft }).getState(), viewport);
-    expect(calls).toContain('translate(40,40)');
+    expect(calls).toContain('setTransform(2,0,0,2,80,80)');
     expect(calls).toContain(`ellipse(0,0,30,20,0,0,${String(Math.PI * 2)})`);
   });
 
@@ -149,7 +165,7 @@ describe('createRenderer', () => {
       ],
     });
     createRenderer(context).draw(createEditorStore({ draft }).getState(), viewport);
-    expect(calls).toContain('translate(140,120)');
+    expect(calls).toContain('setTransform(2,0,0,2,280,240)');
     expect(calls).toContain('moveTo(-40,20)');
     expect(calls).toContain('lineTo(40,-20)');
   });
@@ -225,10 +241,33 @@ describe('createRenderer', () => {
     const document = [bottom, top].reduce(insertShape, EMPTY_DOCUMENT);
     const preview = new Map([[bottom.id, { ...bottom, x: 500 }]]);
     createRenderer(context).draw(createEditorStore({ document, preview }).getState(), viewport);
-    expect(calls.filter((c) => c.startsWith('translate('))).toEqual([
-      'translate(505,25)',
-      'translate(10,25)',
+    expect(shapeTransforms(calls)).toEqual([
+      'setTransform(2,0,0,2,1010,50)',
+      'setTransform(2,0,0,2,20,50)',
     ]);
+  });
+
+  it('with a visibility query, draws only shapes in view, plus any being dragged', () => {
+    const { context, calls } = createRecordingContext();
+    const near = makeRect({ id: testShapeId('near'), width: 10, zIndex: 0 });
+    const far = makeRect({ id: testShapeId('far'), x: 5000, zIndex: 1 });
+    const others = Array.from({ length: 4 }, (_, i) =>
+      makeRect({ id: testShapeId(`o${String(i)}`), x: 9000, zIndex: i + 2 }),
+    );
+    const document = [near, far, ...others].reduce(insertShape, EMPTY_DOCUMENT);
+    const preview = new Map([[far.id, { ...far, x: 30 }]]);
+    const queried: string[] = [];
+    const renderer = createRenderer(context, (area) => {
+      queried.push(`${String(area.minX)},${String(area.maxX)}`);
+      return area.maxX < 5000 ? [near.id] : [];
+    });
+    renderer.draw(createEditorStore({ document, preview }).getState(), viewport);
+    // Only near (in view) and far (dragged into view), in draw order.
+    expect(shapeTransforms(calls)).toEqual([
+      'setTransform(2,0,0,2,10,50)',
+      'setTransform(2,0,0,2,160,50)',
+    ]);
+    expect(queried).toHaveLength(1);
   });
 
   it('draws the selection overlay last, in device pixels, on pixel centers', () => {

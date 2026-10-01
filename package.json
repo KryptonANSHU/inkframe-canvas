@@ -17,7 +17,8 @@
     "test:coverage": "vitest run --coverage",
     "e2e": "playwright test",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "bench": "playwright test --config bench/playwright.config.ts"
   },
   "dependencies": {
     "lucide-react": "1.49.0",

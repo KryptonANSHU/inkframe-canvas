@@ -72,7 +72,7 @@ export default tseslint.config(
   },
 
   {
-    files: ['*.config.{js,ts}'],
+    files: ['*.config.{js,ts}', 'bench/*.config.ts'],
     languageOptions: { globals: globals.node },
     rules: { 'no-restricted-syntax': 'off' },
   },

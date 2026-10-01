@@ -47,6 +47,9 @@ export type EditorOptions = {
   readonly textEditorClassName: string;
 };
 
+/** Milliseconds the renderer spent drawing one frame. */
+export type FrameListener = (drawMs: number) => void;
+
 export type Editor = {
   readonly store: EditorStore;
   /** Always in sync with the store's document; hit-testing reads it (M3b). */
@@ -62,6 +65,8 @@ export type Editor = {
   readonly focus: () => void;
   /** Removes every listener and observer and stops drawing. */
   readonly dispose: () => void;
+  /** Called after every drawn frame with the draw time; returns an unsubscribe. */
+  readonly onFrame: (listener: FrameListener) => () => void;
 };
 
 const animationFrames: FrameScheduler = {
@@ -85,11 +90,22 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
   const unbindGrid = bindGridPreference(store);
   const measurer = createCanvasTextMeasurer();
   const textLayouts = createTextLayoutCache(measurer);
-  const renderer = createRenderer(context, (shape) => textLayouts.layout(shape));
+  const renderer = createRenderer(
+    context,
+    (shape) => textLayouts.layout(shape),
+    (area) => index.query(area),
+  );
   // `surface` is assigned below; draw only ever runs in a later animation frame.
+  // Timed only while someone listens (the ?debug=1 meter, the benchmark).
+  const frameListeners = new Set<FrameListener>();
   const loop = createRenderLoop(
     () => {
+      const started = frameListeners.size > 0 ? performance.now() : 0;
       renderer.draw(store.getState(), surface.viewport());
+      if (frameListeners.size > 0) {
+        const drawMs = performance.now() - started;
+        for (const listener of frameListeners) listener(drawMs);
+      }
     },
     animationFrames,
     options.reportError,
@@ -167,6 +183,12 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
     store,
     index,
     files,
+    onFrame: (listener) => {
+      frameListeners.add(listener);
+      return () => {
+        frameListeners.delete(listener);
+      };
+    },
     perform: (action) => {
       performEditAction(action, store, reportError, hooks);
     },

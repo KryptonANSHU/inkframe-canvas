@@ -418,3 +418,33 @@ A log of real design decisions: what we chose, why, and what we rejected.
 - **Grid view:** a toggle in the bottom-left bar (and Ctrl / ⌘ + ') draws a grid behind the shapes: 20 world units, every fifth line stronger, spacing growing by fives when lines would be closer than 8 screen pixels. Lines are drawn in device pixels, so they're one crisp pixel at any zoom. Colors are theme tokens at low opacity, so the drawing stays the hero. The setting is remembered per browser, and the grid is never part of an export.
   **Why:** User requests. The grid view itself is small; snap to grid (the larger part) and connected arrows were added to the PRD as Tier 2 "Editor extras" (2B, milestone M11b), at the user's request.
   **Tests:** none added, at the user's request.
+
+## 2026-10-02 — M8: benchmark suite and the performance pass
+
+**Decision:**
+
+- **`npm run bench`:** builds the production app and drives it in Chromium (1440 × 900, DPR 2) through a `?bench` hook that loads only then.
+  - Drawings of 1k, 5k, and 10k shapes come from a fixed seed, so every run measures the same document.
+  - It measures pan, zoom, and a 50-shape drag (one real pointer event per frame through the select tool) with everything on screen, and pan at 100% (part visible, normal use).
+  - It also measures hit-test latency, file save / open / PNG / SVG times, and the JS heap after a 5-minute editing session at 5k.
+  - Results go to `bench/results/<date>-<label>.{json,md}` with the machine, browser, and GPU.
+- **`?debug=1`:** shows an FPS meter with draw time, p95, and a 120-frame graph against the 16.7 ms budget. It is a lazy chunk (under 1 KB gzipped) fed by a new `editor.onFrame` hook that times frames only while someone listens.
+- **Optimizations, from the "before" run:**
+  1. **Viewport culling:** the renderer asks the spatial index for shapes in view and draws only those, sorted back into draw order, plus any being dragged. When at least half the drawing is in view, it walks the whole order instead, which is cheaper than querying and sorting.
+  2. **One `setTransform` per shape** (camera × translate × rotate) instead of save / translate / rotate / restore.
+     **Results (Apple M5, Chromium 153, Metal, DPR 2; draw median / p95):**
+
+| Scenario          | 1k before → after        | 10k before → after                       |
+| ----------------- | ------------------------ | ---------------------------------------- |
+| Pan at 100%       | 2.9 / 3.6 → 0.4 / 0.5 ms | 9.7 / 10.8 → 2.4 / 3.9 ms                |
+| Pan, all visible  | 1.3 / 1.8 → 1.2 / 3.1 ms | 11.1 / 14.5 → 9.3 / 9.7 ms, 60 fps       |
+| Zoom, all visible | 1.1 / 1.5 → 1.1 / 2.0 ms | 10.9 / 12.1 → 9.1 / 10.1 ms, 53 → 58 fps |
+| Drag 50 shapes    | 1.6 / 3.3 → 1.6 / 3.6 ms | 11.0 / 12.1 → 9.2 / 9.5 ms, 53 → 60 fps  |
+
+- **Hit tests:** 1–13 µs at every size.
+- **Memory:** the heap after 5 minutes and 1,980 edits at 5k is 11 MB, below where it started, so nothing leaks (history is capped at 200 steps).
+- **Exports:** PNG export of 10k shapes takes 2.1 s, mostly PNG encoding, in the worker, so the canvas never stalls.
+  **Not done:**
+- **Dirty rectangles:** stay out. At 1k shapes a full frame costs 0.4–1.6 ms, and with culling a typical frame draws only what's on screen.
+- **Level of detail** for tiny shapes at 10k all-visible: possible next step if a real drawing needs it.
+- **Bundle size:** 116.6 KB gzipped for the main JS (React DOM, Radix, the app). It loads once and is cached; splitting further saved under 1 KB in M7b, so it stays.

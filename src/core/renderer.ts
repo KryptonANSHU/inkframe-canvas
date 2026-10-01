@@ -1,11 +1,11 @@
 import { assertNever } from './assertNever';
-import { DEFAULT_CAMERA, worldToDeviceTransform } from './camera';
+import { DEFAULT_CAMERA, worldToDeviceTransform, type Transform } from './camera';
 import { createPoint } from './geometry/point';
 import { drawGrid } from './grid';
 import { drawSelectionOverlay } from './selection/drawSelection';
 import { ARROW_HEAD_SIDES, arrowHeadWing, isFilled, shapeBox } from './shapeGeometry';
-import type { Box } from './geometry/bounds';
-import type { ArrowShape, PathPoint, Shape, TextShape } from './shapes';
+import type { Bounds, Box } from './geometry/bounds';
+import type { ArrowShape, PathPoint, Shape, ShapeId, TextShape } from './shapes';
 import type { EditorState } from './store';
 import { canvasTheme, type CanvasTheme } from './theme';
 import { fontString } from './text/font';
@@ -60,11 +60,19 @@ export type Renderer = {
   draw(state: EditorState, viewport: Viewport): void;
 };
 
+/** Shapes whose bounds meet `area` (world units): the spatial index's query. */
+export type VisibleShapes = (area: Bounds) => readonly ShapeId[];
+
 /**
- * Full redraw every frame. Dirty rectangles only if profiling proves they help (M8).
- * `layoutText` wraps text with the real font; it is only called once fonts are ready.
+ * Full redraw every frame (dirty rectangles measured as unnecessary in M8). With
+ * `visibleShapes`, only shapes in view are drawn. `layoutText` wraps text with the real
+ * font; it is only called once fonts are ready.
  */
-export function createRenderer(context: RenderContext, layoutText: LayoutText): Renderer {
+export function createRenderer(
+  context: RenderContext,
+  layoutText: LayoutText,
+  visibleShapes?: VisibleShapes,
+): Renderer {
   // Reused every frame so drawing allocates nothing for the camera transform.
   const transform = worldToDeviceTransform(DEFAULT_CAMERA, 1);
 
@@ -82,43 +90,93 @@ export function createRenderer(context: RenderContext, layoutText: LayoutText): 
       // Text is never drawn with a fallback font: it waits for the real one (PRD 1B).
       const layout = state.fontsReady ? layoutText : null;
       const theme = canvasTheme(state.theme);
-      const { shapes, order } = state.document;
+      const { shapes } = state.document;
       // Text being edited is shown by the textarea instead, so it isn't drawn twice.
       const editing = state.textEdit?.id;
-      for (const id of order) {
+      for (const id of shapesToDraw(state, viewport, visibleShapes)) {
         // Shapes being moved, resized, or rotated are drawn as their preview versions.
         // Always present while document invariants hold (checked from M5).
         const shape = state.preview?.get(id) ?? shapes.get(id);
         if (shape !== undefined && id !== editing) {
-          drawShape(context, shape, layout, theme);
+          drawShape(context, shape, layout, theme, t);
         }
       }
       if (state.draft !== null) {
-        drawShape(context, state.draft, layout, theme);
+        drawShape(context, state.draft, layout, theme, t);
       }
+      context.globalAlpha = 1;
       drawSelectionOverlay(context, state, viewport.devicePixelRatio);
     },
   };
 }
 
+/**
+ * Below this share of the drawing in view, drawing only the visible shapes (sorted
+ * back into draw order) beats walking the whole order.
+ */
+const CULL_BELOW = 0.5;
+
+/**
+ * Draw order for this frame: every shape, or with `visibleShapes`, just those in view
+ * plus any being dragged (they may have come from off-screen).
+ */
+function shapesToDraw(
+  state: EditorState,
+  viewport: Viewport,
+  visibleShapes: VisibleShapes | undefined,
+): readonly ShapeId[] {
+  const { order, shapes } = state.document;
+  if (visibleShapes === undefined) {
+    return order;
+  }
+  const { camera } = state;
+  const scale = camera.zoom * viewport.devicePixelRatio;
+  const visible = visibleShapes({
+    minX: camera.x,
+    minY: camera.y,
+    maxX: camera.x + viewport.pixelWidth / scale,
+    maxY: camera.y + viewport.pixelHeight / scale,
+  });
+  if (visible.length >= order.length * CULL_BELOW) {
+    return order;
+  }
+  const ids = new Set(visible);
+  for (const id of state.preview?.keys() ?? []) ids.add(id);
+  const zIndex = (id: ShapeId) => shapes.get(id)?.zIndex ?? 0;
+  return [...ids].sort((a, b) => zIndex(a) - zIndex(b));
+}
+
+/**
+ * Draws a shape centered on the origin, so rotation is always around its center. One
+ * setTransform per shape (camera × translate × rotate), instead of save / translate /
+ * rotate / restore: copying the whole context state per shape was measurable at 10k.
+ */
 function drawShape(
   context: RenderContext,
   shape: Shape,
   layoutText: LayoutText | null,
   theme: CanvasTheme,
+  t: Readonly<Transform>,
 ): void {
   const box = shapeBox(shape);
-  context.save();
-  // Every shape is drawn centered on the origin, so rotation is always around its center.
-  context.translate(box.x + box.width / 2, box.y + box.height / 2);
-  context.rotate(shape.rotation);
+  const centerX = box.x + box.width / 2;
+  const centerY = box.y + box.height / 2;
+  const cos = Math.cos(shape.rotation);
+  const sin = Math.sin(shape.rotation);
+  context.setTransform(
+    t.a * cos + t.c * sin,
+    t.b * cos + t.d * sin,
+    t.c * cos - t.a * sin,
+    t.d * cos - t.b * sin,
+    t.a * centerX + t.c * centerY + t.e,
+    t.b * centerX + t.d * centerY + t.f,
+  );
   context.globalAlpha = shape.style.opacity;
   if (shape.type !== 'text') {
     drawOutlined(context, shape, box, theme);
   } else if (layoutText !== null) {
     drawText(context, shape, layoutText(shape), theme);
   }
-  context.restore();
 }
 
 function drawOutlined(

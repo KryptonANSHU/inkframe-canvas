@@ -229,7 +229,7 @@ Each milestone is built and verified locally before the next one starts. Tier 1 
 - [x] M5. Commands, undo / redo, invariants checker, property-based tests
 - [x] M6. Persistence: versioned format, migrations, autosave and recovery, import limits, export in a worker
 - [x] M7. Style panel, layers, snapping and guides, tokens and themes, baseline accessibility, error boundaries
-- [ ] M8. Performance pass and benchmark suite at 1k / 5k / 10k shapes
+- [x] M8. Performance pass and benchmark suite at 1k / 5k / 10k shapes
 - [ ] Gate: Tier 1 verified locally
 - [ ] M9. Deploy Tier 1 on Vercel, README, demo video, technical write-up
 

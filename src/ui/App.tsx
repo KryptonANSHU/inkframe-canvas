@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useState, type ReactNode } from 'react';
 import { Tooltip } from 'radix-ui';
 import type { Editor } from '../core/dom/createEditor';
 import { AppCrash } from './AppCrash';
@@ -17,6 +17,12 @@ import { Toaster } from './Toaster';
 import { Toolbar } from './Toolbar';
 import { ZoomControls } from './ZoomControls';
 
+/** The ?debug=1 performance meter, loaded only when asked for. */
+const DebugOverlay = lazy(() =>
+  import('./DebugOverlay').then((module) => ({ default: module.DebugOverlay })),
+);
+const debug = new URLSearchParams(location.search).get('debug') === '1';
+
 /** Tooltips wait a beat before showing, then switch instantly while moving along a bar. */
 const TOOLTIP_DELAY_MS = 400;
 
@@ -29,16 +35,36 @@ function Area({ name, message, children }: { name: string; message: string; chil
   );
 }
 
+/** `npm run bench` loads the app with ?bench to drive it; nobody else pays for it. */
+const bench = new URLSearchParams(location.search).has('bench');
+
+function attachBenchWhenAsked(editor: Editor | null): void {
+  if (bench && editor !== null) {
+    void import('../../bench/driver').then(({ attachBench }) => {
+      attachBench(editor);
+    });
+  }
+}
+
 export function App() {
   const [editor, setEditor] = useState<Editor | null>(null);
+  const onEditorChange = useCallback((next: Editor | null) => {
+    setEditor(next);
+    attachBenchWhenAsked(next);
+  }, []);
   return (
     <ErrorBoundary area="Inkframe" fallback={<AppCrash />}>
       <main className={styles.app} aria-label="Inkframe editor">
-        <CanvasHost onEditorChange={setEditor} />
+        <CanvasHost onEditorChange={onEditorChange} />
         {editor !== null && (
           <EditorProvider editor={editor}>
             <Tooltip.Provider delayDuration={TOOLTIP_DELAY_MS}>
               <EmptyHint />
+              {debug && (
+                <Suspense fallback={null}>
+                  <DebugOverlay />
+                </Suspense>
+              )}
               <Area name="Menu" message="The menu failed. Reload the page to bring it back.">
                 <MainMenu />
               </Area>
