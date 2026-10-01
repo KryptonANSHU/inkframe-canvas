@@ -6,6 +6,7 @@ import { ARROW_HEAD_SIDES, arrowHeadWing, isFilled, shapeBox } from './shapeGeom
 import type { Box } from './geometry/bounds';
 import type { ArrowShape, PathPoint, Shape, TextShape } from './shapes';
 import type { EditorState } from './store';
+import { canvasTheme, type CanvasTheme } from './theme';
 import { fontString } from './text/font';
 import type { TextLayout } from './text/layout';
 
@@ -76,6 +77,7 @@ export function createRenderer(context: RenderContext, layoutText: LayoutText): 
 
       // Text is never drawn with a fallback font: it waits for the real one (PRD 1B).
       const layout = state.fontsReady ? layoutText : null;
+      const theme = canvasTheme(state.theme);
       const { shapes, order } = state.document;
       // Text being edited is shown by the textarea instead, so it isn't drawn twice.
       const editing = state.textEdit?.id;
@@ -84,18 +86,23 @@ export function createRenderer(context: RenderContext, layoutText: LayoutText): 
         // Always present while document invariants hold (checked from M5).
         const shape = state.preview?.get(id) ?? shapes.get(id);
         if (shape !== undefined && id !== editing) {
-          drawShape(context, shape, layout);
+          drawShape(context, shape, layout, theme);
         }
       }
       if (state.draft !== null) {
-        drawShape(context, state.draft, layout);
+        drawShape(context, state.draft, layout, theme);
       }
       drawSelectionOverlay(context, state, viewport.devicePixelRatio);
     },
   };
 }
 
-function drawShape(context: RenderContext, shape: Shape, layoutText: LayoutText | null): void {
+function drawShape(
+  context: RenderContext,
+  shape: Shape,
+  layoutText: LayoutText | null,
+  theme: CanvasTheme,
+): void {
   const box = shapeBox(shape);
   context.save();
   // Every shape is drawn centered on the origin, so rotation is always around its center.
@@ -103,17 +110,22 @@ function drawShape(context: RenderContext, shape: Shape, layoutText: LayoutText 
   context.rotate(shape.rotation);
   context.globalAlpha = shape.style.opacity;
   if (shape.type !== 'text') {
-    drawOutlined(context, shape, box);
+    drawOutlined(context, shape, box, theme);
   } else if (layoutText !== null) {
-    drawText(context, shape, layoutText(shape));
+    drawText(context, shape, layoutText(shape), theme);
   }
   context.restore();
 }
 
-function drawOutlined(context: RenderContext, shape: OutlinedShape, box: Box): void {
+function drawOutlined(
+  context: RenderContext,
+  shape: OutlinedShape,
+  box: Box,
+  theme: CanvasTheme,
+): void {
   const { style } = shape;
   context.lineWidth = style.strokeWidth;
-  context.strokeStyle = style.strokeColor;
+  context.strokeStyle = theme.shapeColor(style.strokeColor);
   context.lineJoin = shape.type === 'rectangle' ? 'miter' : 'round';
   context.lineCap = 'round';
   context.beginPath();
@@ -122,15 +134,20 @@ function drawOutlined(context: RenderContext, shape: OutlinedShape, box: Box): v
   const offsetY = shape.y - (box.y + box.height / 2);
   traceShape(context, shape, box.width, box.height, offsetX, offsetY);
   if (isFilled(shape) && style.fillColor !== null) {
-    context.fillStyle = style.fillColor;
+    context.fillStyle = theme.shapeColor(style.fillColor);
     context.fill();
   }
   context.stroke();
 }
 
 /** Lines from the top-left of the box, each on its baseline (top + ascent + n × lineHeight). */
-function drawText(context: RenderContext, shape: TextShape, layout: TextLayout): void {
-  context.fillStyle = shape.style.strokeColor;
+function drawText(
+  context: RenderContext,
+  shape: TextShape,
+  layout: TextLayout,
+  theme: CanvasTheme,
+): void {
+  context.fillStyle = theme.shapeColor(shape.style.strokeColor);
   context.font = fontString(shape.fontSize);
   context.textBaseline = 'alphabetic';
   const left = -shape.width / 2;

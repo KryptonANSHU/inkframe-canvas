@@ -5,7 +5,7 @@ import styles from './FileBar.module.css';
 type FileBarProps = { readonly editor: Editor };
 
 /**
- * Open and Save until the M7 toolbar's file menu replaces it. Shows progress while a
+ * Open, Save, and Export until the M7b toolbar's file menu replaces it. Shows progress while a
  * file opens, and why it couldn't be opened.
  */
 export function FileBar({ editor }: FileBarProps) {
@@ -37,6 +37,7 @@ export function FileBar({ editor }: FileBarProps) {
         >
           Save as JSON
         </button>
+        <span className={styles.divider} aria-hidden="true" />
         <button
           type="button"
           className={styles.button}
@@ -60,10 +61,10 @@ export function FileBar({ editor }: FileBarProps) {
       )}
       {status.kind === 'error' && (
         <p className={styles.error} role="alert">
-          {status.message}{' '}
+          <span>{status.message}</span>
           <button
             type="button"
-            className={styles.button}
+            className={styles.dismiss}
             onClick={run(() => {
               files.dismissStatus();
             })}

@@ -16,6 +16,7 @@
    runtime to match the canvas at the current zoom. */
 .textEditor {
   position: absolute;
+  z-index: var(--z-text-editor);
   margin: 0;
   padding: 0;
   border: 0;

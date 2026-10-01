@@ -12,8 +12,10 @@ export function StorageBanner({ editor }: StorageBannerProps) {
   }
   return (
     <div className={styles.banner} role="alert">
-      Autosave is off: this browser isn't letting Inkframe store data, so your drawing is kept only
-      until you close this tab.{' '}
+      <span>
+        Autosave is off: this browser isn&apos;t letting Inkframe store data, so your drawing is
+        kept only until you close this tab.
+      </span>
       <button
         type="button"
         className={styles.button}

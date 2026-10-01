@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import 'virtual:inkframe-tokens.css';
 import './design/global.css';
 import { App } from './ui/App';
 

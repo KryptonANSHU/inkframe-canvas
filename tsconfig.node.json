@@ -6,6 +6,8 @@
     "moduleResolution": "bundler",
     "types": ["node"],
     "noEmit": true,
+    // Lets files the Vite config loads (natively, in Node) import each other with .ts.
+    "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,

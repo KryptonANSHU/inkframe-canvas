@@ -85,3 +85,28 @@ describe('createRenderLoop', () => {
     expect(draw).not.toHaveBeenCalled();
   });
 });
+
+describe('createRenderLoop errors', () => {
+  it('reports a failing draw once and keeps drawing later changes', () => {
+    const frames: (() => void)[] = [];
+    const scheduler: FrameScheduler = {
+      request: (callback) => frames.push(callback),
+      cancel: () => undefined,
+    };
+    const reportError = vi.fn();
+    let fail = true;
+    const draw = vi.fn(() => {
+      if (fail) throw new Error('bad shape');
+    });
+    const loop = createRenderLoop(draw, scheduler, reportError);
+    for (let i = 0; i < 2; i++) {
+      loop.invalidate();
+      frames.shift()?.();
+    }
+    expect(reportError).toHaveBeenCalledTimes(1);
+    fail = false;
+    loop.invalidate();
+    frames.shift()?.();
+    expect(draw).toHaveBeenCalledTimes(3);
+  });
+});

@@ -2,6 +2,7 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 import { DEFAULT_CAMERA, type Camera } from './camera';
 import { EMPTY_DOCUMENT, type DocumentState } from './document';
 import type { Bounds } from './geometry/bounds';
+import type { ThemeName } from '../design/tokens';
 import { EMPTY_HISTORY, type History } from './history';
 import type { Shape, ShapeId } from './shapes';
 import type { TextEdit } from './text/textShape';
@@ -43,6 +44,8 @@ export type EditorState = {
   readonly fontsReady: boolean;
   readonly autosave: AutosaveStatus;
   readonly fileStatus: FileStatus;
+  /** The theme the canvas draws in; follows the page (see dom/themeMode.ts). */
+  readonly theme: ThemeName;
 };
 
 export type EditorStore = StoreApi<EditorState>;
@@ -64,6 +67,7 @@ export function createEditorStore(initial: Partial<EditorState> = {}): EditorSto
     fontsReady: false,
     autosave: 'starting',
     fileStatus: { kind: 'idle' },
+    theme: 'light',
     ...initial,
   }));
 }

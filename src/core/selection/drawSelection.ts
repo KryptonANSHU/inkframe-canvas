@@ -5,6 +5,7 @@ import { rotatedBoxCorners } from '../geometry/transform';
 import type { RenderContext } from '../renderer';
 import { shapeBox } from '../shapeGeometry';
 import type { EditorState } from '../store';
+import { canvasTheme } from '../theme';
 import {
   availableHandles,
   HANDLE_SIZE_PX,
@@ -15,12 +16,8 @@ import {
 import { selectedShapes } from './selectedShapes';
 import { selectionFrame, type SelectionFrame } from './selectionFrame';
 
-/** Selection blue, the UI's only accent. Moves to theme tokens in M7. */
-export const SELECTION_COLOR = '#3d5afe';
 /** Marquee fill opacity: enough to see the area, not enough to hide shapes. */
 const MARQUEE_FILL_ALPHA = 0.08;
-/** Handle fill, so handles stand out over any shape. Moves to theme tokens in M7. */
-const HANDLE_FILL = '#ffffff';
 /** Radius of round handles (rotation, line ends), in screen pixels. */
 const ROUND_HANDLE_RADIUS_PX = 4.5;
 
@@ -46,7 +43,8 @@ export function drawSelectionOverlay(
   context.globalAlpha = 1;
   context.lineWidth = lineWidth;
   context.lineJoin = 'miter';
-  context.strokeStyle = SELECTION_COLOR;
+  const theme = canvasTheme(state.theme);
+  context.strokeStyle = theme.selection;
 
   if (shapes.length > 1) {
     for (const shape of shapes) {
@@ -61,10 +59,18 @@ export function drawSelectionOverlay(
   }
   // Handles are hidden mid-gesture: the shapes are moving under them.
   if (frame !== null && state.preview === null && state.marquee === null) {
-    drawHandles(context, shapes, frame, state.camera, devicePixelRatio, lineWidth);
+    drawHandles(
+      context,
+      shapes,
+      frame,
+      state.camera,
+      devicePixelRatio,
+      lineWidth,
+      theme.handleFill,
+    );
   }
   if (state.marquee !== null) {
-    drawMarquee(context, project(marqueeCorners(state.marquee), true));
+    drawMarquee(context, project(marqueeCorners(state.marquee), true), theme.selection);
   }
 }
 
@@ -130,9 +136,13 @@ function strokePolygon(context: RenderContext, points: readonly Readonly<Point>[
   context.stroke();
 }
 
-function drawMarquee(context: RenderContext, points: readonly Readonly<Point>[]): void {
+function drawMarquee(
+  context: RenderContext,
+  points: readonly Readonly<Point>[],
+  color: string,
+): void {
   tracePolygon(context, points);
-  context.fillStyle = SELECTION_COLOR;
+  context.fillStyle = color;
   context.globalAlpha = MARQUEE_FILL_ALPHA;
   context.fill();
   context.globalAlpha = 1;
@@ -146,8 +156,9 @@ function drawHandles(
   camera: Camera,
   devicePixelRatio: number,
   lineWidth: number,
+  fill: string,
 ): void {
-  context.fillStyle = HANDLE_FILL;
+  context.fillStyle = fill;
   for (const handle of availableHandles(shapes, frame, camera.zoom)) {
     const screen = worldToScreen(camera, handlePosition(handle, shapes, frame, camera.zoom));
     const x = screen.x * devicePixelRatio;

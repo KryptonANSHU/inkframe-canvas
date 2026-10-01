@@ -1,6 +1,7 @@
 import { worldToScreen, type Camera } from '../camera';
 import { DEFAULT_SHAPE_STYLE } from '../shapes';
 import type { EditorStore } from '../store';
+import { canvasTheme } from '../theme';
 import { commitTextEdit } from '../text/commitTextEdit';
 import { whenFontsReady } from '../text/whenFontsReady';
 import { DEFAULT_FONT_SIZE, DEFAULT_TEXT_WIDTH, fontString } from '../text/font';
@@ -39,7 +40,8 @@ export function bindTextEditor(options: TextEditorOptions): () => void {
     close();
     store.setState({ textEdit: null });
     if (document.activeElement === null || document.activeElement === document.body) {
-      canvas.focus();
+      // The user didn't move focus here, so no ring around the whole canvas.
+      canvas.focus({ preventScroll: true, focusVisible: false });
     }
     if (edit !== null) {
       whenFontsReady(store, () => {
@@ -77,7 +79,8 @@ function openTextarea(
   textarea.setAttribute('aria-label', 'Text');
   textarea.rows = 1;
   textarea.spellcheck = false;
-  textarea.style.color = (edit.original?.style ?? DEFAULT_SHAPE_STYLE).strokeColor;
+  const stored = (edit.original?.style ?? DEFAULT_SHAPE_STYLE).strokeColor;
+  textarea.style.color = canvasTheme(store.getState().theme).shapeColor(stored);
   textarea.value = edit.original?.text ?? '';
   placeTextarea(textarea, canvas, edit, store.getState().camera, measurer);
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { colors } from '../design/tokens';
 import { EMPTY_DOCUMENT, insertShape } from './document';
 import {
   createRenderer as createRendererWithLayout,
@@ -256,7 +257,7 @@ describe('createRenderer', () => {
     ]);
     // The bottom-right handle is an 8 px square centered on the corner, snapped to pixels.
     expect(overlay).toContain('moveTo(106.5,66.5)');
-    expect(context.strokeStyle).toBe('#3d5afe');
+    expect(context.strokeStyle).toBe(colors.light.select);
     expect(context.lineWidth).toBe(1);
   });
 

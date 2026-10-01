@@ -24,6 +24,7 @@ import { createFileActions, type FileActions } from './files';
 import { createExportClient } from './exportClient';
 import { createFileReaderClient } from './fileWorkerClient';
 import { createIndexedDbStorage } from './indexedDbStorage';
+import { watchThemeMode } from './themeMode';
 import { observeCanvasSurface } from './canvasSurface';
 import { createCanvasTextMeasurer } from './canvasTextMeasurer';
 import { loadTextFont } from './fonts';
@@ -65,13 +66,18 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
   const index = createSpatialIndex();
   const unbindIndex = bindSpatialIndex(store, index);
   const unwatchInvariants = watchInvariantsInDev(store, index, options.reportError);
+  const unwatchTheme = watchThemeMode(store);
   const measurer = createCanvasTextMeasurer();
   const textLayouts = createTextLayoutCache(measurer);
   const renderer = createRenderer(context, (shape) => textLayouts.layout(shape));
   // `surface` is assigned below; draw only ever runs in a later animation frame.
-  const loop = createRenderLoop(() => {
-    renderer.draw(store.getState(), surface.viewport());
-  }, animationFrames);
+  const loop = createRenderLoop(
+    () => {
+      renderer.draw(store.getState(), surface.viewport());
+    },
+    animationFrames,
+    options.reportError,
+  );
   const surface = observeCanvasSurface(canvas, loop.invalidate);
   const unsubscribe = store.subscribe(loop.invalidate);
 
@@ -137,9 +143,10 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
     index,
     files,
     focus: () => {
-      canvas.focus({ preventScroll: true });
+      canvas.focus({ preventScroll: true, focusVisible: false });
     },
     dispose: () => {
+      unwatchTheme();
       unbindClipboard();
       unbindFlush();
       void persistence.flush();

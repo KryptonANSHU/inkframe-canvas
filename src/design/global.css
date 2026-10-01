@@ -1,3 +1,12 @@
+/* The UI font, self-hosted (OFL). The canvas loads the same file through FontFace. */
+@font-face {
+  font-family: 'Instrument Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/instrument-sans-latin-400-normal.woff2') format('woff2');
+}
+
 /* The canvas fills the whole window, so the page itself must never scroll or add margins. */
 html,
 body,
@@ -5,4 +14,18 @@ body,
   margin: 0;
   block-size: 100%;
   overflow: hidden;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-sm);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* One focus ring everywhere: visible, selection blue, offset from the control. */
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-select);
+  outline-offset: var(--focus-ring-offset);
 }
