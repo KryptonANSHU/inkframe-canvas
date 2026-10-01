@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { alphaAt, canvas, drag, EMPTY, openEditor } from './helpers';
+import { alphaAt, canvas, drag, EMPTY, nextFrame, openEditor } from './helpers';
 
 let consoleProblems: string[] = [];
 
@@ -28,6 +28,8 @@ async function drawAndDeselect(
 ) {
   await drag(page, from, to);
   await page.keyboard.press('Escape');
+  // Until the deselect is drawn, the old frame still shows handles on the box corners.
+  await nextFrame(page);
 }
 
 test('O draws an ellipse: on its outline, not in the box corners', async ({ page }) => {
