@@ -69,6 +69,20 @@ describe('resizeFromHandle', () => {
   });
 });
 
+// Found by the history property test: 1 / 5e-324 overflows to Infinity.
+it('treats a side too thin to scale as flat, so nothing becomes NaN or Infinity', () => {
+  const line = makeLine({
+    points: [
+      { x: 0, y: 0 },
+      { x: 0, y: 5e-324 },
+    ],
+  });
+  const resized = resizeOne(line, { x: -1, y: -1 }, { x: 0, y: 0 });
+  if (resized?.type !== 'line') throw new Error('expected a line');
+  const numbers = [resized.x, resized.y, ...resized.points.flatMap((p) => [p.x, p.y])];
+  expect(numbers.every((n) => Number.isFinite(n))).toBe(true);
+});
+
 describe('shapeScale', () => {
   it('passes scale straight through at 0° and π, and swaps axes at 90°', () => {
     expect(shapeScale(0, 2, 3)).toEqual({ rotation: 0, scaleX: 2, scaleY: 3 });

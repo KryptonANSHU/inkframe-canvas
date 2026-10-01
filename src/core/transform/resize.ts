@@ -39,8 +39,8 @@ export function resizeFromHandle(
   const halfHeight = frame.height / 2;
   const anchorX = options.fromCenter ? 0 : -direction.x * halfWidth;
   const anchorY = options.fromCenter ? 0 : -direction.y * halfHeight;
-  let scaleX = axisScale(direction.x, target.x, anchorX, halfWidth);
-  let scaleY = axisScale(direction.y, target.y, anchorY, halfHeight);
+  let scaleX = isFlat(frame.width) ? 1 : axisScale(direction.x, target.x, anchorX, halfWidth);
+  let scaleY = isFlat(frame.height) ? 1 : axisScale(direction.y, target.y, anchorY, halfHeight);
 
   if (options.keepAspect) {
     [scaleX, scaleY] = keepAspect(direction, scaleX, scaleY);
@@ -71,9 +71,19 @@ function keepAspect(direction: HandleDirection, scaleX: number, scaleY: number):
   return direction.x !== 0 ? [scaleX, Math.abs(scaleX)] : [Math.abs(scaleY), scaleY];
 }
 
-/** Never smaller than 1 world unit; a zero-size axis (a flat line) keeps factor 1. */
+/**
+ * A side this thin (a flat line, or float noise) can't be scaled: dividing by it
+ * overflows to Infinity. It keeps factor 1, so a flat line stays flat.
+ */
+const FLAT_SIZE = 1e-9;
+
+function isFlat(size: number): boolean {
+  return size < FLAT_SIZE;
+}
+
+/** Never smaller than 1 world unit; a flat axis keeps factor 1. */
 function atLeastMinimum(scale: number, size: number): number {
-  if (size === 0) {
+  if (isFlat(size)) {
     return 1;
   }
   return Math.abs(scale) * size < MIN_SHAPE_SIZE
