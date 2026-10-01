@@ -82,6 +82,10 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
   );
   const unbindInput = bindCanvasInput(canvas, controller, surface);
   canvas.style.cursor = controller.cursor();
+  // Shortcuts are heard only while the canvas has focus, and nothing has focus on load:
+  // without this, the first tool key is ignored and the next drag is a marquee. No ring
+  // for a focus the user didn't move; browsers without `focusVisible` just show it.
+  canvas.focus({ preventScroll: true, focusVisible: false });
   const unbindTextEditor = bindTextEditor({
     store,
     canvas,

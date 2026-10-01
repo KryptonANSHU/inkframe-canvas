@@ -246,3 +246,9 @@ A log of real design decisions: what we chose, why, and what we rejected.
 
 **Decision:** The text tool always opens the textarea. If the text is committed before the font has loaded, the shape is created as soon as it does, so its height is still measured with the real font.
 **Why:** Found by a flaky e2e test under load: the tool used to ignore clicks until `fontsReady`, so on a slow connection a click did nothing and the letters typed afterwards switched tools — a silent failure. A new e2e test holds the font back with `page.route` to prove the fix.
+
+## 2026-10-01 — The canvas starts focused
+
+**Decision:** `createEditor` focuses the canvas on mount with `focus({ preventScroll: true, focusVisible: false })`. Shortcuts stay canvas-only, as CLAUDE.md requires.
+**Why:** Reported by the user: shapes "vanished on release" and took 2–3 tries. Nothing had focus on load, so the first tool key was ignored and the drag that followed was a select-tool marquee, which disappears on release. `focusVisible: false` avoids a ring around the whole window for a focus the user didn't move; browsers without the option show the ring, which is still correct.
+**Alternatives rejected:** listening for keys page-wide (skipping text fields): fixes the same bug but breaks the "canvas or toolbar has focus" rule, and would steal Space and Enter from future toolbar buttons. Leaving the active tool invisible until M7 remains a known gap: after drawing a rectangle, ellipse, line, or arrow, the next drag is a selection (the cursor is the only cue). The M7 toolbar fixes that.
