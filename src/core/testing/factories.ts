@@ -19,3 +19,8 @@ export function makeRect(overrides: Partial<Omit<RectShape, 'type'>> = {}): Rect
     ...overrides,
   };
 }
+
+/** A fresh pointer input at a screen position (the real controller reuses one object). */
+export function pointerAt(x: number, y: number, pointerId = 1) {
+  return { pointerId, screen: { x, y } };
+}

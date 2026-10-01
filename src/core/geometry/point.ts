@@ -5,3 +5,7 @@ export type Point = { x: number; y: number };
 export function createPoint(x = 0, y = 0): Point {
   return { x, y };
 }
+
+export function distance(a: Readonly<Point>, b: Readonly<Point>): number {
+  return Math.hypot(b.x - a.x, b.y - a.y);
+}

@@ -39,3 +39,6 @@ export const DEFAULT_SHAPE_STYLE: ShapeStyle = {
   strokeWidth: 2,
   opacity: 1,
 };
+
+/** Smallest width or height a shape may have, in world units. */
+export const MIN_SHAPE_SIZE = 1;
