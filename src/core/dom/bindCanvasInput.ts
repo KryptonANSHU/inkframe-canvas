@@ -97,7 +97,8 @@ function bindKeys(
   canvas.addEventListener(
     'keydown',
     (event) => {
-      if (controller.keyDown(event.key)) {
+      const { key, ctrlKey, metaKey, altKey } = event;
+      if (controller.keyDown({ key, ctrlKey, metaKey, altKey })) {
         event.preventDefault();
       }
       syncCursor();

@@ -155,3 +155,20 @@ A log of real design decisions: what we chose, why, and what we rejected.
 
 **Decision:** The property test builds random documents (1–150 shapes of every type, rotation, fill, and stroke width), then compares `hitTest` and `hitTestAll` with an every-shape brute force on 10,000 points each: half uniform, half inside a random shape's bounds. Points come from a seeded PRNG driven by fast-check, so a failure is reproducible. 5 runs per `npm run test:property` (about 1.5 s); a one-off 30-run pass also passed.
 **Verified:** A deliberately broken query (ignoring the tolerance) fails it immediately.
+
+## 2026-10-01 — One drag tool, many shape builders
+
+**Decision:** The rectangle tool became `createDragShapeTool(store, reportError, build)`. Rectangle, ellipse, line, and arrow are each a pure `DragShapeBuilder` (`tools/shapeBuilders.ts`) from drag start to end. Lines and arrows keep the drag direction; a drag under 1 unit is stretched to 1 unit along its direction (straight right if it has none).
+**Why:** The gesture logic (3 px threshold, draft, cancel, one command per gesture) is written and tested once. Builders are pure functions, tested without any pointer events.
+**Rejected:** one tool per shape (four copies of the same state machine).
+
+## 2026-10-01 — Pen draft shares the growing points array
+
+**Decision:** While drawing, the pen tool appends points to its own array and the draft shape references that same array; each move creates a new draft object, not a new array. On release the points are copied once, shifted so `(x, y)` is their top-left. Points closer than 1 screen pixel are skipped; recording stops at 10,000 points (the stroke ends there visually until release).
+**Why:** Copying the array on every move is O(n²) over a long stroke. The shared array is safe because the draft is never part of the document, and a test checks the committed points are a different array that later strokes don't touch.
+**Next:** pressure-based width and `getCoalescedEvents` for smoother fast strokes arrive with pointer types in M4.
+
+## 2026-10-01 — Tool shortcuts on the canvas
+
+**Decision:** `activeTool` lives in the store. R / O / L / A / P switch tools (case-insensitive) when the canvas has focus, no gesture is active, and no Ctrl / Cmd / Alt is held. The visible toolbar comes in M7.
+**Why:** Modifier combinations belong to the browser and OS (Ctrl + R reloads, Cmd + A selects all later). Switching mid-gesture would change what the current drag creates.

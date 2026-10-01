@@ -2,12 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EMPTY_DOCUMENT, insertShape } from '../document';
 import { createEditorStore } from '../store';
 import { makeRect, pointerAt, testShapeId } from '../testing/factories';
-import { createRectangleTool, DRAG_THRESHOLD_PX } from './rectangleTool';
+import { createDragShapeTool, DRAG_THRESHOLD_PX } from './dragShapeTool';
+import { lineBetween, rectangleBetween } from './shapeBuilders';
 
-function setup(camera = { x: 0, y: 0, zoom: 1 }) {
+function setup(camera = { x: 0, y: 0, zoom: 1 }, build = rectangleBetween) {
   const store = createEditorStore({ camera });
   const reportError = vi.fn();
-  const tool = createRectangleTool(store, reportError);
+  const tool = createDragShapeTool(store, reportError, build);
   return { store, tool, reportError };
 }
 
@@ -21,7 +22,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('rectangle tool', () => {
+describe('drag shape tool', () => {
   it('creates one rectangle from a drag, in world coordinates', () => {
     const { store, tool } = setup({ x: 100, y: 50, zoom: 2 });
     tool.pointerDown(pointerAt(10, 20));
@@ -105,7 +106,7 @@ describe('rectangle tool', () => {
     const store = createEditorStore({ document: insertShape(EMPTY_DOCUMENT, existing) });
     const before = store.getState().document;
     const reportError = vi.fn();
-    const tool = createRectangleTool(store, reportError);
+    const tool = createDragShapeTool(store, reportError, rectangleBetween);
     vi.spyOn(crypto, 'randomUUID').mockReturnValue('taken' as ReturnType<typeof crypto.randomUUID>);
 
     tool.pointerDown(pointerAt(0, 0));
@@ -115,5 +116,22 @@ describe('rectangle tool', () => {
     expect(store.getState().document).toBe(before);
     expect(store.getState().draft).toBeNull();
     expect(reportError).toHaveBeenCalledWith(expect.objectContaining({ name: 'CommandError' }));
+  });
+
+  it('builds whichever shape it was given, from the drag start to the release point', () => {
+    const { store, tool } = setup(undefined, lineBetween);
+    tool.pointerDown(pointerAt(100, 100));
+    tool.pointerMove(pointerAt(60, 120));
+    tool.pointerUp(pointerAt(40, 130));
+
+    expect(onlyShape(store)).toMatchObject({
+      type: 'line',
+      x: 40,
+      y: 100,
+      points: [
+        { x: 60, y: 0 },
+        { x: 0, y: 30 },
+      ],
+    });
   });
 });

@@ -1,52 +1,14 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { alphaAt, drag, EMPTY, FULL, openEditor } from './helpers';
 
 // The default rectangle has a 2-unit stroke centered on its edges. At 100% zoom and
 // DPR 1, the top edge at y = 200 covers y 199–201: pixel rows 199 and 200 are fully
 // inked, rows 198 and 201 are empty. Those exact values prove lines are crisp.
-const FULL = 255;
-const EMPTY = 0;
-
-/**
- * Alpha of one backing-store pixel (device pixels, not CSS pixels). Reads through a
- * throwaway 1×1 copy so repeated reads never touch the app canvas's GPU-backed context.
- */
-async function alphaAt(page: Page, x: number, y: number): Promise<number> {
-  return page.evaluate(
-    ([px, py]) => {
-      const source = document.querySelector('canvas');
-      const copy = document.createElement('canvas');
-      copy.width = 1;
-      copy.height = 1;
-      const context = copy.getContext('2d', { willReadFrequently: true });
-      if (source === null || context === null) {
-        throw new Error('No canvas on the page.');
-      }
-      context.drawImage(source, px, py, 1, 1, 0, 0, 1, 1);
-      return context.getImageData(0, 0, 1, 1).data[3] ?? -1;
-    },
-    [x, y] as const,
-  );
-}
-
-async function drag(page: Page, from: [number, number], to: [number, number]) {
-  await page.mouse.move(...from);
-  await page.mouse.down();
-  await page.mouse.move(...to, { steps: 5 });
-  await page.mouse.up();
-}
 
 let consoleProblems: string[] = [];
 
 test.beforeEach(async ({ page }) => {
-  consoleProblems = [];
-  page.on('console', (message) => {
-    if (message.type() === 'error' || message.type() === 'warning') {
-      consoleProblems.push(`${message.type()}: ${message.text()}`);
-    }
-  });
-  page.on('pageerror', (error) => consoleProblems.push(`pageerror: ${error.message}`));
-  await page.goto('/');
-  await expect(page.getByRole('application', { name: 'Drawing canvas' })).toBeVisible();
+  consoleProblems = await openEditor(page);
 });
 
 test.afterEach(() => {

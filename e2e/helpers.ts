@@ -1,0 +1,59 @@
+import { expect, type Page } from '@playwright/test';
+
+export const FULL = 255;
+export const EMPTY = 0;
+
+/**
+ * Alpha of one backing-store pixel (device pixels, not CSS pixels). Reads through a
+ * throwaway 1×1 copy so repeated reads never touch the app canvas's GPU-backed context.
+ */
+export async function alphaAt(page: Page, x: number, y: number): Promise<number> {
+  return page.evaluate(
+    ([px, py]) => {
+      const source = document.querySelector('canvas');
+      const copy = document.createElement('canvas');
+      copy.width = 1;
+      copy.height = 1;
+      const context = copy.getContext('2d', { willReadFrequently: true });
+      if (source === null || context === null) {
+        throw new Error('No canvas on the page.');
+      }
+      context.drawImage(source, px, py, 1, 1, 0, 0, 1, 1);
+      return context.getImageData(0, 0, 1, 1).data[3] ?? -1;
+    },
+    [x, y] as const,
+  );
+}
+
+export async function drag(
+  page: Page,
+  from: readonly [number, number],
+  to: readonly [number, number],
+  steps = 5,
+) {
+  await page.mouse.move(...from);
+  await page.mouse.down();
+  await page.mouse.move(...to, { steps });
+  await page.mouse.up();
+}
+
+/**
+ * Opens the editor and records console errors, warnings, and page errors.
+ * Assert the returned list is empty at the end of the test.
+ */
+export async function openEditor(page: Page): Promise<string[]> {
+  const problems: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error' || message.type() === 'warning') {
+      problems.push(`${message.type()}: ${message.text()}`);
+    }
+  });
+  page.on('pageerror', (error) => problems.push(`pageerror: ${error.message}`));
+  await page.goto('/');
+  await expect(canvas(page)).toBeVisible();
+  return problems;
+}
+
+export function canvas(page: Page) {
+  return page.getByRole('application', { name: 'Drawing canvas' });
+}

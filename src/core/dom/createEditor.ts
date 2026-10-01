@@ -4,8 +4,15 @@ import { createRenderer } from '../renderer';
 import { createSpatialIndex, type SpatialIndex } from '../spatial/spatialIndex';
 import { bindSpatialIndex } from '../spatial/syncIndex';
 import { createEditorStore, type EditorStore } from '../store';
+import { createDragShapeTool } from '../tools/dragShapeTool';
 import { createPanTool } from '../tools/panTool';
-import { createRectangleTool } from '../tools/rectangleTool';
+import { createPenTool } from '../tools/penTool';
+import {
+  arrowBetween,
+  ellipseBetween,
+  lineBetween,
+  rectangleBetween,
+} from '../tools/shapeBuilders';
 import { bindCanvasInput } from './bindCanvasInput';
 import { observeCanvasSurface } from './canvasSurface';
 
@@ -46,8 +53,15 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
   const surface = observeCanvasSurface(canvas, loop.invalidate);
   const unsubscribe = store.subscribe(loop.invalidate);
 
+  const { reportError } = options;
   const controller = createInputController(store, {
-    draw: createRectangleTool(store, options.reportError),
+    byId: {
+      rectangle: createDragShapeTool(store, reportError, rectangleBetween),
+      ellipse: createDragShapeTool(store, reportError, ellipseBetween),
+      line: createDragShapeTool(store, reportError, lineBetween),
+      arrow: createDragShapeTool(store, reportError, arrowBetween),
+      pen: createPenTool(store, reportError),
+    },
     pan: createPanTool(store),
   });
   const unbindInput = bindCanvasInput(canvas, controller, surface);

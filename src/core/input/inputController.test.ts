@@ -3,19 +3,37 @@ import { DEFAULT_CAMERA } from '../camera';
 import { EMPTY_DOCUMENT } from '../document';
 import { createEditorStore } from '../store';
 import { pointerAt } from '../testing/factories';
+import { createDragShapeTool } from '../tools/dragShapeTool';
 import { createPanTool } from '../tools/panTool';
-import { createRectangleTool } from '../tools/rectangleTool';
-import { createInputController } from './inputController';
+import { createPenTool } from '../tools/penTool';
+import {
+  arrowBetween,
+  ellipseBetween,
+  lineBetween,
+  rectangleBetween,
+} from '../tools/shapeBuilders';
+import { createInputController, type KeyInput } from './inputController';
 
 // Integration through the real tools: pointer input → tool → command → store.
 function setup() {
   const store = createEditorStore();
   const errors: Error[] = [];
+  const reportError = (error: Error) => errors.push(error);
   const controller = createInputController(store, {
-    draw: createRectangleTool(store, (error) => errors.push(error)),
+    byId: {
+      rectangle: createDragShapeTool(store, reportError, rectangleBetween),
+      ellipse: createDragShapeTool(store, reportError, ellipseBetween),
+      line: createDragShapeTool(store, reportError, lineBetween),
+      arrow: createDragShapeTool(store, reportError, arrowBetween),
+      pen: createPenTool(store, reportError),
+    },
     pan: createPanTool(store),
   });
   return { store, controller, errors };
+}
+
+function key(name: string, modifiers: Partial<Omit<KeyInput, 'key'>> = {}): KeyInput {
+  return { key: name, ctrlKey: false, metaKey: false, altKey: false, ...modifiers };
 }
 
 function drag(controller: ReturnType<typeof setup>['controller'], pointerId = 1) {
@@ -35,7 +53,7 @@ describe('input controller', () => {
 
   it('pans instead of drawing while space is held', () => {
     const { store, controller } = setup();
-    expect(controller.keyDown(' ')).toBe(true);
+    expect(controller.keyDown(key(' '))).toBe(true);
     expect(controller.cursor()).toBe('grab');
     drag(controller);
     expect(store.getState().document).toBe(EMPTY_DOCUMENT);
@@ -44,7 +62,7 @@ describe('input controller', () => {
 
   it('keeps panning until pointerup when space is released mid-gesture', () => {
     const { store, controller } = setup();
-    controller.keyDown(' ');
+    controller.keyDown(key(' '));
     controller.pointerDown(pointerAt(0, 0));
     controller.keyUp(' ');
     expect(controller.cursor()).toBe('grabbing');
@@ -77,7 +95,7 @@ describe('input controller', () => {
     [
       'Escape',
       (c: Controller) => {
-        c.keyDown('Escape');
+        c.keyDown(key('Escape'));
       },
     ],
     [
@@ -99,13 +117,13 @@ describe('input controller', () => {
 
   it('does not claim Escape or other keys when there is nothing to cancel', () => {
     const { controller } = setup();
-    expect(controller.keyDown('Escape')).toBe(false);
-    expect(controller.keyDown('a')).toBe(false);
+    expect(controller.keyDown(key('Escape'))).toBe(false);
+    expect(controller.keyDown(key('x'))).toBe(false);
   });
 
   it('forgets a held space on window blur', () => {
     const { controller } = setup();
-    controller.keyDown(' ');
+    controller.keyDown(key(' '));
     controller.releaseAll();
     expect(controller.cursor()).toBe('crosshair');
   });
@@ -117,5 +135,44 @@ describe('input controller', () => {
       { x: 0, y: 0 },
     );
     expect(store.getState().camera).toEqual({ ...DEFAULT_CAMERA, y: 40 });
+  });
+
+  it.each([
+    ['r', 'rectangle'],
+    ['o', 'ellipse'],
+    ['L', 'line'],
+    ['a', 'arrow'],
+    ['p', 'pen'],
+  ] as const)('switches tools with the %s shortcut', (shortcut, tool) => {
+    const { store, controller } = setup();
+    store.setState({ activeTool: tool === 'rectangle' ? 'pen' : 'rectangle' });
+    expect(controller.keyDown(key(shortcut))).toBe(true);
+    expect(store.getState().activeTool).toBe(tool);
+  });
+
+  it('draws with the active tool', () => {
+    const { store, controller } = setup();
+    controller.keyDown(key('o'));
+    drag(controller);
+    const [id] = store.getState().document.order;
+    expect(store.getState().document.shapes.get(id ?? ('' as never))?.type).toBe('ellipse');
+  });
+
+  it.each([{ ctrlKey: true }, { metaKey: true }, { altKey: true }])(
+    'leaves shortcuts with modifiers (%o) to the browser',
+    (modifiers) => {
+      const { store, controller } = setup();
+      expect(controller.keyDown(key('p', modifiers))).toBe(false);
+      expect(store.getState().activeTool).toBe('rectangle');
+    },
+  );
+
+  it('does not switch tools in the middle of a gesture', () => {
+    const { store, controller } = setup();
+    controller.pointerDown(pointerAt(0, 0));
+    expect(controller.keyDown(key('o'))).toBe(false);
+    controller.pointerMove(pointerAt(50, 50));
+    controller.pointerUp(pointerAt(50, 50));
+    expect(store.getState().activeTool).toBe('rectangle');
   });
 });
