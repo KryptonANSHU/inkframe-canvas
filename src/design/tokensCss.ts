@@ -6,6 +6,7 @@ import {
   motion,
   radius,
   shadows,
+  size,
   space,
   zIndex,
   type ThemeName,
@@ -42,6 +43,7 @@ export function tokensToCss(): string {
   const constant = [
     ...declarations('space', space, 'px'),
     ...declarations('radius', radius, 'px'),
+    ...declarations('size', size, 'px'),
     ...declarations('font-size', fontSize, 'px'),
     ...declarations('font', fontFamily),
     ...declarations('z', zIndex),

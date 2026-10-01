@@ -1,0 +1,38 @@
+.zoom {
+  composes: floating from './surfaces.module.css';
+  position: absolute;
+  z-index: var(--z-floating);
+  inset-block-end: var(--space-3);
+  inset-inline-start: var(--space-3);
+  display: flex;
+  align-items: center;
+  padding: var(--space-1);
+}
+
+/* The zoom level: a text button wide enough for "400%" so nothing shifts. */
+.level {
+  composes: iconButton from './surfaces.module.css';
+  inline-size: auto;
+  min-inline-size: 52px;
+  padding-inline: var(--space-2);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.level[aria-expanded='true'] {
+  background: var(--color-hover);
+}
+
+.menu {
+  composes: menu from './surfaces.module.css';
+  min-inline-size: 200px;
+}
+
+.item {
+  composes: menuItem from './surfaces.module.css';
+}
+
+.shortcut {
+  composes: menuShortcut from './surfaces.module.css';
+}

@@ -1,6 +1,16 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
-import { alphaAt, canvas, drag, EMPTY, FULL, nextFrame, openEditor } from './helpers';
+import {
+  alphaAt,
+  canvas,
+  chooseMenuItem,
+  drag,
+  EMPTY,
+  FULL,
+  nextFrame,
+  notifications,
+  openEditor,
+} from './helpers';
 
 let consoleProblems: string[] = [];
 
@@ -39,7 +49,7 @@ test('the drawing survives a reload', async ({ page }) => {
 test('Save as JSON, then Open brings the drawing back; undo un-opens it', async ({ page }) => {
   await drawRectangle(page);
   const download = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Save as JSON' }).click();
+  await chooseMenuItem(page, 'Save as JSON');
   const path = await (await download).path();
 
   // Undo the drawing, so the canvas is empty before opening the saved file.
@@ -47,7 +57,7 @@ test('Save as JSON, then Open brings the drawing back; undo un-opens it', async 
   expect(await edgeInk(page)).toBe(EMPTY);
 
   const chooser = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: 'Open…' }).click();
+  await chooseMenuItem(page, 'Open…');
   await (await chooser).setFiles(path);
   await expect.poll(() => edgeInk(page)).toBe(FULL);
   expect(JSON.parse(await readFile(path, 'utf8'))).toMatchObject({
@@ -71,7 +81,7 @@ test('a file Inkframe cannot open shows why, and leaves the drawing alone', asyn
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify({ format: 'inkframe', version: 1, shapes })),
   });
-  await expect(page.getByRole('alert')).toContainText('Inkframe opens up to 20,000');
+  await expect(notifications(page)).toContainText('Inkframe opens up to 20,000');
   expect(await edgeInk(page)).toBe(FULL);
 });
 

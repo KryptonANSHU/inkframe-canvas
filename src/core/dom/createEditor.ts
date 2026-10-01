@@ -17,7 +17,16 @@ import {
 } from '../tools/shapeBuilders';
 import { createTextTool } from '../tools/textTool';
 import { createTextLayoutCache } from '../text/layout';
-import { createShapeClipboard } from '../editActions';
+import {
+  createShapeClipboard,
+  performEditAction,
+  type EditAction,
+  type EditorHooks,
+} from '../editActions';
+import type { HistoryGroup } from '../history';
+import type { ShapeStyle } from '../shapes';
+import { applyStyle } from '../style';
+import type { ToolId } from '../tools/toolIds';
 import { bindCanvasInput } from './bindCanvasInput';
 import { bindClipboard } from './clipboard';
 import { createFileActions, type FileActions } from './files';
@@ -41,9 +50,14 @@ export type Editor = {
   readonly store: EditorStore;
   /** Always in sync with the store's document; hit-testing reads it (M3b). */
   readonly index: SpatialIndex;
-  /** Open and Save, for the file bar. */
+  /** Open, Save, and Export, for the main menu. */
   readonly files: FileActions;
-  /** Gives the canvas keyboard focus back, e.g. after a file bar button was used. */
+  /** Runs what a shortcut would: undo, zoom, arrange, and so on (for buttons). */
+  readonly perform: (action: EditAction) => void;
+  readonly setTool: (tool: ToolId) => void;
+  /** Restyles the selection as one undo step; `group` joins a slider drag into one. */
+  readonly applyStyle: (patch: Partial<ShapeStyle>, group?: HistoryGroup) => void;
+  /** Gives the canvas keyboard focus back after a pointer click on a control. */
   readonly focus: () => void;
   /** Removes every listener and observer and stops drawing. */
   readonly dispose: () => void;
@@ -99,6 +113,15 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
     reader,
     reportError,
   });
+  const hooks: EditorHooks = {
+    open: () => {
+      files.open();
+    },
+    save: () => {
+      files.save();
+    },
+    viewSize: () => ({ width: surface.cssWidth(), height: surface.cssHeight() }),
+  };
   const controller = createInputController(
     store,
     {
@@ -114,15 +137,7 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
       pan: createPanTool(store),
     },
     reportError,
-    {
-      open: () => {
-        files.open();
-      },
-      save: () => {
-        files.save();
-      },
-      viewSize: () => ({ width: surface.cssWidth(), height: surface.cssHeight() }),
-    },
+    hooks,
   );
   const unbindInput = bindCanvasInput(canvas, controller, surface);
   canvas.style.cursor = controller.cursor();
@@ -150,6 +165,15 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
     store,
     index,
     files,
+    perform: (action) => {
+      performEditAction(action, store, reportError, hooks);
+    },
+    setTool: (tool) => {
+      store.setState({ activeTool: tool });
+    },
+    applyStyle: (patch, group) => {
+      applyStyle(store, patch, reportError, group);
+    },
     focus: () => {
       canvas.focus({ preventScroll: true, focusVisible: false });
     },

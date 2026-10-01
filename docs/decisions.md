@@ -367,3 +367,19 @@ A log of real design decisions: what we chose, why, and what we rejected.
   - only a stylus (`pointerType: 'pen'`) sets pen width from pressure; trackpads can report click force, which made mouse strokes hairline-thin;
   - canvas `pointerdown` prevents the default action (no text selection or native drag can cancel a stroke) and moves focus itself.
     **Why:** PRD 1A (style panel, layers, zoom), CLAUDE.md (shortcuts with toolbar focus), and the user's reports.
+
+## 2026-10-02 — M7b UI: toolbar, menu, style panel, zoom, history, toasts, shortcuts
+
+**Decision:** The PRD layout, on design tokens and Radix primitives (`radix-ui` 1.6.7) with Lucide icons (`lucide-react` 1.49.0), both approved by the user.
+
+- **Top row:** the main menu (top left: Open, Save as JSON, Export selection or drawing as PNG / SVG, theme System / Light / Dark, Keyboard shortcuts) and the toolbar (top center: seven tools plus the Q lock).
+- **Style panel:** appears on the right only while something is selected. It has stroke and fill swatches drawn as they look in the current theme, a four-step stroke width, an opacity slider whose drag is one undo step, and layer order.
+- **Bottom row:** zoom (bottom left: −, a level menu, +) and history (bottom right: undo, redo, shortcuts).
+- **Elsewhere:** the empty-canvas hint, toasts for file progress and every reported error, and the `?` shortcuts dialog. Each area has its own error boundary.
+- **Theme:** the choice is stored in `localStorage` and applied by an inline script before first paint, so dark mode never flashes light.
+  **Details that matter:**
+- **Focus:** a pointer click on any control hands focus back to the canvas, while keyboard users stay in the toolbar, which has arrow-key roving focus.
+- **Selected states:** styled from `aria-checked` / `aria-pressed`, because a Radix tooltip trigger overwrites `data-state` on the same element.
+- **Shared looks:** come through CSS-module `composes`, so each element keeps one class. In Vite dev, a composed file's edits can leave stale copies until the dev server restarts; production builds are correct.
+  **Bundle:** the main JS grew from 65.3 to 114.0 KB gzipped (+48.7 KB, above the 30–40 KB estimate). Lazy-loading the shortcuts dialog saved under 1 KB (it shares focus and scroll handling with the menus), so it was reverted; bundle work is M8's.
+  **Alternatives rejected:** a separate layers list panel (the PRD asks for order controls; a list joins the Tier 3 shape list); a free-form color picker (any color would have no tuned dark-theme counterpart; a curated palette reads well in both themes).

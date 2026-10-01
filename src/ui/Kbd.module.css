@@ -1,0 +1,32 @@
+.keys {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.key {
+  display: inline-grid;
+  place-items: center;
+  min-inline-size: 20px;
+  block-size: 20px;
+  padding-inline: var(--space-1);
+  border: 1px solid var(--color-line);
+  border-block-end-width: 2px;
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-ink-muted);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  line-height: 1;
+}
+
+/* On a tooltip: no box, just quieter glyphs. */
+.inverse {
+  composes: key;
+  min-inline-size: auto;
+  block-size: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  opacity: 0.65;
+}

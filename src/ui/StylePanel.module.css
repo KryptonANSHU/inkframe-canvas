@@ -1,0 +1,181 @@
+.panel {
+  composes: floating from './surfaces.module.css';
+  position: absolute;
+  z-index: var(--z-floating);
+  /* Below the top row of chrome, so it never collides with the toolbar. */
+  inset-block-start: calc(var(--space-3) * 2 + var(--size-control) + 2 * var(--space-1) + 2px);
+  inset-inline-end: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  inline-size: var(--size-panel);
+  padding: var(--space-3);
+  animation: enter var(--duration-base) var(--easing);
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateX(4px);
+  }
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(8, var(--size-swatch));
+  justify-content: space-between;
+}
+
+/* Each swatch: a color dot with a hairline edge, so pale tints read on white. */
+.swatch {
+  inline-size: var(--size-swatch);
+  block-size: var(--size-swatch);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-round);
+  box-shadow: inset 0 0 0 1px var(--color-line);
+  cursor: pointer;
+  transition: box-shadow var(--duration-fast) var(--easing);
+}
+
+.swatch:hover {
+  box-shadow:
+    inset 0 0 0 1px var(--color-line),
+    0 0 0 2px var(--color-surface),
+    0 0 0 3px var(--color-line);
+}
+
+/* The chosen color: a ring in selection blue, set off from the dot by the surface. */
+.swatch[aria-checked='true'] {
+  box-shadow:
+    inset 0 0 0 1px var(--color-line),
+    0 0 0 2px var(--color-surface),
+    0 0 0 4px var(--color-select);
+}
+
+.swatch:focus-visible {
+  outline-offset: 3px;
+}
+
+.none {
+  composes: swatch;
+  background:
+    linear-gradient(
+      135deg,
+      transparent calc(50% - 0.75px),
+      var(--color-ink-muted) calc(50% - 0.75px) calc(50% + 0.75px),
+      transparent calc(50% + 0.75px)
+    ),
+    var(--color-surface);
+}
+
+.segments {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-control);
+  background: var(--color-hover);
+}
+
+.segment {
+  display: grid;
+  place-items: center;
+  block-size: calc(var(--size-control) - 4px);
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--radius-control) - 2px);
+  background: transparent;
+  color: var(--color-ink-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--easing),
+    color var(--duration-fast) var(--easing);
+}
+
+.segment:hover {
+  color: var(--color-ink);
+}
+
+.segment[aria-checked='true'] {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-float);
+  color: var(--color-ink);
+}
+
+.opacity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.slider {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  block-size: var(--size-swatch);
+  touch-action: none;
+  user-select: none;
+}
+
+.track {
+  position: relative;
+  flex: 1;
+  block-size: 4px;
+  border-radius: var(--radius-round);
+  background: var(--color-line);
+}
+
+.range {
+  position: absolute;
+  block-size: 100%;
+  border-radius: var(--radius-round);
+  background: var(--color-select);
+}
+
+.thumb {
+  display: block;
+  inline-size: 14px;
+  block-size: 14px;
+  border: 2px solid var(--color-select);
+  border-radius: var(--radius-round);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-float);
+  cursor: grab;
+  transition: transform var(--duration-fast) var(--easing);
+}
+
+.thumb:hover {
+  transform: scale(1.1);
+}
+
+.thumb:active {
+  cursor: grabbing;
+}
+
+.value {
+  min-inline-size: 4ch;
+  color: var(--color-ink);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}

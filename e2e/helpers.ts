@@ -117,3 +117,14 @@ export async function isSelectionBlue(page: Page, x: number, y: number): Promise
 export async function nextFrame(page: Page): Promise<void> {
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
 }
+
+/** Opens the main menu and picks an item, e.g. /Export .* as PNG/. */
+export async function chooseMenuItem(page: Page, name: string | RegExp): Promise<void> {
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('menuitem', { name }).click();
+}
+
+/** The toast region, where errors and file progress appear. */
+export function notifications(page: Page) {
+  return page.getByRole('region', { name: /Notifications/ });
+}

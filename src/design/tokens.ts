@@ -18,6 +18,13 @@ export const colors = {
     danger: '#C62F3B',
     /** Tint under a hovered control: ink at low opacity, so it suits any surface. */
     hover: 'rgb(30 36 48 / 0.06)',
+    /** Background of the active tool and pressed toggles: selection blue, quietly. */
+    selectSubtle: 'rgb(61 90 254 / 0.12)',
+    /** Tooltips invert the theme, so they never blend into a panel. */
+    tooltip: '#1E2430',
+    tooltipText: '#F3F5F8',
+    /** Dims the canvas behind a dialog. */
+    scrim: 'rgb(16 24 40 / 0.28)',
   },
   dark: {
     canvas: '#181B21',
@@ -28,6 +35,10 @@ export const colors = {
     select: '#7B8CFF',
     danger: '#F06B74',
     hover: 'rgb(231 234 240 / 0.08)',
+    selectSubtle: 'rgb(123 140 255 / 0.18)',
+    tooltip: '#E7EAF0',
+    tooltipText: '#181B21',
+    scrim: 'rgb(0 0 0 / 0.5)',
   },
 } as const satisfies Record<ThemeName, Record<string, string>>;
 
@@ -72,7 +83,13 @@ export const shadows = {
 export const space = { 1: 4, 2: 8, 3: 12, 4: 16, 6: 24, 8: 32 } as const;
 
 /** Radius has hierarchy: controls are tighter than the panels that hold them. */
-export const radius = { control: 6, panel: 10 } as const;
+export const radius = { control: 6, panel: 10, round: 999 } as const;
+
+/** Fixed sizes: one control height everywhere, 16 px Lucide icons, one panel width. */
+export const size = { control: 32, swatch: 22, icon: 16, panel: 236 } as const;
+
+/** Lucide icons use a 1.5 px stroke (CLAUDE.md). */
+export const ICON_STROKE = 1.5;
 
 export const fontSize = { xs: 12, sm: 13, md: 14, lg: 16, xl: 20 } as const;
 

@@ -1,0 +1,50 @@
+.bar {
+  composes: floating from './surfaces.module.css';
+  position: absolute;
+  z-index: var(--z-floating);
+  inset-block-start: var(--space-3);
+  inset-inline-start: var(--space-3);
+  display: flex;
+  padding: var(--space-1);
+}
+
+.trigger {
+  composes: iconButton from './surfaces.module.css';
+}
+
+.trigger[aria-expanded='true'] {
+  background: var(--color-hover);
+}
+
+.menu {
+  composes: menu from './surfaces.module.css';
+}
+
+.item {
+  composes: menuItem from './surfaces.module.css';
+}
+
+.icon {
+  composes: menuIcon from './surfaces.module.css';
+}
+
+.shortcut {
+  composes: menuShortcut from './surfaces.module.css';
+}
+
+.separator {
+  composes: menuSeparator from './surfaces.module.css';
+}
+
+.label {
+  composes: menuLabel from './surfaces.module.css';
+}
+
+/* The chosen theme: a small dot at the end of its row. */
+.check {
+  inline-size: 6px;
+  block-size: 6px;
+  margin-inline-start: auto;
+  border-radius: var(--radius-round);
+  background: var(--color-select);
+}

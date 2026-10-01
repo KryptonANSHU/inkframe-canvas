@@ -1,0 +1,139 @@
+/*
+ * Shared looks, pulled into components with `composes:` so each element keeps one
+ * class. Floating chrome is quiet: one panel radius, one shadow, a hairline border.
+ */
+
+.floating {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-float);
+}
+
+.iconButton {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  inline-size: var(--size-control);
+  block-size: var(--size-control);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--color-ink);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--easing),
+    color var(--duration-fast) var(--easing);
+}
+
+.iconButton:hover {
+  background: var(--color-hover);
+}
+
+.iconButton:focus-visible {
+  outline-offset: calc(-1 * var(--focus-ring-width));
+}
+
+/* Selected state from ARIA: Radix tooltips write their own data-state on triggers. */
+.iconButton[aria-checked='true'],
+.iconButton[aria-pressed='true'] {
+  background: var(--color-select-subtle);
+  color: var(--color-select);
+}
+
+.iconButton:disabled {
+  background: transparent;
+  color: var(--color-ink-muted);
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Popovers, menus, and tooltips appear with a short, small rise. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(2px) scale(0.98);
+  }
+}
+
+.tooltip {
+  z-index: var(--z-overlay);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-block: var(--space-1);
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--color-tooltip);
+  color: var(--color-tooltip-text);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  animation: rise var(--duration-fast) var(--easing);
+}
+
+.menu {
+  composes: floating;
+  z-index: var(--z-overlay);
+  min-inline-size: 232px;
+  padding: var(--space-1);
+  animation: rise var(--duration-fast) var(--easing);
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  block-size: var(--size-control);
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-control);
+  color: var(--color-ink);
+  font-size: var(--font-size-sm);
+  cursor: default;
+  outline: none;
+  user-select: none;
+}
+
+.menuItem[data-highlighted] {
+  background: var(--color-hover);
+}
+
+.menuItem[data-disabled] {
+  color: var(--color-ink-muted);
+}
+
+.menuIcon {
+  flex-shrink: 0;
+  color: var(--color-ink-muted);
+}
+
+.menuSeparator {
+  block-size: 1px;
+  margin-block: var(--space-1);
+  margin-inline: calc(-1 * var(--space-1));
+  background: var(--color-line);
+}
+
+.menuLabel {
+  padding-block: var(--space-1);
+  padding-inline: var(--space-2);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+}
+
+.menuShortcut {
+  margin-inline-start: auto;
+  padding-inline-start: var(--space-4);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.divider {
+  flex-shrink: 0;
+  align-self: stretch;
+  inline-size: 1px;
+  margin-block: var(--space-1);
+  background: var(--color-line);
+}

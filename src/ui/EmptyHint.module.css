@@ -1,0 +1,21 @@
+.hint {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-md);
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: appear var(--duration-base) var(--easing);
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+}

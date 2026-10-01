@@ -1,0 +1,94 @@
+.viewport {
+  position: absolute;
+  z-index: var(--z-overlay);
+  inset-block-end: calc(var(--space-3) * 2 + var(--size-control) + 2 * var(--space-1) + 2px);
+  inset-inline-start: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  inline-size: max-content;
+  max-inline-size: min(440px, calc(100vw - 2 * var(--space-4)));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  transform: translateX(-50%);
+  outline: none;
+}
+
+.toast {
+  composes: floating from './surfaces.module.css';
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding-block: var(--space-2);
+  padding-inline: var(--space-3);
+  color: var(--color-ink);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  animation: in var(--duration-base) var(--easing);
+}
+
+.toast[data-state='closed'] {
+  animation: out var(--duration-fast) var(--easing) forwards;
+}
+
+.toast[data-swipe='move'] {
+  transform: translateY(var(--radix-toast-swipe-move-y));
+}
+
+.error {
+  composes: toast;
+  padding-inline-end: var(--space-1);
+}
+
+@keyframes in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes out {
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.message {
+  padding-block: 1px;
+}
+
+.alert {
+  flex-shrink: 0;
+  margin-block-start: 2px;
+  color: var(--color-danger);
+}
+
+.spinner {
+  flex-shrink: 0;
+  margin-block-start: 2px;
+  color: var(--color-select);
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
+
+.close {
+  composes: iconButton from './surfaces.module.css';
+  inline-size: 24px;
+  block-size: 24px;
+  margin-inline-start: var(--space-1);
+  color: var(--color-ink-muted);
+}

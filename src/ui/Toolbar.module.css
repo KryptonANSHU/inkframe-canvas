@@ -1,0 +1,25 @@
+.toolbar {
+  composes: floating from './surfaces.module.css';
+  position: absolute;
+  z-index: var(--z-floating);
+  inset-block-start: var(--space-3);
+  inset-inline-start: 50%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  transform: translateX(-50%);
+}
+
+.group {
+  display: flex;
+  gap: 2px;
+}
+
+.tool {
+  composes: iconButton from './surfaces.module.css';
+}
+
+.divider {
+  composes: divider from './surfaces.module.css';
+}

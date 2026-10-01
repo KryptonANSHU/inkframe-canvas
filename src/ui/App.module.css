@@ -1,4 +1,8 @@
 .app {
   position: relative;
   block-size: 100%;
+  /* An editor surface: dragging must draw, never select the UI's text. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
