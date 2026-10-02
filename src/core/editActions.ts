@@ -9,6 +9,7 @@ import {
   type CommandError,
 } from './commands';
 import type { DocumentState } from './document';
+import { groupSelection, regroupCopies, ungroupSelection } from './groups';
 import type { Result } from './result';
 import { selectedShapes } from './selection/selectedShapes';
 import { createShapeId, type Shape } from './shapes';
@@ -33,6 +34,8 @@ export type EditAction =
   | 'zoomReset'
   | 'zoomFit'
   | ArrangeAction
+  | 'group'
+  | 'ungroup'
   | 'toggleLock'
   | 'toggleGrid'
   | 'help';
@@ -137,6 +140,12 @@ export function performEditAction(
     case 'back':
       arrangeSelection(store, action, reportError);
       return;
+    case 'group':
+      groupSelection(store, reportError);
+      return;
+    case 'ungroup':
+      ungroupSelection(store, reportError);
+      return;
     case 'toggleLock':
       store.setState({ toolLocked: !store.getState().toolLocked });
       return;
@@ -189,12 +198,14 @@ function addCopies(
   if (shapes.length === 0) {
     return;
   }
-  const copies = shapes.map((shape) => ({
-    ...shape,
-    id: createShapeId(),
-    x: shape.x + offset,
-    y: shape.y + offset,
-  }));
+  const copies = regroupCopies(
+    shapes.map((shape) => ({
+      ...shape,
+      id: createShapeId(),
+      x: shape.x + offset,
+      y: shape.y + offset,
+    })),
+  );
   const select = new Set(copies.map((shape) => shape.id));
   report(executeCommand(store, createShapesCommand(label, copies), { select }), reportError);
 }

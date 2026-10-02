@@ -3,7 +3,7 @@ import { MAX_PEN_POINTS } from '../shapes';
 import { makePen, makeRect, makeText, testShapeId } from '../testing/factories';
 import { documentFromShapes, MAX_FILE_BYTES, MAX_SHAPES, toFile } from './fileFormat';
 import { readFile, readFileText } from './readFile';
-import { CURRENT_VERSION, migrate, type RawFile } from './migrations';
+import { CURRENT_VERSION, migrate, migrateV1toV2, type RawFile } from './migrations';
 
 const rect = makeRect({ id: testShapeId('r') });
 const text = makeText({ id: testShapeId('t') });
@@ -80,6 +80,15 @@ describe('file format', () => {
     const calls: number[] = [];
     readFile(file([rect]), (checked) => calls.push(checked));
     expect(calls.at(-1)).toBe(1);
+  });
+});
+
+describe('migrateV1toV2', () => {
+  it('keeps version-1 shapes as they are, and they read as version 2', () => {
+    const v1 = file([rect]);
+    expect(migrateV1toV2(v1)).toEqual(v1);
+    const read = readFile(v1);
+    expect(read.ok && read.value).toEqual([rect]);
   });
 });
 

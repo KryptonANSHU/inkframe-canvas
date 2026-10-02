@@ -62,7 +62,7 @@ test('Save as JSON, then Open brings the drawing back; undo un-opens it', async 
   await expect.poll(() => edgeInk(page)).toBe(FULL);
   expect(JSON.parse(await readFile(path, 'utf8'))).toMatchObject({
     format: 'inkframe',
-    version: 1,
+    version: 2,
   });
 
   await page.keyboard.press('ControlOrMeta+Z');

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { simplifyPath } from '../geometry/simplify';
-import { MAX_PEN_POINTS, MIN_SHAPE_SIZE, type Shape, type ShapeId } from '../shapes';
+import { MAX_PEN_POINTS, MIN_SHAPE_SIZE, type GroupId, type Shape, type ShapeId } from '../shapes';
 import { normalizeAngle } from '../transform/angles';
 
 // zod 4's z.number() already rejects NaN and ±Infinity.
@@ -35,6 +35,13 @@ const base = {
   rotation: coordinate.transform(normalizeAngle),
   style,
   zIndex: z.number().int().nonnegative(),
+  // Absent rather than undefined when a shape isn't grouped, matching the Shape type.
+  groupId: z
+    .string()
+    .min(1)
+    .max(200)
+    .transform((id) => id as GroupId)
+    .exactOptional(),
 };
 
 function shapeSchemaWith(penPoints: z.ZodType<Readonly<{ x: number; y: number }>[]>) {

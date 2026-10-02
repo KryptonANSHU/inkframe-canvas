@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { EMPTY_DOCUMENT, insertShape } from '../document';
-import { DEFAULT_SHAPE_STYLE, type Shape } from '../shapes';
+import { DEFAULT_SHAPE_STYLE, type GroupId, type Shape } from '../shapes';
 import { createSpatialIndex } from '../spatial/spatialIndex';
 import { bindSpatialIndex } from '../spatial/syncIndex';
 import { createEditorStore } from '../store';
@@ -110,6 +110,30 @@ describe('select tool: clicking', () => {
     expect(selected()).toEqual(['a']);
     click(tool, 75, 75, { altKey: true });
     expect(selected()).toEqual(['b']);
+  });
+});
+
+describe('select tool: groups', () => {
+  const groupId = 'g' as GroupId;
+  const grouped = () => setup([{ ...a, groupId }, { ...b, groupId }, far]);
+
+  it('a click or a marquee on one member selects the whole group', () => {
+    const { tool, selected } = grouped();
+    click(tool, 75, 75);
+    expect(selected()).toEqual(['a', 'b']);
+    click(tool, 300, 300);
+    drag(tool, [-10, -10], [110, 110]);
+    expect(selected()).toEqual(['a', 'b']);
+  });
+
+  it('Ctrl / ⌘ + click selects one member; Shift + click removes the whole group', () => {
+    const { tool, selected } = grouped();
+    click(tool, 75, 75, { ctrlKey: true });
+    expect(selected()).toEqual(['b']);
+    click(tool, 75, 75);
+    click(tool, 425, 0, { shiftKey: true });
+    click(tool, 75, 75, { shiftKey: true });
+    expect(selected()).toEqual(['far']);
   });
 });
 

@@ -33,6 +33,8 @@ describe('editActionFor', () => {
     [key(']', { meta: true }), 'forward'],
     [key('}', { meta: true, shift: true }), 'front'],
     [key('[', { ctrl: true, shift: true }), 'back'],
+    [key('g', { ctrl: true }), 'group'],
+    [key('G', { meta: true, shift: true }), 'ungroup'],
     [key('q'), 'toggleLock'],
     [key('?', { shift: true }), 'help'],
     [key('Backspace'), 'delete'],

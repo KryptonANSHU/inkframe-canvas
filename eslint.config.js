@@ -19,6 +19,8 @@ export default tseslint.config(
     },
     rules: {
       eqeqeq: ['error', 'always'],
+      // `const { key, ...rest } = obj` is how readonly data drops a key without mutating.
+      '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true }],
       'no-console': 'error',
       // Named exports only. Config files that need a default export opt out below.
       'no-restricted-syntax': [

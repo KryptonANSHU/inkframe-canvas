@@ -1,6 +1,7 @@
-import { ArrowDown, ArrowUp, BringToFront, SendToBack } from 'lucide-react';
+import { ArrowDown, ArrowUp, BringToFront, Group, SendToBack, Ungroup } from 'lucide-react';
 import { useRef, type ReactNode } from 'react';
 import { Slider, ToggleGroup } from 'radix-ui';
+import { canGroup } from '../core/groups';
 import { selectedShapes } from '../core/selection/selectedShapes';
 import { selectionStyle, type Shared } from '../core/style';
 import { fillSwatches, strokeSwatches, type ShapeSwatch, type ThemeName } from '../design/tokens';
@@ -27,6 +28,13 @@ export function StylePanel() {
   const style = useEditorState((state) => selectionStyle(selectedShapes(state)));
   const theme = useEditorState((state) => state.theme);
   const editingText = useEditorState((state) => state.textEdit !== null);
+  const grouping = useEditorState((state) => {
+    const shapes = selectedShapes(state);
+    return {
+      canGroup: canGroup(shapes),
+      canUngroup: shapes.some((shape) => shape.groupId !== undefined),
+    };
+  });
   if (style === null || editingText) {
     return null;
   }
@@ -87,6 +95,26 @@ export function StylePanel() {
               }}
             />
           ))}
+          {grouping.canGroup && (
+            <IconButton
+              label="Group"
+              Icon={Group}
+              shortcut="Mod+G"
+              onClick={() => {
+                editor.perform('group');
+              }}
+            />
+          )}
+          {grouping.canUngroup && (
+            <IconButton
+              label="Ungroup"
+              Icon={Ungroup}
+              shortcut="Mod+Shift+G"
+              onClick={() => {
+                editor.perform('ungroup');
+              }}
+            />
+          )}
         </div>
       </Section>
     </aside>

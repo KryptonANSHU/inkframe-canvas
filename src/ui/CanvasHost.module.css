@@ -27,4 +27,17 @@
   overflow: hidden;
   white-space: pre-wrap;
   overflow-wrap: break-word;
+  caret-color: var(--color-select);
+}
+
+/*
+ * While typing: a hairline in selection blue with a little air around the text, like a
+ * text frame in a design tool. Outline, not border or padding, so the text stays exactly
+ * where the canvas will draw it. Replaces the heavier app-wide focus ring.
+ */
+.textEditor:focus,
+.textEditor:focus-visible {
+  outline: 1px solid var(--color-select);
+  outline-offset: var(--space-1);
+  border-radius: 1px;
 }

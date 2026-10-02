@@ -14,6 +14,7 @@ const WITH_COMMAND_KEY: Readonly<Record<string, EditAction>> = {
   '-': 'zoomOut',
   '0': 'zoomReset',
   "'": 'toggleGrid',
+  g: 'group',
   ']': 'forward',
   '[': 'backward',
   // Shift + ] and Shift + [ type braces on most layouts.
@@ -43,6 +44,7 @@ export function editActionFor(input: KeyInput): EditAction | null {
   const action = WITH_COMMAND_KEY[key] ?? null;
   if (input.shiftKey && action === 'forward') return 'front';
   if (input.shiftKey && action === 'backward') return 'back';
+  if (input.shiftKey && action === 'group') return 'ungroup';
   // Ctrl / ⌘ + Shift + Z redoes, as in most editors.
   return action === 'undo' && input.shiftKey ? 'redo' : action;
 }

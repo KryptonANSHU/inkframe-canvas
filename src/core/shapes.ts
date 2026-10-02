@@ -1,5 +1,13 @@
 export type ShapeId = string & { readonly __brand: 'ShapeId' };
 
+/** Shapes sharing a group ID select, move, and copy together (Ctrl / ⌘ + G). */
+export type GroupId = string & { readonly __brand: 'GroupId' };
+
+export function createGroupId(): GroupId {
+  // The brand exists only at the type level, so minting an ID needs this one cast.
+  return crypto.randomUUID() as GroupId;
+}
+
 export function createShapeId(): ShapeId {
   // The brand exists only at the type level, so minting an ID needs this one cast.
   return crypto.randomUUID() as ShapeId;
@@ -23,6 +31,8 @@ type ShapeBase = {
   readonly style: ShapeStyle;
   /** Position in the document's draw order: 0 is the bottom. */
   readonly zIndex: number;
+  /** The group this shape belongs to, if any. Groups are flat: no groups in groups. */
+  readonly groupId?: GroupId;
 };
 
 type BoxShapeBase = ShapeBase & {

@@ -1,5 +1,6 @@
 import { screenToWorld } from '../camera';
 import { executeCommand, updateShapesCommand } from '../commands';
+import { expandToGroups } from '../groups';
 import type { Bounds } from '../geometry/bounds';
 import { createPoint, distance, type Point } from '../geometry/point';
 import { hitTest, hitTestAll, hitToleranceAt } from '../hitTest';
@@ -118,7 +119,8 @@ export function createSelectTool({ store, index, measurer, reportError }: Select
       const target = pressTarget(store, index, event.screen, startWorld);
       // Select on press (not release) so a drag that starts here moves this shape.
       if (target.kind === 'shape' && !target.wasSelected && !event.altKey) {
-        select(event.shiftKey ? [...selectionBefore, target.id] : [target.id]);
+        const pressed = withGroup(store, target.id, event);
+        select(event.shiftKey ? [...selectionBefore, ...pressed] : pressed);
       }
       state = { kind: 'pressing', startScreen: { ...event.screen }, startWorld, target };
     },
@@ -256,12 +258,24 @@ function clickSelect(
     return;
   } else if (event.shiftKey) {
     if (target.wasSelected) {
-      select([...selectedIds].filter((id) => id !== target.id));
+      const removed = withGroup(store, target.id, event);
+      select([...selectedIds].filter((id) => !removed.has(id)));
     }
   } else if (target.wasSelected) {
-    // Clicking one shape of a multi-selection (without dragging) narrows to that shape.
-    select([target.id]);
+    // Clicking one shape of a multi-selection (without dragging) narrows to that shape
+    // (its group, or just the shape with Ctrl / ⌘).
+    select(withGroup(store, target.id, event));
   }
+}
+
+/**
+ * The shape a click lands on plus the rest of its group, since a group selects as a
+ * whole. Ctrl / ⌘ + click reaches inside: just that one shape.
+ */
+function withGroup(store: EditorStore, id: ShapeId, event: ToolPointerEvent): Set<ShapeId> {
+  return event.ctrlKey || event.metaKey
+    ? new Set([id])
+    : expandToGroups(store.getState().document, [id]);
 }
 
 function updateMarquee(
@@ -278,7 +292,9 @@ function updateMarquee(
     maxY: Math.max(marquee.startWorld.y, current.y),
   };
   const mode = event.ctrlKey || event.metaKey ? 'touching' : 'inside';
-  const inside = shapesInMarquee(store.getState().document, index, area, mode);
+  const { document } = store.getState();
+  // A marquee that catches part of a group selects the whole group.
+  const inside = expandToGroups(document, shapesInMarquee(document, index, area, mode));
   store.setState({ marquee: area, selectedIds: new Set([...marquee.base, ...inside]) });
 }
 

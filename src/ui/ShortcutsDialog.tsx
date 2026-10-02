@@ -42,6 +42,7 @@ const GROUPS: readonly Group[] = [
       ['Select all', 'Mod+A'],
       ['Add or remove', 'Shift+Click'],
       ['Shape underneath', 'Alt+Click'],
+      ['Shape inside a group', 'Mod+Click'],
       ['Select touched shapes', 'Mod+Drag'],
       ['Nudge', '←↑→↓'],
       ['Nudge by 10', 'Shift+←↑→↓'],
@@ -63,6 +64,8 @@ const GROUPS: readonly Group[] = [
       ['Send backward', 'Mod+['],
       ['Bring to front', 'Mod+Shift+]'],
       ['Send to back', 'Mod+Shift+['],
+      ['Group', 'Mod+G'],
+      ['Ungroup', 'Mod+Shift+G'],
     ],
   },
   {
