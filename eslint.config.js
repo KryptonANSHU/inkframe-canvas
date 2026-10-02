@@ -41,9 +41,9 @@ export default tseslint.config(
     ...jsxA11y.flatConfigs.recommended,
   },
 
-  // The editor core is plain TypeScript: it must never depend on React or the UI layer.
+  // The editor core and the plugin host are plain TypeScript: never React or the UI layer.
   {
-    files: ['src/core/**/*.{ts,tsx}'],
+    files: ['src/core/**/*.{ts,tsx}', 'src/plugins/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
