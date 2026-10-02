@@ -1,12 +1,8 @@
-.zoom {
-  composes: floating from './surfaces.module.css';
+.place {
   position: absolute;
   z-index: var(--z-floating);
   inset-block-end: var(--space-3);
   inset-inline-start: var(--space-3);
-  display: flex;
-  align-items: center;
-  padding: var(--space-1);
 }
 
 /* The zoom level: a text button wide enough for "400%" so nothing shifts. */
@@ -22,11 +18,6 @@
 
 .level[aria-expanded='true'] {
   background: var(--color-hover);
-}
-
-.divider {
-  composes: divider from './surfaces.module.css';
-  margin-inline: var(--space-1);
 }
 
 .menu {

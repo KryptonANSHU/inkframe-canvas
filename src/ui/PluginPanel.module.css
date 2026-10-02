@@ -94,13 +94,6 @@
   flex-shrink: 0;
 }
 
-.action {
-  composes: iconButton from './surfaces.module.css';
-  inline-size: 28px;
-  block-size: 28px;
-  color: var(--color-ink-muted);
-}
-
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -185,48 +178,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1);
-}
-
-.command {
-  block-size: 26px;
-  padding-inline: var(--space-2);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-control);
-  background: var(--color-surface);
-  color: var(--color-ink);
-  font: inherit;
-  font-size: var(--font-size-xs);
-  cursor: pointer;
-  transition: background-color var(--duration-fast) var(--easing);
-}
-
-.command:hover {
-  background: var(--color-hover);
-}
-
-.run {
-  composes: command;
-  flex-shrink: 0;
-  font-weight: 500;
-}
-
-.load {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  block-size: var(--size-control);
-  border: 1px dashed var(--color-line);
-  border-radius: var(--radius-control);
-  background: transparent;
-  color: var(--color-ink);
-  font: inherit;
-  cursor: pointer;
-  transition: background-color var(--duration-fast) var(--easing);
-}
-
-.load:hover {
-  background: var(--color-hover);
 }
 
 .picker {

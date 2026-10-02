@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
@@ -23,6 +24,12 @@ function designTokens(): Plugin {
 // Vite requires a default export from its config file.
 export default defineConfig({
   plugins: [react(), designTokens()],
+  // The design system is an internal package (src/design/package.json), imported by name.
+  resolve: {
+    alias: {
+      '@inkframe/design': fileURLToPath(new URL('./src/design/index.ts', import.meta.url)),
+    },
+  },
   test: {
     // Unit and property tests run as separate projects so `npm test` stays fast
     // and `npm run test:property` can run the slower randomized suites on their own.

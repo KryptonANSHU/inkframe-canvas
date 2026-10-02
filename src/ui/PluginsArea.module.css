@@ -1,11 +1,8 @@
-.bar {
-  composes: floating from './surfaces.module.css';
+.place {
   position: absolute;
   z-index: var(--z-floating);
   inset-block-start: var(--space-3);
   inset-inline-end: var(--space-3);
-  display: flex;
-  padding: var(--space-1);
 }
 
 .trigger {

@@ -1,0 +1,78 @@
+.base {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  block-size: var(--size-control);
+  padding-inline: var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--color-ink);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--easing),
+    border-color var(--duration-fast) var(--easing);
+}
+
+.base[data-size='sm'] {
+  block-size: 26px;
+  padding-inline: var(--space-2);
+  font-size: var(--font-size-xs);
+}
+
+.base:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* The one action a view is about. */
+.primary {
+  composes: base;
+  border-color: var(--color-select);
+  background: var(--color-select);
+  color: var(--color-surface);
+}
+
+/* Slightly deeper on hover: the accent mixed with a little ink. */
+.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-select) 88%, var(--color-ink));
+}
+
+.secondary {
+  composes: base;
+  border-color: var(--color-line);
+  background: var(--color-surface);
+}
+
+.secondary:hover:not(:disabled),
+.ghost:hover:not(:disabled) {
+  background: var(--color-hover);
+}
+
+.ghost {
+  composes: base;
+}
+
+/* Destructive: the danger color on the outline and label, never a filled red slab. */
+.danger {
+  composes: base;
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.danger:hover:not(:disabled) {
+  background: var(--color-hover);
+}
+
+/* An action that adds something: a dashed outline across the panel's width. */
+.add {
+  composes: base;
+  border: 1px dashed var(--color-line);
+}
+
+.add:hover:not(:disabled) {
+  background: var(--color-hover);
+}

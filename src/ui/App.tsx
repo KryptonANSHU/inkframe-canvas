@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useState, type ReactNode } from 'react';
-import { Tooltip } from 'radix-ui';
+import { TooltipProvider } from '@inkframe/design';
 import type { Editor } from '../core/dom/createEditor';
 import { AppCrash } from './AppCrash';
 import styles from './App.module.css';
@@ -23,9 +23,6 @@ const DebugOverlay = lazy(() =>
   import('./DebugOverlay').then((module) => ({ default: module.DebugOverlay })),
 );
 const debug = new URLSearchParams(location.search).get('debug') === '1';
-
-/** Tooltips wait a beat before showing, then switch instantly while moving along a bar. */
-const TOOLTIP_DELAY_MS = 400;
 
 /** Keeps a failure inside one area, with a message saying what stopped working. */
 function Area({ name, message, children }: { name: string; message: string; children: ReactNode }) {
@@ -59,7 +56,7 @@ export function App() {
         <CanvasHost onEditorChange={onEditorChange} />
         {editor !== null && (
           <EditorProvider editor={editor}>
-            <Tooltip.Provider delayDuration={TOOLTIP_DELAY_MS}>
+            <TooltipProvider>
               <EmptyHint />
               {debug && (
                 <Suspense fallback={null}>
@@ -114,7 +111,7 @@ export function App() {
               <Area name="Shortcuts dialog" message="The shortcuts list failed to open.">
                 <ShortcutsDialog />
               </Area>
-            </Tooltip.Provider>
+            </TooltipProvider>
           </EditorProvider>
         )}
       </main>

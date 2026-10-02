@@ -2,7 +2,7 @@ import { CircleStop, RotateCcw, Trash2, Upload, X } from 'lucide-react';
 import { useRef } from 'react';
 import { useStore } from 'zustand';
 import type { PluginEntry, PluginManager } from '../plugins/manager';
-import { ICON_STROKE, size } from '../design/tokens';
+import { Button, ICON_STROKE, IconButton } from '@inkframe/design';
 import { BuiltinPlugins } from './BuiltinPlugins';
 import { PERMISSION_LABEL, stateText } from './pluginCopy';
 import styles from './PluginPanel.module.css';
@@ -29,16 +29,15 @@ export function PluginPanel({ manager }: PluginPanelProps) {
         </ul>
       )}
       <BuiltinPlugins manager={manager} />
-      <button
-        type="button"
-        className={styles.load}
+      <Button
+        variant="add"
+        icon={Upload}
         onClick={() => {
           picker.current?.click();
         }}
       >
-        <Upload size={size.icon} strokeWidth={ICON_STROKE} aria-hidden />
         Load plugin from file…
-      </button>
+      </Button>
       <input
         ref={picker}
         className={styles.picker}
@@ -83,7 +82,9 @@ function PluginRow({
         </div>
         <div className={styles.actions}>
           {stopped ? (
-            <RowButton
+            <IconButton
+              size="sm"
+              tipSide="bottom"
               label="Restart"
               Icon={RotateCcw}
               onClick={() => {
@@ -91,7 +92,9 @@ function PluginRow({
               }}
             />
           ) : (
-            <RowButton
+            <IconButton
+              size="sm"
+              tipSide="bottom"
               label="Stop"
               Icon={CircleStop}
               onClick={() => {
@@ -99,7 +102,9 @@ function PluginRow({
               }}
             />
           )}
-          <RowButton
+          <IconButton
+            size="sm"
+            tipSide="bottom"
             label="Remove"
             Icon={Trash2}
             onClick={() => {
@@ -115,16 +120,15 @@ function PluginRow({
           aria-label={`${state.manifest.name} commands`}
         >
           {state.manifest.commands.map((command) => (
-            <button
+            <Button
               key={command.id}
-              type="button"
-              className={styles.command}
+              size="sm"
               onClick={() => {
                 manager.command(entry.key, command.id);
               }}
             >
               {command.label}
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -161,26 +165,5 @@ function PluginRow({
         </details>
       )}
     </li>
-  );
-}
-
-type RowButtonProps = {
-  readonly label: string;
-  readonly Icon: typeof X;
-  readonly onClick: () => void;
-};
-
-/** Small icon buttons that keep focus in the panel (the panel would close otherwise). */
-function RowButton({ label, Icon, onClick }: RowButtonProps) {
-  return (
-    <button
-      type="button"
-      className={styles.action}
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-    >
-      <Icon size={size.icon} strokeWidth={ICON_STROKE} aria-hidden />
-    </button>
   );
 }

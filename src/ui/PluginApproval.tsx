@@ -2,7 +2,7 @@ import { ShieldCheck } from 'lucide-react';
 import { Dialog } from 'radix-ui';
 import { useStore } from 'zustand';
 import type { PluginManager } from '../plugins/manager';
-import { ICON_STROKE, size } from '../design/tokens';
+import { Button, ICON_STROKE, size } from '@inkframe/design';
 import { useEditor } from './EditorContext';
 import { PERMISSION_TEXT } from './pluginCopy';
 import styles from './PluginApproval.module.css';
@@ -62,24 +62,21 @@ export function PluginApproval({ manager }: PluginApprovalProps) {
             can revoke any permission later.
           </p>
           <div className={styles.buttons}>
-            <button
-              type="button"
-              className={styles.secondary}
+            <Button
               onClick={() => {
                 if (approval !== null) manager.decide(approval.key, false);
               }}
             >
               Don&apos;t allow
-            </button>
-            <button
-              type="button"
-              className={styles.primary}
+            </Button>
+            <Button
+              variant="primary"
               onClick={() => {
                 if (approval !== null) manager.decide(approval.key, true);
               }}
             >
               Allow
-            </button>
+            </Button>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

@@ -1,0 +1,69 @@
+/*
+ * Looks shared by the components, pulled in with `composes:` so each element keeps one
+ * class. Floating chrome is quiet: one panel radius, one shadow, a hairline border.
+ */
+
+.floating {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-float);
+}
+
+/* Popovers, menus, and tooltips appear with a short, small rise. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(2px) scale(0.98);
+  }
+}
+
+.rise {
+  animation: rise var(--duration-fast) var(--easing);
+}
+
+.iconButton {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  inline-size: var(--size-control);
+  block-size: var(--size-control);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--color-ink);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--easing),
+    color var(--duration-fast) var(--easing);
+}
+
+.iconButton:hover,
+.iconButton[aria-expanded='true'] {
+  background: var(--color-hover);
+}
+
+.iconButton:focus-visible {
+  outline-offset: calc(-1 * var(--focus-ring-width));
+}
+
+/* Selected state from ARIA: Radix tooltips write their own data-state on triggers. */
+.iconButton[aria-checked='true'],
+.iconButton[aria-pressed='true'] {
+  background: var(--color-select-subtle);
+  color: var(--color-select);
+}
+
+.iconButton:disabled {
+  background: transparent;
+  color: var(--color-ink-muted);
+  opacity: 0.45;
+  cursor: default;
+}
+
+.iconButton[data-size='sm'] {
+  inline-size: 28px;
+  block-size: 28px;
+  color: var(--color-ink-muted);
+}

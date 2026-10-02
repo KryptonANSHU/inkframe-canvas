@@ -4,11 +4,18 @@ import { Slider, ToggleGroup } from 'radix-ui';
 import { canGroup } from '../core/groups';
 import { selectedShapes } from '../core/selection/selectedShapes';
 import { selectionStyle, type Shared } from '../core/style';
-import { fillSwatches, strokeSwatches, type ShapeSwatch, type ThemeName } from '../design/tokens';
+import {
+  fillSwatches,
+  IconButton,
+  strokeSwatches,
+  Surface,
+  Tooltip,
+  type ShapeSwatch,
+  type ThemeName,
+} from '@inkframe/design';
 import { useEditor, useEditorState } from './EditorContext';
-import { IconButton } from './IconButton';
 import styles from './StylePanel.module.css';
-import { Tip } from './Tip';
+import { useBackToCanvas } from './useBackToCanvas';
 
 const WIDTHS: readonly { value: number; label: string; drawn: number }[] = [
   { value: 1, label: 'Thin', drawn: 1 },
@@ -23,6 +30,7 @@ const OPACITY_STEP = 5;
 /** The style of the selection: colors, stroke width, opacity, and layer order, right side. */
 export function StylePanel() {
   const editor = useEditor();
+  const backToCanvas = useBackToCanvas();
   // Selected separately: each selector returns primitives (or an object of them), so
   // the shallow comparison sees "unchanged" and the panel re-renders only on a change.
   const style = useEditorState((state) => selectionStyle(selectedShapes(state)));
@@ -41,7 +49,7 @@ export function StylePanel() {
   const onlyText = !style.hasStroke;
 
   return (
-    <aside className={styles.panel} aria-label="Style">
+    <Surface as="aside" className={styles.panel} aria-label="Style">
       <Section title={onlyText ? 'Color' : 'Stroke'}>
         <Swatches
           label={onlyText ? 'Text color' : 'Stroke color'}
@@ -90,9 +98,9 @@ export function StylePanel() {
               label={label}
               Icon={Icon}
               shortcut={shortcut}
-              onClick={() => {
+              onClick={backToCanvas(() => {
                 editor.perform(action);
-              }}
+              })}
             />
           ))}
           {grouping.canGroup && (
@@ -100,9 +108,9 @@ export function StylePanel() {
               label="Group"
               Icon={Group}
               shortcut="Mod+G"
-              onClick={() => {
+              onClick={backToCanvas(() => {
                 editor.perform('group');
-              }}
+              })}
             />
           )}
           {grouping.canUngroup && (
@@ -110,14 +118,14 @@ export function StylePanel() {
               label="Ungroup"
               Icon={Ungroup}
               shortcut="Mod+Shift+G"
-              onClick={() => {
+              onClick={backToCanvas(() => {
                 editor.perform('ungroup');
-              }}
+              })}
             />
           )}
         </div>
       </Section>
-    </aside>
+    </Surface>
   );
 }
 
@@ -154,7 +162,7 @@ function Swatches({ label, swatches, theme, value, withNone, onChange }: Swatche
       }}
     >
       {withNone === true && (
-        <Tip label="No fill" side="left">
+        <Tooltip label="No fill" side="left">
           <ToggleGroup.Item
             value={NO_FILL}
             className={styles.none}
@@ -163,10 +171,10 @@ function Swatches({ label, swatches, theme, value, withNone, onChange }: Swatche
               if (event.detail > 0) editor.focus();
             }}
           />
-        </Tip>
+        </Tooltip>
       )}
       {swatches.map((swatch) => (
-        <Tip key={swatch.name} label={swatch.name} side="left">
+        <Tooltip key={swatch.name} label={swatch.name} side="left">
           <ToggleGroup.Item
             value={swatch.light.toLowerCase()}
             className={styles.swatch}
@@ -176,7 +184,7 @@ function Swatches({ label, swatches, theme, value, withNone, onChange }: Swatche
               if (event.detail > 0) editor.focus();
             }}
           />
-        </Tip>
+        </Tooltip>
       ))}
     </ToggleGroup.Root>
   );
@@ -195,7 +203,7 @@ function StrokeWidths({ value }: { readonly value: Shared<number> }) {
       }}
     >
       {WIDTHS.map(({ value: width, label, drawn }) => (
-        <Tip key={width} label={label} side="bottom">
+        <Tooltip key={width} label={label} side="bottom">
           <ToggleGroup.Item
             value={String(width)}
             className={styles.segment}
@@ -216,7 +224,7 @@ function StrokeWidths({ value }: { readonly value: Shared<number> }) {
               />
             </svg>
           </ToggleGroup.Item>
-        </Tip>
+        </Tooltip>
       ))}
     </ToggleGroup.Root>
   );

@@ -17,15 +17,3 @@
   box-shadow: var(--shadow-float);
   color: var(--color-ink);
 }
-
-.button {
-  flex-shrink: 0;
-  padding-block: var(--space-1);
-  padding-inline: var(--space-3);
-  border: 0;
-  border-radius: var(--radius-control);
-  background: var(--color-select);
-  color: var(--color-surface);
-  font: inherit;
-  cursor: pointer;
-}

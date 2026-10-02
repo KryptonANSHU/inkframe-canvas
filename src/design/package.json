@@ -1,0 +1,16 @@
+{
+  "name": "@inkframe/design",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Inkframe's design tokens, themes, and shared React components (Radix-based).",
+  "type": "module",
+  "main": "index.ts",
+  "sideEffects": [
+    "*.css"
+  ],
+  "peerDependencies": {
+    "lucide-react": "1.49.0",
+    "radix-ui": "1.6.7",
+    "react": "18.3.1"
+  }
+}

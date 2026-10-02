@@ -1,6 +1,6 @@
 import { useEditorState } from './EditorContext';
 import styles from './EmptyHint.module.css';
-import { Kbd } from './Kbd';
+import { Kbd } from '@inkframe/design';
 
 /** One helpful line on an empty canvas. It never blocks the pointer. */
 export function EmptyHint() {

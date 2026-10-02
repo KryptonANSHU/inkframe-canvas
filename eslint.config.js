@@ -56,6 +56,25 @@ export default tseslint.config(
               message: 'src/core must not import React.',
             },
             { group: ['**/ui', '**/ui/**'], message: 'src/core must not import from src/ui.' },
+            {
+              group: ['@inkframe/design'],
+              message: 'The design package exports React components; import design/tokens.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // The design system knows nothing of the editor: no core, no app UI.
+  {
+    files: ['src/design/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { group: ['**/core', '**/core/**'], message: 'src/design must not import src/core.' },
+            { group: ['**/ui', '**/ui/**'], message: 'src/design must not import src/ui.' },
           ],
         },
       ],

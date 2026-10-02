@@ -19,15 +19,3 @@
   color: var(--color-ink-muted);
   font-size: var(--font-size-md);
 }
-
-.button {
-  padding-block: var(--space-2);
-  padding-inline: var(--space-4);
-  border: 0;
-  border-radius: var(--radius-control);
-  background: var(--color-select);
-  color: var(--color-surface);
-  font: inherit;
-  font-size: var(--font-size-md);
-  cursor: pointer;
-}

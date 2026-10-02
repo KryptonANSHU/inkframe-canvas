@@ -17,7 +17,7 @@ import { ICON_STROKE, size } from '../design/tokens';
 import { useEditor, useEditorState } from './EditorContext';
 import styles from './MainMenu.module.css';
 import { notify } from './notifications';
-import { shortcutText } from './shortcutLabel';
+import { Divider, shortcutText, Surface } from '@inkframe/design';
 import { applyThemePreference, readThemePreference, type ThemePreference } from './themePreference';
 
 const THEMES: readonly { value: ThemePreference; label: string; Icon: LucideIcon }[] = [
@@ -63,19 +63,19 @@ export function MainMenu() {
   // Non-modal: a menu button needs no focus trap, and nothing else gets aria-hidden.
   return (
     <DropdownMenu.Root modal={false}>
-      <div className={styles.bar}>
+      <Surface layout="bar" className={styles.place}>
         {/* No tooltip: the menu explains itself, and a focus tooltip would outlive it. */}
         <DropdownMenu.Trigger className={styles.trigger} aria-label="Menu">
           <Menu size={size.icon} strokeWidth={ICON_STROKE} aria-hidden />
         </DropdownMenu.Trigger>
-        <span className={styles.divider} aria-hidden="true" />
+        <Divider />
         <img
           className={styles.logo}
           src={`${import.meta.env.BASE_URL}logos/logo-${drawnTheme}.svg`}
           alt="Inkframe"
           draggable={false}
         />
-      </div>
+      </Surface>
       <DropdownMenu.Portal>
         <DropdownMenu.Content
           className={styles.menu}

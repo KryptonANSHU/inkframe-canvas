@@ -1,0 +1,24 @@
+.toolbar {
+  composes: floating from './base.module.css';
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1);
+}
+
+.group {
+  display: flex;
+  gap: 2px;
+}
+
+.item {
+  composes: iconButton from './base.module.css';
+}
+
+.separator {
+  flex-shrink: 0;
+  align-self: stretch;
+  inline-size: 1px;
+  margin-block: var(--space-1);
+  background: var(--color-line);
+}

@@ -2,9 +2,9 @@ import { Grid3x3, Minus, Plus } from 'lucide-react';
 import { DropdownMenu } from 'radix-ui';
 import type { EditAction } from '../core/editActions';
 import { MAX_ZOOM, MIN_ZOOM } from '../core/camera';
+import { Divider, IconButton, shortcutText, Surface } from '@inkframe/design';
 import { useEditor, useEditorState } from './EditorContext';
-import { IconButton } from './IconButton';
-import { shortcutText } from './shortcutLabel';
+import { useBackToCanvas } from './useBackToCanvas';
 import styles from './ZoomControls.module.css';
 
 const ZOOM_ITEMS: readonly { action: EditAction; label: string; shortcut: string }[] = [
@@ -17,20 +17,21 @@ const ZOOM_ITEMS: readonly { action: EditAction; label: string; shortcut: string
 /** Zoom out, the current zoom (a menu of zoom actions), and zoom in, bottom left. */
 export function ZoomControls() {
   const editor = useEditor();
+  const backToCanvas = useBackToCanvas();
   const zoom = useEditorState((state) => state.camera.zoom);
   const gridVisible = useEditorState((state) => state.gridVisible);
   const percent = `${String(Math.round(zoom * 100))}%`;
 
   return (
-    <div className={styles.zoom} role="group" aria-label="Zoom">
+    <Surface layout="bar" className={styles.place} role="group" aria-label="Zoom">
       <IconButton
         label="Zoom out"
         Icon={Minus}
         shortcut="Mod+-"
         disabled={zoom <= MIN_ZOOM}
-        onClick={() => {
+        onClick={backToCanvas(() => {
           editor.perform('zoomOut');
-        }}
+        })}
       />
       {/* Non-modal: a menu button needs no focus trap, and nothing else is aria-hidden. */}
       <DropdownMenu.Root modal={false}>
@@ -69,20 +70,20 @@ export function ZoomControls() {
         Icon={Plus}
         shortcut="Mod+="
         disabled={zoom >= MAX_ZOOM}
-        onClick={() => {
+        onClick={backToCanvas(() => {
           editor.perform('zoomIn');
-        }}
+        })}
       />
-      <span className={styles.divider} aria-hidden="true" />
+      <Divider />
       <IconButton
         label="Grid"
         Icon={Grid3x3}
         shortcut="Mod+'"
         pressed={gridVisible}
-        onClick={() => {
+        onClick={backToCanvas(() => {
           editor.perform('toggleGrid');
-        }}
+        })}
       />
-    </div>
+    </Surface>
   );
 }

@@ -2,7 +2,7 @@ import { Puzzle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Popover } from 'radix-ui';
 import type { PluginManager } from '../plugins/manager';
-import { ICON_STROKE, size } from '../design/tokens';
+import { ICON_STROKE, size, Surface } from '@inkframe/design';
 import { useEditor } from './EditorContext';
 import { notify } from './notifications';
 import { PluginApproval } from './PluginApproval';
@@ -43,12 +43,12 @@ export function PluginsArea() {
           if (open) loadManager();
         }}
       >
-        <div className={styles.bar}>
+        <Surface layout="bar" className={styles.place}>
           {/* No tooltip: the panel explains itself (see the main menu). */}
           <Popover.Trigger className={styles.trigger} aria-label="Plugins">
             <Puzzle size={size.icon} strokeWidth={ICON_STROKE} aria-hidden />
           </Popover.Trigger>
-        </div>
+        </Surface>
         <Popover.Portal>
           <Popover.Content
             className={styles.content}

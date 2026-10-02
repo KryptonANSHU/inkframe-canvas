@@ -57,21 +57,6 @@
   }
 }
 
-.tooltip {
-  z-index: var(--z-overlay);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding-block: var(--space-1);
-  padding-inline: var(--space-2);
-  border-radius: var(--radius-control);
-  background: var(--color-tooltip);
-  color: var(--color-tooltip-text);
-  font-size: var(--font-size-xs);
-  line-height: 1.4;
-  animation: rise var(--duration-fast) var(--easing);
-}
-
 .menu {
   composes: floating;
   z-index: var(--z-overlay);
@@ -128,12 +113,4 @@
   font-size: var(--font-size-xs);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
-}
-
-.divider {
-  flex-shrink: 0;
-  align-self: stretch;
-  inline-size: 1px;
-  margin-block: var(--space-1);
-  background: var(--color-line);
 }

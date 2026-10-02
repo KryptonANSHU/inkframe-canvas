@@ -1,3 +1,4 @@
+import { Button } from '@inkframe/design';
 import { useStore } from 'zustand';
 import type { PluginManager } from '../plugins/manager';
 import styles from './PluginPanel.module.css';
@@ -27,16 +28,15 @@ export function BuiltinPlugins({ manager }: BuiltinPluginsProps) {
               <p className={styles.name}>{plugin.name}</p>
               <p className={styles.status}>{plugin.description}</p>
             </div>
-            <button
-              type="button"
-              className={styles.run}
+            <Button
+              size="sm"
               aria-label={`Run ${plugin.name}`}
               onClick={() => {
                 manager.run(plugin.code, plugin.name, 'builtin');
               }}
             >
               Run
-            </button>
+            </Button>
           </li>
         ))}
       </ul>

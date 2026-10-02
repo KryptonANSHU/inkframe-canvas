@@ -1,5 +1,4 @@
 .panel {
-  composes: floating from './surfaces.module.css';
   position: absolute;
   z-index: var(--z-floating);
   /* Below the top row of chrome, so it never collides with the toolbar. */

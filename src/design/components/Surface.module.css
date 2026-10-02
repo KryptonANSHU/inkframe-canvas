@@ -1,0 +1,21 @@
+.surface {
+  composes: floating from './base.module.css';
+}
+
+/* A bar of controls: icon buttons in a row, with a little padding around them. */
+.bar {
+  composes: floating from './base.module.css';
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-1);
+}
+
+.divider {
+  flex-shrink: 0;
+  align-self: stretch;
+  inline-size: 1px;
+  margin-block: var(--space-1);
+  margin-inline: var(--space-1);
+  background: var(--color-line);
+}

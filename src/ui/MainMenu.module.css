@@ -1,21 +1,12 @@
-.bar {
-  composes: floating from './surfaces.module.css';
+.place {
   position: absolute;
   z-index: var(--z-floating);
   inset-block-start: var(--space-3);
   inset-inline-start: var(--space-3);
-  display: flex;
-  align-items: center;
-  padding: var(--space-1);
 }
 
 .trigger {
   composes: iconButton from './surfaces.module.css';
-}
-
-.divider {
-  composes: divider from './surfaces.module.css';
-  margin-inline: var(--space-1);
 }
 
 /* The wordmark sits at icon scale, so it reads as a label, not a banner. */

@@ -1,9 +1,10 @@
 import styles from './Kbd.module.css';
-import { shortcutKeys } from './shortcutLabel';
+import { shortcutKeys } from './shortcuts';
 
 type KbdProps = {
   /** "Mod+Shift+Z" style; Mod is ⌘ on Apple platforms and Ctrl elsewhere. */
   readonly shortcut: string;
+  /** "inverse" sits on a dark tooltip: no caps, just quieter glyphs. */
   readonly tone?: 'plain' | 'inverse';
 };
 

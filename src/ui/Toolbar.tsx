@@ -10,13 +10,17 @@ import {
   Type,
   type LucideIcon,
 } from 'lucide-react';
-import type { MouseEvent } from 'react';
-import { Toolbar as RadixToolbar } from 'radix-ui';
+import {
+  Toolbar as ToolbarRoot,
+  ToolbarChoice,
+  ToolbarOption,
+  ToolbarSeparator,
+  ToolbarToggle,
+} from '@inkframe/design';
 import type { ToolId } from '../core/tools/toolIds';
-import { ICON_STROKE, size } from '../design/tokens';
 import { useEditor, useEditorState } from './EditorContext';
-import { Tip } from './Tip';
 import styles from './Toolbar.module.css';
+import { useBackToCanvas } from './useBackToCanvas';
 
 const TOOLS: readonly { id: ToolId; label: string; key: string; Icon: LucideIcon }[] = [
   { id: 'select', label: 'Select', key: 'V', Icon: MousePointer2 },
@@ -35,57 +39,43 @@ const TOOLS: readonly { id: ToolId; label: string; key: string; Icon: LucideIcon
  */
 export function Toolbar() {
   const editor = useEditor();
+  const backToCanvas = useBackToCanvas();
   const { activeTool, toolLocked } = useEditorState((state) => ({
     activeTool: state.activeTool,
     toolLocked: state.toolLocked,
   }));
-  // detail is 0 for keyboard activation: keyboard users keep focus in the toolbar.
-  const backToCanvas = (event: MouseEvent) => {
-    if (event.detail > 0) editor.focus();
-  };
-  const LockIcon = toolLocked ? Lock : LockOpen;
 
   return (
-    <RadixToolbar.Root className={styles.toolbar} aria-label="Tools">
-      <RadixToolbar.ToggleGroup
-        type="single"
-        className={styles.group}
+    <ToolbarRoot label="Tools" className={styles.place}>
+      <ToolbarChoice<ToolId>
+        label="Drawing tool"
         value={activeTool}
-        aria-label="Drawing tool"
-        onValueChange={(tool) => {
-          // Radix sends "" when the active item is clicked again; a tool stays chosen.
-          if (tool !== '') editor.setTool(tool as ToolId);
+        onChange={(tool) => {
+          editor.setTool(tool);
         }}
       >
         {TOOLS.map(({ id, label, key, Icon }) => (
-          <Tip key={id} label={label} shortcut={key}>
-            <RadixToolbar.ToggleItem
-              value={id}
-              className={styles.tool}
-              aria-label={label}
-              aria-keyshortcuts={key}
-              onClick={backToCanvas}
-            >
-              <Icon size={size.icon} strokeWidth={ICON_STROKE} aria-hidden />
-            </RadixToolbar.ToggleItem>
-          </Tip>
+          <ToolbarOption
+            key={id}
+            value={id}
+            label={label}
+            Icon={Icon}
+            shortcut={key}
+            onClick={backToCanvas(() => undefined)}
+          />
         ))}
-      </RadixToolbar.ToggleGroup>
-      <RadixToolbar.Separator className={styles.divider} />
-      <Tip label={toolLocked ? 'Unlock tool' : 'Keep tool after drawing'} shortcut="Q">
-        <RadixToolbar.Button
-          className={styles.tool}
-          aria-label="Keep tool after drawing"
-          aria-pressed={toolLocked}
-          aria-keyshortcuts="Q"
-          onClick={(event) => {
-            editor.perform('toggleLock');
-            backToCanvas(event);
-          }}
-        >
-          <LockIcon size={size.icon} strokeWidth={ICON_STROKE} aria-hidden />
-        </RadixToolbar.Button>
-      </Tip>
-    </RadixToolbar.Root>
+      </ToolbarChoice>
+      <ToolbarSeparator />
+      <ToolbarToggle
+        label="Keep tool after drawing"
+        tip={toolLocked ? 'Unlock tool' : 'Keep tool after drawing'}
+        Icon={toolLocked ? Lock : LockOpen}
+        shortcut="Q"
+        pressed={toolLocked}
+        onClick={backToCanvas(() => {
+          editor.perform('toggleLock');
+        })}
+      />
+    </ToolbarRoot>
   );
 }

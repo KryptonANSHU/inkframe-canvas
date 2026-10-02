@@ -3,7 +3,7 @@ import { useRef } from 'react';
 import { Dialog } from 'radix-ui';
 import { ICON_STROKE, size } from '../design/tokens';
 import { useEditor, useEditorState } from './EditorContext';
-import { Kbd } from './Kbd';
+import { Kbd } from '@inkframe/design';
 import styles from './ShortcutsDialog.module.css';
 
 type Group = { readonly title: string; readonly rows: readonly (readonly [string, string])[] };
