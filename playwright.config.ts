@@ -21,9 +21,13 @@ export default defineConfig({
     },
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-  webServer: {
-    command: `npm run dev -- --port ${String(port)} --strictPort`,
-    url: baseURL,
-    reuseExistingServer: !isCI,
-  },
+  webServer: [
+    {
+      command: `npm run dev -- --port ${String(port)} --strictPort`,
+      url: baseURL,
+      reuseExistingServer: !isCI,
+    },
+    // The collaboration relay, at the address the dev build connects to.
+    { command: 'npm run relay', url: 'http://localhost:1234', reuseExistingServer: !isCI },
+  ],
 });
