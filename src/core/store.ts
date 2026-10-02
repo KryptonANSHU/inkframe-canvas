@@ -81,7 +81,7 @@ export function createEditorStore(initial: Partial<EditorState> = {}): EditorSto
     theme: 'light',
     toolLocked: false,
     helpOpen: false,
-    gridVisible: false,
+    gridVisible: true,
     ...initial,
   }));
 }

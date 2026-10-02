@@ -21,6 +21,11 @@ import {
   testShapeId,
 } from './testing/factories';
 
+/** Grid lines would add canvas calls to every recording; the grid has its own tests. */
+function storeWithoutGrid(initial: Parameters<typeof createEditorStore>[0] = {}) {
+  return createEditorStore({ gridVisible: false, ...initial });
+}
+
 /** The per-shape transforms, leaving out resets and the camera transform (no offset). */
 function shapeTransforms(calls: readonly string[]): string[] {
   return calls.filter((c) => c.startsWith('setTransform(') && !c.endsWith(',0,0)'));
@@ -74,7 +79,7 @@ const viewport: Viewport = { pixelWidth: 1600, pixelHeight: 1200, devicePixelRat
 describe('createRenderer', () => {
   it('clears the whole backing store, then sets the camera transform once', () => {
     const { context, calls } = createRecordingContext();
-    const state = createEditorStore({ camera: { x: 10, y: 20, zoom: 1.5 } }).getState();
+    const state = storeWithoutGrid({ camera: { x: 10, y: 20, zoom: 1.5 } }).getState();
 
     createRenderer(context).draw(state, viewport);
 
@@ -93,7 +98,7 @@ describe('createRenderer', () => {
       makeRect({ id: testShapeId('top'), width: 20, zIndex: 1 }),
     ].reduce(insertShape, EMPTY_DOCUMENT);
     const draft = makeRect({ id: testShapeId('draft'), width: 30 });
-    const state = createEditorStore({ document, draft }).getState();
+    const state = storeWithoutGrid({ document, draft }).getState();
 
     createRenderer(context).draw(state, viewport);
 
@@ -104,7 +109,7 @@ describe('createRenderer', () => {
   it('rotates a rectangle around its center', () => {
     const { context, calls } = createRecordingContext();
     const draft = makeRect({ x: 100, y: 50, width: 40, height: 20, rotation: 0.5 });
-    createRenderer(context).draw(createEditorStore({ draft }).getState(), viewport);
+    createRenderer(context).draw(storeWithoutGrid({ draft }).getState(), viewport);
 
     // One transform per shape: the camera (×2 at DPR 2), then the center (120, 60),
     // then the rotation by 0.5.
@@ -118,12 +123,12 @@ describe('createRenderer', () => {
   it('fills only shapes that have a fill color, and always strokes', () => {
     const { context, calls } = createRecordingContext();
     const filled = makeRect({ style: { ...DEFAULT_SHAPE_STYLE, fillColor: '#ff0000' } });
-    createRenderer(context).draw(createEditorStore({ draft: filled }).getState(), viewport);
+    createRenderer(context).draw(storeWithoutGrid({ draft: filled }).getState(), viewport);
     expect(calls.filter((c) => c === 'fill()')).toHaveLength(1);
     expect(context.fillStyle).toBe('#ff0000');
 
     calls.length = 0;
-    createRenderer(context).draw(createEditorStore({ draft: makeRect() }).getState(), viewport);
+    createRenderer(context).draw(storeWithoutGrid({ draft: makeRect() }).getState(), viewport);
     expect(calls).not.toContain('fill()');
     expect(calls).toContain('stroke()');
   });
@@ -136,7 +141,7 @@ describe('createRenderer', () => {
     };
     const style = { strokeColor: '#123456', fillColor: null, strokeWidth: 4, opacity: 0.5 };
     createRenderer(context).draw(
-      createEditorStore({ draft: makeRect({ style }) }).getState(),
+      storeWithoutGrid({ draft: makeRect({ style }) }).getState(),
       viewport,
     );
     expect(context.strokeStyle).toBe('#123456');
@@ -149,7 +154,7 @@ describe('createRenderer', () => {
   it('draws an ellipse inside its box, centered on the box center', () => {
     const { context, calls } = createRecordingContext();
     const draft = makeEllipse({ x: 10, y: 20, width: 60, height: 40 });
-    createRenderer(context).draw(createEditorStore({ draft }).getState(), viewport);
+    createRenderer(context).draw(storeWithoutGrid({ draft }).getState(), viewport);
     expect(calls).toContain('setTransform(2,0,0,2,80,80)');
     expect(calls).toContain(`ellipse(0,0,30,20,0,0,${String(Math.PI * 2)})`);
   });
@@ -164,7 +169,7 @@ describe('createRenderer', () => {
         { x: 80, y: 0 },
       ],
     });
-    createRenderer(context).draw(createEditorStore({ draft }).getState(), viewport);
+    createRenderer(context).draw(storeWithoutGrid({ draft }).getState(), viewport);
     expect(calls).toContain('setTransform(2,0,0,2,280,240)');
     expect(calls).toContain('moveTo(-40,20)');
     expect(calls).toContain('lineTo(40,-20)');
@@ -178,7 +183,7 @@ describe('createRenderer', () => {
         { x: 100, y: 0 },
       ],
     });
-    createRenderer(context).draw(createEditorStore({ draft }).getState(), viewport);
+    createRenderer(context).draw(storeWithoutGrid({ draft }).getState(), viewport);
     // Shaft start, plus one move to the tip for each side of the head.
     expect(calls.filter((c) => c.startsWith('moveTo('))).toEqual([
       'moveTo(-50,0)',
@@ -189,7 +194,7 @@ describe('createRenderer', () => {
 
   it('smooths a pen path with one curve per inner point', () => {
     const { context, calls } = createRecordingContext();
-    createRenderer(context).draw(createEditorStore({ draft: makePen() }).getState(), viewport);
+    createRenderer(context).draw(storeWithoutGrid({ draft: makePen() }).getState(), viewport);
     expect(calls.filter((c) => c.startsWith('quadraticCurveTo('))).toHaveLength(2);
     expect(context.lineCap).toBe('round');
   });
@@ -198,7 +203,7 @@ describe('createRenderer', () => {
     const style = { ...DEFAULT_SHAPE_STYLE, fillColor: '#ff0000' };
     for (const draft of [makeLine({ style }), makeArrow({ style }), makePen({ style })]) {
       const { context, calls } = createRecordingContext();
-      createRenderer(context).draw(createEditorStore({ draft }).getState(), viewport);
+      createRenderer(context).draw(storeWithoutGrid({ draft }).getState(), viewport);
       expect(calls).not.toContain('fill()');
     }
   });
@@ -214,7 +219,7 @@ describe('createRenderer', () => {
       text: 'Hello world again and again',
     });
     createRenderer(context).draw(
-      createEditorStore({ draft, fontsReady: true }).getState(),
+      storeWithoutGrid({ draft, fontsReady: true }).getState(),
       viewport,
     );
 
@@ -230,7 +235,7 @@ describe('createRenderer', () => {
 
   it('draws no text until fonts are ready', () => {
     const { context, calls } = createRecordingContext();
-    createRenderer(context).draw(createEditorStore({ draft: makeText() }).getState(), viewport);
+    createRenderer(context).draw(storeWithoutGrid({ draft: makeText() }).getState(), viewport);
     expect(calls.some((c) => c.startsWith('fillText('))).toBe(false);
   });
 
@@ -240,7 +245,7 @@ describe('createRenderer', () => {
     const top = makeRect({ id: testShapeId('top'), width: 20, zIndex: 1 });
     const document = [bottom, top].reduce(insertShape, EMPTY_DOCUMENT);
     const preview = new Map([[bottom.id, { ...bottom, x: 500 }]]);
-    createRenderer(context).draw(createEditorStore({ document, preview }).getState(), viewport);
+    createRenderer(context).draw(storeWithoutGrid({ document, preview }).getState(), viewport);
     expect(shapeTransforms(calls)).toEqual([
       'setTransform(2,0,0,2,1010,50)',
       'setTransform(2,0,0,2,20,50)',
@@ -261,7 +266,7 @@ describe('createRenderer', () => {
       queried.push(`${String(area.minX)},${String(area.maxX)}`);
       return area.maxX < 5000 ? [near.id] : [];
     });
-    renderer.draw(createEditorStore({ document, preview }).getState(), viewport);
+    renderer.draw(storeWithoutGrid({ document, preview }).getState(), viewport);
     // Only near (in view) and far (dragged into view), in draw order.
     expect(shapeTransforms(calls)).toEqual([
       'setTransform(2,0,0,2,10,50)',
@@ -274,7 +279,7 @@ describe('createRenderer', () => {
     const { context, calls } = createRecordingContext();
     const rect = makeRect({ x: 10, y: 20, width: 100, height: 50 });
     const document = insertShape(EMPTY_DOCUMENT, rect);
-    const state = createEditorStore({ document, selectedIds: new Set([rect.id]) }).getState();
+    const state = storeWithoutGrid({ document, selectedIds: new Set([rect.id]) }).getState();
     createRenderer(context).draw(state, { ...viewport, devicePixelRatio: 1 });
 
     const overlay = calls.slice(calls.lastIndexOf('setTransform(1,0,0,1,0,0)'));
@@ -306,7 +311,7 @@ describe('createRenderer', () => {
     const selected = { document, selectedIds: new Set([line.id]) };
 
     const idle = createRecordingContext();
-    createRenderer(idle.context).draw(createEditorStore(selected).getState(), viewport);
+    createRenderer(idle.context).draw(storeWithoutGrid(selected).getState(), viewport);
     const idleOverlay = idle.calls.slice(idle.calls.lastIndexOf('setTransform(1,0,0,1,0,0)'));
     expect(idleOverlay.filter((c) => c.startsWith('arc('))).toHaveLength(2);
     expect(idleOverlay.filter((c) => c === 'stroke()')).toHaveLength(2);
@@ -314,7 +319,7 @@ describe('createRenderer', () => {
     const moving = createRecordingContext();
     const preview = new Map([[line.id, { ...line, x: 50 }]]);
     createRenderer(moving.context).draw(
-      createEditorStore({ ...selected, preview }).getState(),
+      storeWithoutGrid({ ...selected, preview }).getState(),
       viewport,
     );
     const movingOverlay = moving.calls.slice(moving.calls.lastIndexOf('setTransform(1,0,0,1,0,0)'));
@@ -327,7 +332,7 @@ describe('createRenderer', () => {
     const b = makeRect({ id: testShapeId('b'), x: 200, zIndex: 1 });
     const document = [a, b].reduce(insertShape, EMPTY_DOCUMENT);
     const marquee = { minX: 0, minY: 0, maxX: 50, maxY: 50 };
-    const state = createEditorStore({
+    const state = storeWithoutGrid({
       document,
       selectedIds: new Set([a.id, b.id]),
       marquee,

@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig, devices } from '@playwright/test';
 
 const port = 4174;
+const baseURL = `http://localhost:${String(port)}`;
 
 /**
  * `npm run bench`: the production build (dev builds run the invariants checker on every
@@ -13,7 +14,14 @@ export default defineConfig({
   testMatch: 'bench.spec.ts',
   timeout: 30 * 60_000,
   reporter: 'list',
-  use: { baseURL: `http://localhost:${String(port)}` },
+  use: {
+    baseURL,
+    // Grid off, as when the saved results were recorded, so runs stay comparable.
+    storageState: {
+      cookies: [],
+      origins: [{ origin: baseURL, localStorage: [{ name: 'inkframe.grid', value: 'off' }] }],
+    },
+  },
   projects: [
     {
       name: 'chromium',
@@ -30,7 +38,7 @@ export default defineConfig({
   ],
   webServer: {
     command: `npm run build && npx vite preview --port ${String(port)} --strictPort`,
-    url: `http://localhost:${String(port)}`,
+    url: baseURL,
     // Commands run from this config's folder by default; Vite must run from the project root.
     cwd: fileURLToPath(new URL('..', import.meta.url)),
     reuseExistingServer: false,
