@@ -7,6 +7,7 @@ import { EMPTY_HISTORY } from '../core/history';
 import { EMPTY_SELECTION, type EditorStore } from '../core/store';
 import { bindDocument } from './binding';
 import { loadIdentity } from './identity';
+import { bindPresence, type PresenceSource } from './presence';
 import { createSharedUndo } from './sharedUndo';
 
 /** What a session needs from the editor (core/dom/createEditor's Editor fits). */
@@ -16,6 +17,7 @@ export type CollabEditor = {
   readonly saveNow: () => Promise<void>;
   readonly reloadDrawing: () => Promise<void>;
   readonly reportError: (error: Error) => void;
+  readonly onPointerMove: PresenceSource['onPointerMove'];
 };
 
 export type SessionOptions = {
@@ -84,11 +86,13 @@ export async function joinRoom(
   });
   window.addEventListener('online', publishStatus);
   window.addEventListener('offline', publishStatus);
+  const unbindPresence = bindPresence(editor, provider.awareness, self);
 
   return {
     async leave() {
       window.removeEventListener('online', publishStatus);
       window.removeEventListener('offline', publishStatus);
+      unbindPresence();
       provider.destroy();
       binding.dispose();
       undo.dispose();

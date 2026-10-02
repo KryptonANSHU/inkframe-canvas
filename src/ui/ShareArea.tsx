@@ -6,6 +6,7 @@ import type { CollabStatus } from '../core/collabState';
 import { RELAY_URL, newRoomName, roomInLink, setRoomInLink } from './collabLink';
 import { useEditor, useEditorState } from './EditorContext';
 import { notify } from './notifications';
+import { PeopleList } from './PeopleList';
 import styles from './ShareArea.module.css';
 
 const STATUS: Readonly<Record<CollabStatus, { tone: 'ok' | 'busy' | 'off'; label: string }>> = {
@@ -21,7 +22,10 @@ const STATUS: Readonly<Record<CollabStatus, { tone: 'ok' | 'busy' | 'off'; label
  */
 export function ShareArea() {
   const editor = useEditor();
-  const collab = useEditorState((state) => state.collab);
+  // Room and status only: peers' cursors change many times a second.
+  const collab = useEditorState((state) =>
+    state.collab === null ? null : { room: state.collab.room, status: state.collab.status },
+  );
   const session = useRef<CollabSession | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -100,6 +104,7 @@ export function ShareArea() {
           <>
             <p className={styles.text}>Anyone with this link can draw here with you:</p>
             <p className={styles.link}>{location.href}</p>
+            <PeopleList />
             <div className={styles.actions}>
               <Button icon={Link} onClick={() => void copyLink(location.href)}>
                 Copy link

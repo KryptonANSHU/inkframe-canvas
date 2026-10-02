@@ -38,7 +38,9 @@ import { createFileReaderClient } from './fileWorkerClient';
 import { createIndexedDbStorage } from './indexedDbStorage';
 import { bindGridPreference } from './gridPreference';
 import { watchThemeMode } from './themeMode';
-import { observeCanvasSurface } from './canvasSurface';
+import { observeCanvasSurface, type CanvasSurface } from './canvasSurface';
+import { screenToWorld } from '../camera';
+import { createPoint, type Point } from '../geometry/point';
 import { createCanvasTextMeasurer } from './canvasTextMeasurer';
 import { loadTextFont } from './fonts';
 import { bindTextEditor } from './textEditor';
@@ -79,7 +81,11 @@ export type Editor = {
   /** Shows this device's autosaved drawing again (after leaving a room). */
   readonly reloadDrawing: () => Promise<void>;
   readonly reportError: (error: Error) => void;
+  /** The pointer over the canvas in world units, or null as it leaves; returns an unsubscribe. */
+  readonly onPointerMove: (listener: PointerListener) => () => void;
 };
+
+export type PointerListener = (world: Readonly<Point> | null) => void;
 
 const animationFrames: FrameScheduler = {
   request: (callback) => requestAnimationFrame(callback),
@@ -110,6 +116,7 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
   // `surface` is assigned below; draw only ever runs in a later animation frame.
   // Timed only while someone listens (the ?debug=1 meter, the benchmark).
   const frameListeners = new Set<FrameListener>();
+  const pointerListeners = new Set<PointerListener>();
   const loop = createRenderLoop(
     () => {
       const started = frameListeners.size > 0 ? performance.now() : 0;
@@ -184,6 +191,7 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
     hooks,
   );
   const unbindInput = bindCanvasInput(canvas, controller, surface);
+  const unbindPointer = watchPointer(canvas, store, surface, pointerListeners);
   canvas.style.cursor = controller.cursor();
   // Shortcuts are heard only while the canvas has focus, and nothing has focus on load:
   // without this, the first tool key is ignored and the next drag is a marquee. No ring
@@ -222,6 +230,12 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
     saveNow: () => persistence.flush(),
     reloadDrawing: () => persistence.reload(),
     reportError,
+    onPointerMove: (listener) => {
+      pointerListeners.add(listener);
+      return () => {
+        pointerListeners.delete(listener);
+      };
+    },
     perform: (action) => {
       performEditAction(action, store, reportError, hooks);
     },
@@ -245,6 +259,7 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
       exporter.dispose();
       unbindTextEditor();
       unbindInput();
+      unbindPointer();
       unsubscribe();
       unwatchInvariants();
       unbindIndex();
@@ -306,6 +321,31 @@ function watchInvariantsInDev(
   return () => {
     disposed = true;
     unwatch?.();
+  };
+}
+
+/** Reports the pointer's world position to listeners (collaborators see it as a cursor). */
+function watchPointer(
+  canvas: HTMLCanvasElement,
+  store: EditorStore,
+  surface: CanvasSurface,
+  listeners: ReadonlySet<PointerListener>,
+): () => void {
+  const screen = createPoint();
+  const onMove = (event: PointerEvent) => {
+    if (listeners.size === 0) return;
+    surface.toScreen(event.clientX, event.clientY, screen);
+    const world = screenToWorld(store.getState().camera, screen);
+    for (const listener of listeners) listener(world);
+  };
+  const onLeave = () => {
+    for (const listener of listeners) listener(null);
+  };
+  canvas.addEventListener('pointermove', onMove);
+  canvas.addEventListener('pointerleave', onLeave);
+  return () => {
+    canvas.removeEventListener('pointermove', onMove);
+    canvas.removeEventListener('pointerleave', onLeave);
   };
 }
 

@@ -1,0 +1,31 @@
+.title {
+  margin: 0 0 var(--space-1);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-ink);
+  font-size: var(--font-size-sm);
+}
+
+/* The person's cursor color (set inline: it comes from their presence). */
+.dot {
+  flex-shrink: 0;
+  inline-size: 10px;
+  block-size: 10px;
+  border-radius: var(--radius-round);
+}

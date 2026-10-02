@@ -65,6 +65,8 @@ function createRecordingContext() {
     fillText: record('fillText'),
     font: '',
     textBaseline: 'alphabetic',
+    measureText: (text: string) => ({ width: text.length * 7 }) as TextMetrics,
+    roundRect: record('roundRect'),
   };
   return { context, calls };
 }
@@ -346,5 +348,26 @@ describe('createRenderer', () => {
     expect(overlay.filter((c) => c === 'fill()')).toHaveLength(1);
     // At DPR 2 the line is 2 device pixels wide, so edges sit on pixel boundaries.
     expect(overlay).toContain('moveTo(0,0)');
+  });
+});
+
+describe('presence', () => {
+  it("draws collaborators' cursors with their names, and nothing when alone", () => {
+    const alone = createRecordingContext();
+    createRenderer(alone.context).draw(storeWithoutGrid().getState(), viewport);
+    expect(alone.calls.filter((c) => c.startsWith('roundRect('))).toHaveLength(0);
+
+    const { context, calls } = createRecordingContext();
+    const collab = {
+      room: 'room-1',
+      status: 'connected' as const,
+      self: { name: 'Me', color: '#1971C2' },
+      peers: [
+        { id: 2, name: 'Quiet otter', color: '#C2255C', cursor: { x: 10, y: 10 }, selection: [] },
+      ],
+    };
+    createRenderer(context).draw(storeWithoutGrid({ collab }).getState(), viewport);
+    expect(calls.filter((c) => c.startsWith('fillText(Quiet otter'))).toHaveLength(1);
+    expect(calls.filter((c) => c.startsWith('roundRect('))).toHaveLength(1);
   });
 });

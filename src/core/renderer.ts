@@ -2,6 +2,7 @@ import { assertNever } from './assertNever';
 import { DEFAULT_CAMERA, worldToDeviceTransform, type Transform } from './camera';
 import { createPoint } from './geometry/point';
 import { drawGrid } from './grid';
+import { drawPresence } from './presence';
 import { drawSelectionOverlay } from './selection/drawSelection';
 import { ARROW_HEAD_SIDES, arrowHeadWing, isFilled, shapeBox } from './shapeGeometry';
 import type { Bounds, Box } from './geometry/bounds';
@@ -42,6 +43,8 @@ export type RenderContext = Pick<
   | 'fillText'
   | 'font'
   | 'textBaseline'
+  | 'measureText'
+  | 'roundRect'
 >;
 
 /** Shapes drawn as a stroked (and maybe filled) path: everything except text. */
@@ -106,6 +109,7 @@ export function createRenderer(
       }
       context.globalAlpha = 1;
       drawSelectionOverlay(context, state, viewport.devicePixelRatio);
+      drawPresence(context, state, viewport.devicePixelRatio);
     },
   };
 }
