@@ -2,7 +2,7 @@ import type { Bounds } from '../geometry/bounds';
 import type { Result } from '../result';
 import type { Shape } from '../shapes';
 import type { ExportFormat, ExportRequest, ExportResponse } from '../../workers/exportProtocol';
-import { FONT_URL } from './fonts';
+import { FONT_URLS } from './fonts';
 
 export type ExportClient = {
   render(
@@ -54,7 +54,11 @@ export function createExportClient(): ExportClient {
         format,
         shapes,
         area,
-        fontUrl: new URL(FONT_URL, location.href).href,
+        fontUrls: {
+          hand: new URL(FONT_URLS.hand, location.href).href,
+          sans: new URL(FONT_URLS.sans, location.href).href,
+          mono: new URL(FONT_URLS.mono, location.href).href,
+        },
       };
       return new Promise((resolve) => {
         pending.set(request.id, resolve);

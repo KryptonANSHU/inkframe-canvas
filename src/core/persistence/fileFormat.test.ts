@@ -3,7 +3,14 @@ import { MAX_PEN_POINTS } from '../shapes';
 import { makePen, makeRect, makeText, testShapeId } from '../testing/factories';
 import { documentFromShapes, MAX_FILE_BYTES, MAX_SHAPES, toFile } from './fileFormat';
 import { readFile, readFileText } from './readFile';
-import { CURRENT_VERSION, migrate, migrateV1toV2, migrateV2toV3, type RawFile } from './migrations';
+import {
+  CURRENT_VERSION,
+  migrate,
+  migrateV1toV2,
+  migrateV2toV3,
+  migrateV3toV4,
+  type RawFile,
+} from './migrations';
 
 const rect = makeRect({ id: testShapeId('r') });
 const text = makeText({ id: testShapeId('t') });
@@ -97,6 +104,21 @@ describe('migrateV2toV3', () => {
     const v2 = file([{ ...rect, groupId: 'g' }], { version: 2 });
     expect(migrateV2toV3(v2)).toEqual(v2);
     expect(readFile(v2).ok).toBe(true);
+  });
+});
+
+describe('migrateV3toV4', () => {
+  it('opens version-3 text as Normal, exactly as it looked', () => {
+    const v3 = file([text], { version: 3 });
+    expect(migrateV3toV4(v3)).toEqual(v3);
+    const read = readFile(v3);
+    expect(read.ok && read.value[0]).not.toHaveProperty('font');
+  });
+
+  it('keeps a chosen font through a save and reload', () => {
+    const hand = { ...text, font: 'hand' as const };
+    const read = readFile(toFile(documentFromShapes([hand])));
+    expect(read.ok && read.value[0]).toMatchObject({ font: 'hand' });
   });
 });
 

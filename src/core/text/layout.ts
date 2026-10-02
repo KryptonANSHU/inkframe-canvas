@@ -1,4 +1,5 @@
-import type { TextShape } from '../shapes';
+import type { TextFont, TextShape } from '../shapes';
+import { textFont } from './font';
 
 export type FontMetrics = {
   /** Baseline offset from the top of a line. */
@@ -6,10 +7,13 @@ export type FontMetrics = {
   readonly lineHeight: number;
 };
 
-/** Measures text in a given font size. The browser version wraps canvas measureText. */
+/**
+ * Measures text in a given size and face (Normal when omitted). The browser version
+ * wraps canvas measureText.
+ */
 export type TextMeasurer = {
-  width(text: string, fontSize: number): number;
-  metrics(fontSize: number): FontMetrics;
+  width(text: string, fontSize: number, font?: TextFont): number;
+  metrics(fontSize: number, font?: TextFont): FontMetrics;
 };
 
 export type TextLine = { readonly text: string; readonly width: number };
@@ -30,13 +34,14 @@ export function layoutText(
   maxWidth: number,
   fontSize: number,
   measurer: TextMeasurer,
+  font: TextFont = 'sans',
 ): TextLayout {
-  const measure = (value: string) => measurer.width(value, fontSize);
+  const measure = (value: string) => measurer.width(value, fontSize, font);
   const lines = text
     .split('\n')
     .flatMap((paragraph) => wrapParagraph(paragraph, maxWidth, measure))
     .map((line) => ({ text: line, width: measure(line) }));
-  const metrics = measurer.metrics(fontSize);
+  const metrics = measurer.metrics(fontSize, font);
   return { ...metrics, lines, height: lines.length * metrics.lineHeight };
 }
 
@@ -98,7 +103,7 @@ export function createTextLayoutCache(measurer: TextMeasurer) {
       if (cached !== undefined) {
         return cached;
       }
-      const layout = layoutText(shape.text, shape.width, shape.fontSize, measurer);
+      const layout = layoutText(shape.text, shape.width, shape.fontSize, measurer, textFont(shape));
       cache.set(shape, layout);
       return layout;
     },

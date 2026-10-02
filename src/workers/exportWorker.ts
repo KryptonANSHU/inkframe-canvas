@@ -4,7 +4,8 @@ import { shapesToSvg } from '../core/export/svg';
 import { documentFromShapes } from '../core/persistence/fileFormat';
 import { createRenderer } from '../core/renderer';
 import { createEditorStore } from '../core/store';
-import { TEXT_FONT_FAMILY } from '../core/text/font';
+import type { TextFont } from '../core/shapes';
+import { TEXT_FACES, textFont } from '../core/text/font';
 import { createTextLayoutCache } from '../core/text/layout';
 import type { ExportRequest, ExportResponse } from './exportProtocol';
 
@@ -30,17 +31,23 @@ self.onmessage = ({ data }: MessageEvent<ExportRequest>) => {
 };
 
 async function exportImage(request: ExportRequest): Promise<Blob> {
-  const hasText = request.shapes.some((shape) => shape.type === 'text');
-  if (hasText) {
-    await loadFont(request.fontUrl);
-  }
+  // Only the faces this export uses are loaded or embedded.
+  const faces = [
+    ...new Set(request.shapes.flatMap((shape) => (shape.type === 'text' ? [textFont(shape)] : []))),
+  ];
+  await Promise.all(faces.map((face) => loadFont(face, request.fontUrls[face])));
   const context = new OffscreenCanvas(1, 1).getContext('2d');
   if (context === null) {
     throw new Error('no 2D canvas in workers');
   }
   const layouts = createTextLayoutCache(createContextTextMeasurer(context));
   if (request.format === 'svg') {
-    const fontCss = hasText ? await embeddedFontCss(request.fontUrl) : null;
+    const fontCss =
+      faces.length === 0
+        ? null
+        : (
+            await Promise.all(faces.map((face) => embeddedFontCss(face, request.fontUrls[face])))
+          ).join('');
     const svg = shapesToSvg(
       request.shapes,
       request.area,
@@ -76,32 +83,35 @@ async function renderPng(
   return canvas.convertToBlob({ type: 'image/png' });
 }
 
-let fontLoaded: Promise<void> | null = null;
+const fontsLoaded = new Map<TextFont, Promise<void>>();
 
-/** Workers have their own font set; the text font must be loaded into it once. */
-function loadFont(url: string): Promise<void> {
-  fontLoaded ??= (async () => {
-    // Declared on WorkerGlobalScope, which the DOM typings this project uses don't include.
-    const { fonts } = self as unknown as { fonts?: FontFaceSet };
-    if (fonts === undefined) {
-      throw new Error("this browser can't load fonts in workers");
-    }
-    const face = new FontFace(TEXT_FONT_FAMILY, `url(${url}) format('woff2')`, {
-      weight: '400',
-      style: 'normal',
+/** Workers have their own font set; each text face must be loaded into it once. */
+function loadFont(font: TextFont, url: string): Promise<void> {
+  const loading =
+    fontsLoaded.get(font) ??
+    (async () => {
+      // Declared on WorkerGlobalScope, which the DOM typings this project uses don't include.
+      const { fonts } = self as unknown as { fonts?: FontFaceSet };
+      if (fonts === undefined) {
+        throw new Error("this browser can't load fonts in workers");
+      }
+      const face = new FontFace(TEXT_FACES[font].family, `url(${url}) format('woff2')`, {
+        weight: '400',
+        style: 'normal',
+      });
+      fonts.add(face);
+      await face.load();
+    })().catch((error: unknown) => {
+      // Not cached, so the next export tries again.
+      fontsLoaded.delete(font);
+      throw error;
     });
-    fonts.add(face);
-    await face.load();
-  })().catch((error: unknown) => {
-    // Not cached, so the next export tries again.
-    fontLoaded = null;
-    throw error;
-  });
-  return fontLoaded;
+  fontsLoaded.set(font, loading);
+  return loading;
 }
 
 /** An @font-face rule with the font inlined, so the SVG renders the same anywhere. */
-async function embeddedFontCss(url: string): Promise<string> {
+async function embeddedFontCss(font: TextFont, url: string): Promise<string> {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error('the text font could not be fetched');
@@ -112,5 +122,5 @@ async function embeddedFontCss(url: string): Promise<string> {
   for (let i = 0; i < bytes.length; i += 0x8000) {
     binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
   }
-  return `@font-face{font-family:"${TEXT_FONT_FAMILY}";src:url(data:font/woff2;base64,${btoa(binary)}) format("woff2");}`;
+  return `@font-face{font-family:"${TEXT_FACES[font].family}";src:url(data:font/woff2;base64,${btoa(binary)}) format("woff2");}`;
 }

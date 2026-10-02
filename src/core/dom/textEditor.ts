@@ -4,7 +4,13 @@ import type { EditorStore } from '../store';
 import { canvasTheme } from '../theme';
 import { commitTextEdit } from '../text/commitTextEdit';
 import { whenFontsReady } from '../text/whenFontsReady';
-import { DEFAULT_FONT_SIZE, DEFAULT_TEXT_WIDTH, fontString } from '../text/font';
+import {
+  DEFAULT_FONT_SIZE,
+  DEFAULT_TEXT_FONT,
+  DEFAULT_TEXT_WIDTH,
+  fontString,
+  textFont,
+} from '../text/font';
 import type { TextMeasurer } from '../text/layout';
 import type { TextEdit } from '../text/textShape';
 
@@ -123,7 +129,8 @@ function placeTextarea(
   measurer: TextMeasurer,
 ): void {
   const fontSize = edit.original?.fontSize ?? DEFAULT_FONT_SIZE;
-  const { lineHeight } = measurer.metrics(fontSize);
+  const font = edit.original === null ? DEFAULT_TEXT_FONT : textFont(edit.original);
+  const { lineHeight } = measurer.metrics(fontSize, font);
   const width = (edit.original?.width ?? DEFAULT_TEXT_WIDTH) * camera.zoom;
   const height = (edit.original?.height ?? lineHeight) * camera.zoom;
   const screen = worldToScreen(camera, edit);
@@ -132,7 +139,7 @@ function placeTextarea(
   style.top = `${String(canvas.offsetTop + screen.y)}px`;
   style.width = `${String(width)}px`;
   // `font` resets line-height, so it must be set first.
-  style.font = fontString(fontSize * camera.zoom);
+  style.font = fontString(fontSize * camera.zoom, font);
   style.lineHeight = `${String(lineHeight * camera.zoom)}px`;
   // Rotated text turns around its box center, as on the canvas.
   const rotation = edit.original?.rotation ?? 0;

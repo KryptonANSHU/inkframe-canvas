@@ -12,7 +12,7 @@
 
 ## Features
 
-- Rectangles, ellipses, lines, arrows, freehand pen, and text
+- Rectangles, ellipses, lines, arrows, freehand pen, and text in a hand-drawn, normal, or code font
 - Select, move, resize, rotate, with snapping guides
 - Undo and redo for every change, and grouping (Ctrl/⌘ + G)
 - Styles, layers, light and dark themes, a grid, keyboard shortcuts (press `?`)

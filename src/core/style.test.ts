@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { undo } from './commands';
 import { documentFromShapes } from './persistence/fileFormat';
 import { createEditorStore } from './store';
-import { applyStyle, selectionStyle } from './style';
-import { makeLine, makeRect, makeText, testShapeId } from './testing/factories';
+import { applyStyle, applyTextFont, selectionStyle } from './style';
+import { fakeMeasurer, makeLine, makeRect, makeText, testShapeId } from './testing/factories';
 
 const rect = makeRect({ id: testShapeId('r') });
 const line = makeLine({ id: testShapeId('l'), style: { ...rect.style, strokeWidth: 4 } });
@@ -26,8 +26,11 @@ describe('selectionStyle', () => {
       strokeWidth: 'mixed',
       opacity: 1,
       hasStroke: true,
+      // Text from before fonts were a choice reads as Normal.
+      font: 'sans',
     });
     expect(selectionStyle([text])).toMatchObject({ fillColor: undefined, hasStroke: false });
+    expect(selectionStyle([rect])?.font).toBeUndefined();
     expect(selectionStyle([])).toBeNull();
   });
 });
@@ -49,6 +52,17 @@ describe('applyStyle', () => {
     applyStyle(store, { opacity: 0.8 }, vi.fn(), { key: 'opacity', continues: false });
     applyStyle(store, { opacity: 0.6 }, vi.fn(), { key: 'opacity', continues: true });
     applyStyle(store, { opacity: 0.6 }, vi.fn());
+    expect(store.getState().history.past).toHaveLength(1);
+  });
+});
+
+describe('applyTextFont', () => {
+  it('sets the face of the selected text only, as one undo step', () => {
+    const { store, shape } = setup();
+    applyTextFont(store, 'hand', fakeMeasurer, vi.fn());
+    expect(shape('t')).toMatchObject({ font: 'hand' });
+    expect(store.getState().history.past).toHaveLength(1);
+    applyTextFont(store, 'hand', fakeMeasurer, vi.fn());
     expect(store.getState().history.past).toHaveLength(1);
   });
 });

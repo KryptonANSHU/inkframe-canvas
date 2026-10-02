@@ -1,5 +1,5 @@
 import { DEFAULT_SHAPE_STYLE, MIN_SHAPE_SIZE, type ShapeId, type TextShape } from '../shapes';
-import { DEFAULT_FONT_SIZE, DEFAULT_TEXT_WIDTH } from './font';
+import { DEFAULT_FONT_SIZE, DEFAULT_TEXT_FONT, DEFAULT_TEXT_WIDTH, textFont } from './font';
 import { layoutText, type TextMeasurer } from './layout';
 
 export type TextPlacement = { readonly id: ShapeId; readonly x: number; readonly y: number };
@@ -32,6 +32,7 @@ export function createTextShape(
     height: MIN_SHAPE_SIZE,
     text: '',
     fontSize: DEFAULT_FONT_SIZE,
+    font: DEFAULT_TEXT_FONT,
     rotation: 0,
     style: DEFAULT_SHAPE_STYLE,
     zIndex: 0,
@@ -57,6 +58,6 @@ export function withText(
   if (text === '') {
     return null;
   }
-  const layout = layoutText(text, shape.width, shape.fontSize, measurer);
+  const layout = layoutText(text, shape.width, shape.fontSize, measurer, textFont(shape));
   return { ...shape, text, height: Math.max(MIN_SHAPE_SIZE, layout.height) };
 }

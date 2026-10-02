@@ -2,9 +2,9 @@ import type { Result } from '../result';
 
 /**
  * The file format version this build writes. Version 2 added groups, version 3 arrows
- * attached to shapes.
+ * attached to shapes, version 4 a font per text shape.
  */
-export const CURRENT_VERSION = 3;
+export const CURRENT_VERSION = 4;
 
 /** A file's top-level object, before it has been validated. */
 export type RawFile = Readonly<Record<string, unknown>>;
@@ -22,10 +22,14 @@ export const migrateV1toV2: Migration = (file) => ({ ...file });
 /** Version 2 had no attachments: same story, its arrows are valid version-3 arrows. */
 export const migrateV2toV3: Migration = (file) => ({ ...file });
 
+/** Version 3 text had no font: absent means Normal, exactly how it looked. */
+export const migrateV3toV4: Migration = (file) => ({ ...file });
+
 /** `MIGRATIONS[n]` turns a version-n file into version n + 1, each with its own tests. */
 export const MIGRATIONS: Readonly<Record<number, Migration>> = {
   1: migrateV1toV2,
   2: migrateV2toV3,
+  3: migrateV3toV4,
 };
 
 /**

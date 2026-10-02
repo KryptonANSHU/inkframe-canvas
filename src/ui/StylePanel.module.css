@@ -36,3 +36,22 @@
   display: flex;
   justify-content: space-between;
 }
+
+/* Font samples, each in its own face. */
+.hand,
+.sans,
+.mono {
+  font-size: var(--font-size-md);
+}
+
+.hand {
+  font-family: var(--font-hand);
+}
+
+.sans {
+  font-family: var(--font-ui);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}

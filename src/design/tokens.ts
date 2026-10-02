@@ -115,6 +115,9 @@ export const fontSize = { xs: 12, sm: 13, md: 14, lg: 16, xl: 20 } as const;
 
 export const fontFamily = {
   ui: "'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif",
+  /** Canvas text faces, for showing them in the UI (font pickers). */
+  hand: "'Shantell Sans', cursive",
+  mono: "'JetBrains Mono', ui-monospace, monospace",
 } as const;
 
 /** Stacking order of everything above the canvas. */

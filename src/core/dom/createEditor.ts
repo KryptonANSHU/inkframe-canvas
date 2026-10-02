@@ -29,8 +29,8 @@ import {
   type SharedHistory,
 } from '../editActions';
 import type { HistoryGroup } from '../history';
-import type { ShapeStyle } from '../shapes';
-import { applyStyle } from '../style';
+import type { ShapeStyle, TextFont } from '../shapes';
+import { applyStyle, applyTextFont } from '../style';
 import type { TextMeasurer } from '../text/layout';
 import type { ToolId } from '../tools/toolIds';
 import { bindCanvasInput } from './bindCanvasInput';
@@ -45,7 +45,7 @@ import { observeCanvasSurface, type CanvasSurface } from './canvasSurface';
 import { screenToWorld } from '../camera';
 import { createPoint, type Point } from '../geometry/point';
 import { createCanvasTextMeasurer } from './canvasTextMeasurer';
-import { loadTextFont } from './fonts';
+import { loadTextFonts } from './fonts';
 import { bindTextEditor } from './textEditor';
 
 export type EditorOptions = {
@@ -69,6 +69,8 @@ export type Editor = {
   /** Runs what a shortcut would: undo, zoom, arrange, and so on (for buttons). */
   readonly perform: (action: EditAction) => void;
   readonly setTool: (tool: ToolId) => void;
+  /** Sets the selected text's face as one undo step. */
+  readonly applyTextFont: (font: TextFont) => void;
   /** Restyles the selection as one undo step; `group` joins a slider drag into one. */
   readonly applyStyle: (patch: Partial<ShapeStyle>, group?: HistoryGroup) => void;
   /** Gives the canvas keyboard focus back after a pointer click on a control. */
@@ -264,6 +266,9 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
     setTool: (tool) => {
       store.setState({ activeTool: tool });
     },
+    applyTextFont: (font) => {
+      applyTextFont(store, font, measurer, reportError);
+    },
     applyStyle: (patch, group) => {
       applyStyle(store, patch, reportError, group);
     },
@@ -305,7 +310,7 @@ function watchFontLoad(
     resetMeasurements();
     store.setState({ fontsReady: true });
   };
-  loadTextFont().then(ready, (cause: unknown) => {
+  loadTextFonts().then(ready, (cause: unknown) => {
     reportError(
       new Error("The text font didn't load, so text uses a system font. Reload to try again.", {
         cause,

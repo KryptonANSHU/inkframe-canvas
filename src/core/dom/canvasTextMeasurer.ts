@@ -1,3 +1,4 @@
+import type { TextFont } from '../shapes';
 import { fontString } from '../text/font';
 import type { FontMetrics, TextMeasurer } from '../text/layout';
 
@@ -24,39 +25,40 @@ export function createContextTextMeasurer(
   context: MeasuringContext,
 ): TextMeasurer & { reset(): void } {
   let widths = new Map<string, number>();
-  let metrics = new Map<number, FontMetrics>();
+  let metrics = new Map<string, FontMetrics>();
 
-  const useFont = (fontSize: number) => {
-    const font = fontString(fontSize);
+  const useFont = (fontSize: number, face: TextFont) => {
+    const font = fontString(fontSize, face);
     if (context.font !== font) {
       context.font = font;
     }
   };
 
   return {
-    width(text, fontSize) {
-      const key = `${String(fontSize)}|${text}`;
+    width(text, fontSize, face = 'sans') {
+      const key = `${face}|${String(fontSize)}|${text}`;
       const cached = widths.get(key);
       if (cached !== undefined) {
         return cached;
       }
-      useFont(fontSize);
+      useFont(fontSize, face);
       const width = context.measureText(text).width;
       widths.set(key, width);
       return width;
     },
-    metrics(fontSize) {
-      const cached = metrics.get(fontSize);
+    metrics(fontSize, face = 'sans') {
+      const key = `${face}|${String(fontSize)}`;
+      const cached = metrics.get(key);
       if (cached !== undefined) {
         return cached;
       }
-      useFont(fontSize);
+      useFont(fontSize, face);
       const { fontBoundingBoxAscent, fontBoundingBoxDescent } = context.measureText('M');
       const measured = {
         ascent: fontBoundingBoxAscent,
         lineHeight: fontBoundingBoxAscent + fontBoundingBoxDescent,
       };
-      metrics.set(fontSize, measured);
+      metrics.set(key, measured);
       return measured;
     },
     reset() {

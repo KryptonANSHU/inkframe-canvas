@@ -80,11 +80,17 @@ export type PenShape = ShapeBase & {
  * loaded font when the text is committed, so bounds never depend on re-measuring.
  * Drawn in the stroke color.
  */
+/** Text faces: hand-drawn (Shantell Sans), normal (Instrument Sans), and code. */
+export const TEXT_FONTS = ['hand', 'sans', 'mono'] as const;
+export type TextFont = (typeof TEXT_FONTS)[number];
+
 export type TextShape = BoxShapeBase & {
   readonly type: 'text';
   readonly text: string;
   /** In world units. */
   readonly fontSize: number;
+  /** Absent means 'sans': text from before fonts were a choice keeps its look. */
+  readonly font?: TextFont;
 };
 
 export type BoxShape = RectShape | EllipseShape | TextShape;

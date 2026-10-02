@@ -2,6 +2,7 @@ import { ArrowDown, ArrowUp, BringToFront, Group, SendToBack, Ungroup } from 'lu
 import { useRef, type ReactNode } from 'react';
 import { canGroup } from '../core/groups';
 import { selectedShapes } from '../core/selection/selectedShapes';
+import type { TextFont } from '../core/shapes';
 import { selectionStyle, type Shared } from '../core/style';
 import {
   ColorPicker,
@@ -79,6 +80,11 @@ export function StylePanel() {
       {style.hasStroke && (
         <Section title="Stroke width">
           <StrokeWidths value={style.strokeWidth} />
+        </Section>
+      )}
+      {style.font !== undefined && (
+        <Section title="Font">
+          <TextFonts value={style.font} />
         </Section>
       )}
       <Section title="Opacity">
@@ -194,6 +200,37 @@ function StrokeWidths({ value }: { readonly value: Shared<number> }) {
       value={value === 'mixed' ? null : String(value)}
       onChange={(width) => {
         editor.applyStyle({ strokeWidth: Number(width) });
+      }}
+      onItemClick={backToCanvas(() => undefined)}
+    />
+  );
+}
+
+const FONTS: readonly { value: TextFont; label: string; sample: string }[] = [
+  { value: 'hand', label: 'Hand-drawn', sample: styles.hand ?? '' },
+  { value: 'sans', label: 'Normal', sample: styles.sans ?? '' },
+  { value: 'mono', label: 'Code', sample: styles.mono ?? '' },
+];
+
+/** The text face, each option shown in its own face. */
+function TextFonts({ value }: { readonly value: Shared<TextFont> }) {
+  const editor = useEditor();
+  const backToCanvas = useBackToCanvas();
+  return (
+    <SegmentedControl<TextFont>
+      label="Font"
+      options={FONTS.map(({ value: font, label, sample }) => ({
+        value: font,
+        label,
+        content: (
+          <span className={sample} aria-hidden="true">
+            Aa
+          </span>
+        ),
+      }))}
+      value={value === 'mixed' ? null : value}
+      onChange={(font) => {
+        editor.applyTextFont(font);
       }}
       onItemClick={backToCanvas(() => undefined)}
     />

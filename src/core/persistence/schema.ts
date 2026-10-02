@@ -4,6 +4,7 @@ import {
   ANCHORS,
   MAX_PEN_POINTS,
   MIN_SHAPE_SIZE,
+  TEXT_FONTS,
   type GroupId,
   type Shape,
   type ShapeId,
@@ -74,6 +75,7 @@ function shapeSchemaWith(penPoints: z.ZodType<Readonly<{ x: number; y: number }>
       height: size,
       text: z.string().max(100_000),
       fontSize: z.number().min(1).max(1000),
+      font: z.enum(TEXT_FONTS).exactOptional(),
     }),
   ]);
 }

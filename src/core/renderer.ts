@@ -9,7 +9,7 @@ import type { Bounds, Box } from './geometry/bounds';
 import type { ArrowShape, PathPoint, Shape, ShapeId, TextShape } from './shapes';
 import type { EditorState } from './store';
 import { canvasTheme, type CanvasTheme } from './theme';
-import { fontString } from './text/font';
+import { fontString, textFont } from './text/font';
 import type { TextLayout } from './text/layout';
 
 // Scratch point for arrowhead wings, so drawing allocates nothing per shape.
@@ -214,7 +214,7 @@ function drawText(
   theme: CanvasTheme,
 ): void {
   context.fillStyle = theme.shapeColor(shape.style.strokeColor);
-  context.font = fontString(shape.fontSize);
+  context.font = fontString(shape.fontSize, textFont(shape));
   context.textBaseline = 'alphabetic';
   const left = -shape.width / 2;
   const top = -shape.height / 2 + layout.ascent;

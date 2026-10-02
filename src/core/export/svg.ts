@@ -3,7 +3,7 @@ import type { Bounds } from '../geometry/bounds';
 import { createPoint } from '../geometry/point';
 import { ARROW_HEAD_SIDES, arrowHeadWing, isFilled, shapeBox } from '../shapeGeometry';
 import type { PathPoint, Shape, TextShape } from '../shapes';
-import { TEXT_FONT_FAMILY } from '../text/font';
+import { TEXT_FACES, textFont } from '../text/font';
 import type { TextLayout } from '../text/layout';
 
 /**
@@ -92,9 +92,15 @@ function textToSvg(shape: TextShape, layout: TextLayout): string {
     .join('');
   // Spaces are kept as typed, like the canvas; SVG would collapse them otherwise.
   return (
-    `<text xml:space="preserve" style="white-space:pre" font-family="${TEXT_FONT_FAMILY}, sans-serif" ` +
+    `<text xml:space="preserve" style="white-space:pre" font-family="${fontFamilyAttribute(shape)}" ` +
     `font-size="${n(shape.fontSize)}" fill="${shape.style.strokeColor}">${lines}</text>`
   );
+}
+
+/** The shape's face with its generic fallback, quoted for an XML attribute. */
+function fontFamilyAttribute(shape: TextShape): string {
+  const face = TEXT_FACES[textFont(shape)];
+  return `'${face.family}', ${face.fallback}`;
 }
 
 function polyline(points: readonly PathPoint[], dx: number, dy: number): string {

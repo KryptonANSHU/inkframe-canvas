@@ -1,5 +1,5 @@
 import type { Bounds } from '../core/geometry/bounds';
-import type { Shape } from '../core/shapes';
+import type { Shape, TextFont } from '../core/shapes';
 
 export type ExportFormat = 'png' | 'svg';
 
@@ -10,8 +10,8 @@ export type ExportRequest = {
   /** Bottom to top. */
   readonly shapes: readonly Shape[];
   readonly area: Bounds;
-  /** Absolute URL of the text font, loaded (PNG) or embedded (SVG) by the worker. */
-  readonly fontUrl: string;
+  /** Absolute URL of each text face, loaded (PNG) or embedded (SVG) when used. */
+  readonly fontUrls: Readonly<Record<TextFont, string>>;
 };
 
 export type ExportResponse =

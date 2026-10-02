@@ -11,8 +11,10 @@ import {
   type RectShape,
   type Shape,
   type ShapeStyle,
+  type TextFont,
   type TextShape,
 } from '../shapes';
+import { DEFAULT_TEXT_FONT } from '../text/font';
 import { withText } from '../text/textShape';
 import type { TextMeasurer } from '../text/layout';
 import { pathBetween } from '../tools/shapeBuilders';
@@ -79,6 +81,8 @@ export type TemplateKit = {
 export type ArrowEnd = { readonly shape: BoxShape; readonly anchor: Anchor } | Point;
 
 export type TextOptions = {
+  /** Hand-drawn unless said otherwise, like text typed in the editor. */
+  readonly font?: TextFont;
   readonly size?: number;
   readonly color?: StrokeName;
   readonly width?: number;
@@ -105,7 +109,9 @@ export function createKit(measurer: TextMeasurer): TemplateKit {
   };
   const makeText = (content: string, x: number, y: number, options: TextOptions = {}) => {
     const fontSize = options.size ?? 18;
-    const width = options.width ?? Math.ceil(measurer.width(content, fontSize) * LABEL_SLACK) + 4;
+    const font = options.font ?? DEFAULT_TEXT_FONT;
+    const width =
+      options.width ?? Math.ceil(measurer.width(content, fontSize, font) * LABEL_SLACK) + 4;
     const shape: TextShape = {
       ...base,
       id: createShapeId(),
@@ -116,6 +122,7 @@ export function createKit(measurer: TextMeasurer): TemplateKit {
       height: 1,
       text: content,
       fontSize,
+      font,
       style: style({ stroke: options.color ?? 'Ink' }),
     };
     const measured = withText(shape, content, measurer);
@@ -159,7 +166,7 @@ export function createKit(measurer: TextMeasurer): TemplateKit {
     label(content, on, options) {
       const measured = makeText(content, 0, 0, options);
       // Centered on the text's own width; the box keeps a little slack to its right.
-      const inked = measurer.width(content, measured.fontSize);
+      const inked = measurer.width(content, measured.fontSize, measured.font);
       const centerX = on.x + on.width / 2;
       const centerY = on.y + on.height / 2;
       return { ...measured, x: centerX - inked / 2, y: centerY - measured.height / 2 };
