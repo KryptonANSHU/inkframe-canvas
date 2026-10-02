@@ -14,3 +14,11 @@
   inset-block-start: var(--space-3);
   inset-inline-end: var(--space-3);
 }
+
+/* Phones (the 640px breakpoint is shared by every phone layout rule). */
+@media (max-width: 640px) {
+  .topEnd {
+    inset-block-start: calc(var(--space-2) + var(--safe-top));
+    inset-inline-end: calc(var(--space-2) + var(--safe-right));
+  }
+}

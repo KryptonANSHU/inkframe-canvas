@@ -35,15 +35,17 @@ export function HistoryControls() {
           editor.perform('redo');
         })}
       />
-      <Divider />
-      <IconButton
-        label="Keyboard shortcuts"
-        Icon={CircleQuestionMark}
-        shortcut="?"
-        onClick={backToCanvas(() => {
-          editor.perform('help');
-        })}
-      />
+      <span className={styles.desktopOnly}>
+        <Divider />
+        <IconButton
+          label="Keyboard shortcuts"
+          Icon={CircleQuestionMark}
+          shortcut="?"
+          onClick={backToCanvas(() => {
+            editor.perform('help');
+          })}
+        />
+      </span>
     </Surface>
   );
 }

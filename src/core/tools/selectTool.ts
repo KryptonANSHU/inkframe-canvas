@@ -217,7 +217,7 @@ function pressTarget(
   const selected = selectedShapes(state);
   const frame = selectionFrame(selected);
   // Handles first: they sit on the frame's edge, often on top of the shape itself.
-  const handle = frame === null ? null : handleAt(selected, frame, camera, screen);
+  const handle = frame === null ? null : handleAt(selected, frame, camera, screen, state.touchMode);
   if (handle !== null && frame !== null) {
     return { kind: 'handle', handle, frame };
   }

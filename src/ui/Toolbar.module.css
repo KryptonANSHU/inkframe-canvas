@@ -5,3 +5,13 @@
   inset-inline-start: 50%;
   transform: translateX(-50%);
 }
+
+/* Phones (the 640px breakpoint is shared by every phone layout rule). */
+@media (max-width: 640px) {
+  /* Tools move to the bottom, within thumb reach, as in mobile drawing apps. */
+  .place {
+    inset-block: auto calc(var(--space-3) + var(--safe-bottom));
+    max-inline-size: calc(100vw - 2 * var(--space-2));
+    overflow-x: auto;
+  }
+}

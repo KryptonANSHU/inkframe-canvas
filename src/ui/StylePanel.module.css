@@ -37,6 +37,11 @@
   justify-content: space-between;
 }
 
+.actions {
+  display: flex;
+  gap: var(--space-1);
+}
+
 /* Font samples, each in its own face. */
 .hand,
 .sans,
@@ -54,4 +59,34 @@
 
 .mono {
   font-family: var(--font-mono);
+}
+
+/* Phones (the 640px breakpoint is shared by every phone layout rule). */
+@media (max-width: 640px) {
+  /* The selection's quick actions, centered above the undo and zoom bars. */
+  .quickBar {
+    position: absolute;
+    z-index: var(--z-floating);
+    inset-block-end: calc(
+      var(--space-3) + 2 * var(--bar-height) + 2 * var(--space-2) + var(--safe-bottom)
+    );
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
+  }
+
+  /* The full style sheet, above the quick bar, scrolling when tall. */
+  .sheet {
+    position: absolute;
+    z-index: var(--z-floating);
+    inset-block-end: calc(
+      var(--space-3) + 3 * var(--bar-height) + 3 * var(--space-2) + var(--safe-bottom)
+    );
+    inset-inline: var(--space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    max-block-size: 40vh;
+    overflow-y: auto;
+    padding: var(--space-3);
+  }
 }

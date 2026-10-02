@@ -12,3 +12,21 @@
   font-size: var(--font-size-sm);
   font-variant-numeric: tabular-nums;
 }
+
+/* Kept on larger screens only. */
+.desktopOnly {
+  display: contents;
+}
+
+/* Phones (the 640px breakpoint is shared by every phone layout rule). */
+@media (max-width: 640px) {
+  /* Just above the tool bar, on the right; pinch zooms, so − and + step aside. */
+  .place {
+    inset-block-end: calc(var(--space-3) + var(--bar-height) + var(--space-2) + var(--safe-bottom));
+    inset-inline: auto var(--space-2);
+  }
+
+  .desktopOnly {
+    display: none;
+  }
+}

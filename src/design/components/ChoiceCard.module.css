@@ -43,3 +43,27 @@
   font-size: var(--font-size-xs);
   line-height: 1.4;
 }
+
+/* Phones: a compact row, the picture beside the words (the app's 640px breakpoint). */
+@media (max-width: 640px) {
+  .card {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    grid-template-rows: auto auto;
+    column-gap: var(--space-3);
+    align-items: center;
+  }
+
+  .preview {
+    grid-row: span 2;
+    padding: var(--space-1);
+  }
+
+  .title {
+    align-self: end;
+  }
+
+  .description {
+    align-self: start;
+  }
+}

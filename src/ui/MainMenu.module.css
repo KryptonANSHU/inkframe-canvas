@@ -13,3 +13,20 @@
   margin-inline: var(--space-1) var(--space-2);
   pointer-events: none;
 }
+
+/* The wordmark and its divider, as one unit that phones hide. */
+.brand {
+  display: contents;
+}
+
+/* Phones (the 640px breakpoint is shared by every phone layout rule). */
+@media (max-width: 640px) {
+  .place {
+    inset-block-start: calc(var(--space-2) + var(--safe-top));
+    inset-inline-start: calc(var(--space-2) + var(--safe-left));
+  }
+
+  .brand {
+    display: none;
+  }
+}

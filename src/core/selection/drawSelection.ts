@@ -12,6 +12,7 @@ import { canvasTheme } from '../theme';
 import {
   availableHandles,
   HANDLE_SIZE_PX,
+  TOUCH_HANDLE_SIZE_PX,
   handlePosition,
   singleSegment,
   type HandleId,
@@ -82,6 +83,7 @@ export function drawSelectionOverlay(
       devicePixelRatio,
       lineWidth,
       theme.handleFill,
+      state.touchMode ? TOUCH_HANDLE_SIZE_PX : HANDLE_SIZE_PX,
     );
   }
   if (state.marquee !== null) {
@@ -261,6 +263,7 @@ function drawHandles(
   devicePixelRatio: number,
   lineWidth: number,
   fill: string,
+  handleSize: number,
 ): void {
   context.fillStyle = fill;
   for (const handle of availableHandles(shapes, frame, camera.zoom)) {
@@ -271,14 +274,7 @@ function drawHandles(
     if (isRound(handle)) {
       context.arc(x, y, ROUND_HANDLE_RADIUS_PX * devicePixelRatio, 0, Math.PI * 2);
     } else {
-      traceSquare(
-        context,
-        x,
-        y,
-        (HANDLE_SIZE_PX * devicePixelRatio) / 2,
-        frame.rotation,
-        lineWidth,
-      );
+      traceSquare(context, x, y, (handleSize * devicePixelRatio) / 2, frame.rotation, lineWidth);
     }
     context.fill();
     context.stroke();

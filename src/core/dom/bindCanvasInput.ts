@@ -94,6 +94,8 @@ export function bindCanvasInput(
   canvas.addEventListener(
     'dblclick',
     (event) => {
+      // Touch double taps are recognized by the controller; some browsers also send this.
+      if (pointer.pointerType === 'touch') return;
       surface.toScreen(event.clientX, event.clientY, pointer.screen);
       const { shiftKey, altKey, ctrlKey, metaKey } = event;
       controller.doubleClick({ ...pointer, shiftKey, altKey, ctrlKey, metaKey });

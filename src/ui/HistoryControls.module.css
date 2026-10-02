@@ -4,3 +4,21 @@
   inset-block-end: var(--space-3);
   inset-inline-end: var(--space-3);
 }
+
+/* Kept on larger screens only. */
+.desktopOnly {
+  display: contents;
+}
+
+/* Phones (the 640px breakpoint is shared by every phone layout rule). */
+@media (max-width: 640px) {
+  /* Just above the tool bar, on the left; the shortcuts list stays in the menu. */
+  .place {
+    inset-block-end: calc(var(--space-3) + var(--bar-height) + var(--space-2) + var(--safe-bottom));
+    inset-inline: var(--space-2) auto;
+  }
+
+  .desktopOnly {
+    display: none;
+  }
+}

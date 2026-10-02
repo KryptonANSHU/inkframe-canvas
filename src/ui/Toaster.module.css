@@ -5,3 +5,12 @@
   inset-inline-start: 50%;
   transform: translateX(-50%);
 }
+
+/* Phones (the 640px breakpoint is shared by every phone layout rule). */
+@media (max-width: 640px) {
+  .place {
+    inset-block-end: calc(
+      var(--space-3) + 3 * var(--bar-height) + 4 * var(--space-2) + var(--safe-bottom)
+    );
+  }
+}

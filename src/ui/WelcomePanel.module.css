@@ -109,6 +109,40 @@
   font-size: var(--font-size-xs);
 }
 
+/* Phones (the 640px breakpoint is shared by every phone layout rule). */
+@media (max-width: 640px) {
+  /* Between the top bar and the bottom bars, scrolling inside. */
+  .panel {
+    inset-block: calc(var(--space-2) * 2 + var(--bar-height) + var(--safe-top))
+      calc(var(--space-3) + 2 * var(--bar-height) + 2 * var(--space-2) + var(--safe-bottom));
+    inset-inline: var(--space-2);
+    inline-size: auto;
+    max-block-size: none;
+    padding: var(--space-4);
+    transform: none;
+    animation: none;
+  }
+
+  .title {
+    font-size: var(--font-size-lg);
+  }
+
+  .uses {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .templates {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  /* Shortcuts mean little on a phone: just the way out. */
+  .hint {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .panel {
     animation: none;

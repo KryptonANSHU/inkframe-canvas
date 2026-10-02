@@ -14,6 +14,9 @@ export type HandleId = ResizeHandle | 'rotate' | 'start' | 'end';
 export const HANDLE_SIZE_PX = 8;
 /** How close the pointer must be to a handle's center to grab it, in screen pixels. */
 export const HANDLE_HIT_PX = 8;
+/** On touch, handles draw larger and grab from a finger's width away. */
+export const TOUCH_HANDLE_SIZE_PX = 12;
+export const TOUCH_HANDLE_HIT_PX = 22;
 /** Gap between the frame's top edge and the rotation handle, in screen pixels. */
 export const ROTATE_HANDLE_OFFSET_PX = 24;
 /** Below this on-screen length, a side's middle handle is hidden so corners stay grabbable. */
@@ -108,9 +111,10 @@ export function handleAt(
   frame: SelectionFrame,
   camera: Camera,
   screen: Readonly<Point>,
+  touch = false,
 ): HandleId | null {
   let best: HandleId | null = null;
-  let bestDistance = HANDLE_HIT_PX;
+  let bestDistance = touch ? TOUCH_HANDLE_HIT_PX : HANDLE_HIT_PX;
   for (const handle of availableHandles(shapes, frame, camera.zoom)) {
     const position = worldToScreen(camera, handlePosition(handle, shapes, frame, camera.zoom));
     const distance = Math.hypot(position.x - screen.x, position.y - screen.y);

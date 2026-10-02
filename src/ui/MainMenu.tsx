@@ -133,13 +133,15 @@ export function MainMenu() {
           }}
         />
       </Menu>
-      <Divider />
-      <img
-        className={styles.logo}
-        src={`${import.meta.env.BASE_URL}logos/logo-${drawnTheme}.svg`}
-        alt="Inkframe"
-        draggable={false}
-      />
+      <span className={styles.brand}>
+        <Divider />
+        <img
+          className={styles.logo}
+          src={`${import.meta.env.BASE_URL}logos/logo-${drawnTheme}.svg`}
+          alt="Inkframe"
+          draggable={false}
+        />
+      </span>
     </Surface>
   );
 }

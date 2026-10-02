@@ -29,3 +29,34 @@ body {
   outline: var(--focus-ring-width) solid var(--color-select);
   outline-offset: var(--focus-ring-offset);
 }
+
+/*
+ * Layout helpers for the floating chrome. A bar is one control high plus its padding
+ * and border; safe areas keep chrome clear of notches and the home indicator.
+ */
+:root {
+  --bar-height: calc(var(--size-control) + 2 * var(--space-1) + 2px);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+/* Fingers need bigger targets than a mouse (WCAG 2.5.8 asks for at least 24px; 40 is comfortable). */
+@media (pointer: coarse) {
+  :root {
+    --size-control: 40px;
+  }
+}
+
+/* The narrowest phones (320px) still fit all eight tools in one bar. */
+@media (pointer: coarse) and (max-width: 360px) {
+  :root {
+    --size-control: 36px;
+  }
+}
+
+/* A double tap never zooms the page; pinch zoom stays available, for accessibility. */
+html {
+  touch-action: manipulation;
+}

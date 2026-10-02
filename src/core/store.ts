@@ -66,6 +66,8 @@ export type EditorState = {
   readonly sharedUndo: { readonly canUndo: boolean; readonly canRedo: boolean } | null;
   /** The shared room this drawing is in, or null when drawing alone. */
   readonly collab: CollabState | null;
+  /** The last canvas input was a finger: handles grow and grab from farther away. */
+  readonly touchMode: boolean;
 };
 
 export type EditorStore = StoreApi<EditorState>;
@@ -96,6 +98,7 @@ export function createEditorStore(initial: Partial<EditorState> = {}): EditorSto
     anchorHint: null,
     sharedUndo: null,
     collab: null,
+    touchMode: false,
     ...initial,
   }));
 }

@@ -79,6 +79,7 @@ export function createInputController(
   const touches = createTouchTracker();
   const busy = () => gesture !== null || touches.pinching();
 
+  const taps = createTapTracker();
   const toolForNextGesture = () =>
     spaceHeld ? tools.pan : tools.byId[store.getState().activeTool];
 
@@ -160,8 +161,11 @@ export function createInputController(
 
   return {
     pointerDown(input) {
+      const touch = input.pointerType === 'touch';
+      if (store.getState().touchMode !== touch) store.setState({ touchMode: touch });
+      if (touch) taps.down(input, store.getState().activeTool);
       // One gesture at a time, except that a second finger turns into a pinch.
-      return input.pointerType === 'touch' ? touchDown(input) : startGesture(input);
+      return touch ? touchDown(input) : startGesture(input);
     },
     pointerMove(input) {
       const camera = touches.move(input.pointerId, input.screen);
@@ -176,12 +180,15 @@ export function createInputController(
       }
     },
     pointerUp(input) {
+      const doubleTap = input.pointerType === 'touch' && taps.up(input);
       if (touches.up(input.pointerId) || gesture?.pointerId !== input.pointerId) {
         return;
       }
       const { tool } = gesture;
       gesture = null;
       tool.pointerUp(input);
+      // Phones send no reliable dblclick on a canvas: two quick taps edit text instead.
+      if (doubleTap && !spaceHeld) tools.byId.select.doubleClick?.(input);
     },
     cancelGesture,
     // Whatever the active tool, a double-click edits text or starts new text there; the
@@ -216,5 +223,49 @@ export function createInputController(
       store.setState({ camera: applyWheel(store.getState().camera, input, anchor) });
     },
     cursor: () => (gesture?.tool ?? toolForNextGesture()).getCursor(),
+  };
+}
+
+/** Two taps this close in time (ms) and space (screen px) make a double tap. */
+const DOUBLE_TAP_MS = 350;
+const DOUBLE_TAP_PX = 24;
+/** A press that moves farther than this (screen px) is a drag, not a tap. */
+const TAP_SLOP_PX = 10;
+
+/**
+ * Recognizes double taps from raw touch pointer events. Both taps must use the same
+ * tool: a tap that placed a text box and a tap on it with Select are two gestures.
+ */
+function createTapTracker() {
+  type Tap = { x: number; y: number; time: number; tool: string };
+  let press: (Tap & { id: number }) | null = null;
+  let lastTap: Tap | null = null;
+  return {
+    down(input: PointerInput, tool: string) {
+      press = {
+        id: input.pointerId,
+        x: input.screen.x,
+        y: input.screen.y,
+        time: performance.now(),
+        tool,
+      };
+    },
+    /** True when this release completes a double tap. */
+    up(input: PointerInput): boolean {
+      const now = performance.now();
+      const started = press;
+      press = null;
+      if (started?.id !== input.pointerId) return false;
+      const moved = Math.hypot(input.screen.x - started.x, input.screen.y - started.y);
+      if (moved > TAP_SLOP_PX || now - started.time > DOUBLE_TAP_MS) return false;
+      const tap = { x: input.screen.x, y: input.screen.y, time: now, tool: started.tool };
+      const near =
+        lastTap !== null &&
+        lastTap.tool === tap.tool &&
+        now - lastTap.time <= DOUBLE_TAP_MS &&
+        Math.hypot(tap.x - lastTap.x, tap.y - lastTap.y) <= DOUBLE_TAP_PX;
+      lastTap = near ? null : tap;
+      return near;
+    },
   };
 }

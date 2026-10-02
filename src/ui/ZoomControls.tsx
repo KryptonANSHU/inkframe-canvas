@@ -23,15 +23,17 @@ export function ZoomControls() {
 
   return (
     <Surface layout="bar" className={styles.place} role="group" aria-label="Zoom">
-      <IconButton
-        label="Zoom out"
-        Icon={Minus}
-        shortcut="Mod+-"
-        disabled={zoom <= MIN_ZOOM}
-        onClick={backToCanvas(() => {
-          editor.perform('zoomOut');
-        })}
-      />
+      <span className={styles.desktopOnly}>
+        <IconButton
+          label="Zoom out"
+          Icon={Minus}
+          shortcut="Mod+-"
+          disabled={zoom <= MIN_ZOOM}
+          onClick={backToCanvas(() => {
+            editor.perform('zoomOut');
+          })}
+        />
+      </span>
       <Menu
         side="top"
         trigger={
@@ -56,15 +58,17 @@ export function ZoomControls() {
           />
         ))}
       </Menu>
-      <IconButton
-        label="Zoom in"
-        Icon={Plus}
-        shortcut="Mod+="
-        disabled={zoom >= MAX_ZOOM}
-        onClick={backToCanvas(() => {
-          editor.perform('zoomIn');
-        })}
-      />
+      <span className={styles.desktopOnly}>
+        <IconButton
+          label="Zoom in"
+          Icon={Plus}
+          shortcut="Mod+="
+          disabled={zoom >= MAX_ZOOM}
+          onClick={backToCanvas(() => {
+            editor.perform('zoomIn');
+          })}
+        />
+      </span>
       <Divider />
       <IconButton
         label="Grid"
