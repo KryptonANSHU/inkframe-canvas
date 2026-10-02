@@ -96,6 +96,15 @@ export function updateShapesCommand(
   };
 }
 
+/** Several commands as one step: done in order, undone in reverse. */
+export function sequenceCommand(label: string, commands: readonly Command[]): Command {
+  return {
+    label,
+    do: (document) => commands.reduce((next, command) => command.do(next), document),
+    undo: (document) => commands.reduceRight((next, command) => command.undo(next), document),
+  };
+}
+
 export type ExecuteOptions = {
   /** The selection once the command has run; defaults to the current one. */
   readonly select?: ReadonlySet<ShapeId>;

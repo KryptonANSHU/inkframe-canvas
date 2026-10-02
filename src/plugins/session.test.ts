@@ -343,3 +343,26 @@ describe('hostile input', () => {
     expect(Object.getPrototypeOf(created)).toBe(Object.prototype);
   });
 });
+
+describe('attachments from plugins', () => {
+  it('are ignored: a plugin can read them but never set them', async () => {
+    const { session, store, start } = setup();
+    await start();
+    const attached = {
+      type: 'arrow',
+      x: 0,
+      y: 0,
+      rotation: 0,
+      style: rect.style,
+      points: [
+        { x: 0, y: 0 },
+        { x: 50, y: 0 },
+      ],
+      start: { shapeId: rect.id, anchor: 'center' },
+    };
+    session.receive(call(1, 'shapes.create', { shapes: [attached] }));
+    const created = [...store.getState().document.shapes.values()].at(-1);
+    expect(created).toMatchObject({ type: 'arrow' });
+    expect(created && 'start' in created).toBe(false);
+  });
+});

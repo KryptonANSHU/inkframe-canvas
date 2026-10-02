@@ -1,3 +1,4 @@
+import { settleAttachments } from '../attachments';
 import { EMPTY_DOCUMENT, insertShape, type DocumentState } from '../document';
 import type { Shape } from '../shapes';
 import { CURRENT_VERSION } from './migrations';
@@ -27,9 +28,13 @@ export function toFile(document: DocumentState): InkframeFile {
   return { format: FILE_FORMAT, version: CURRENT_VERSION, shapes };
 }
 
-/** Builds a document from shapes listed bottom to top; their zIndex is renumbered. */
+/**
+ * Builds a document from shapes listed bottom to top; their zIndex is renumbered, and
+ * arrows are settled on the shapes they are attached to (dropping attachments to
+ * shapes that aren't there).
+ */
 export function documentFromShapes(shapes: readonly Shape[]): DocumentState {
-  return shapes.reduce(
+  return settleAttachments(shapes).reduce<DocumentState>(
     (document, shape) => insertShape(document, { ...shape, zIndex: document.order.length }),
     EMPTY_DOCUMENT,
   );

@@ -1,6 +1,13 @@
 import { z } from 'zod';
 import { simplifyPath } from '../geometry/simplify';
-import { MAX_PEN_POINTS, MIN_SHAPE_SIZE, type GroupId, type Shape, type ShapeId } from '../shapes';
+import {
+  ANCHORS,
+  MAX_PEN_POINTS,
+  MIN_SHAPE_SIZE,
+  type GroupId,
+  type Shape,
+  type ShapeId,
+} from '../shapes';
 import { normalizeAngle } from '../transform/angles';
 
 // zod 4's z.number() already rejects NaN and ±Infinity.
@@ -27,6 +34,9 @@ const shapeId = z
   .max(200)
   .transform((id) => id as ShapeId);
 
+// Absent rather than undefined when an end is free, matching the Shape type.
+const attachment = z.object({ shapeId, anchor: z.enum(ANCHORS) }).exactOptional();
+
 /** Shared by every shape. Rotation is normalized rather than refused. */
 const base = {
   id: shapeId,
@@ -49,7 +59,13 @@ function shapeSchemaWith(penPoints: z.ZodType<Readonly<{ x: number; y: number }>
     z.object({ ...base, type: z.literal('rectangle'), width: size, height: size }),
     z.object({ ...base, type: z.literal('ellipse'), width: size, height: size }),
     z.object({ ...base, type: z.literal('line'), points: z.tuple([point, point]) }),
-    z.object({ ...base, type: z.literal('arrow'), points: z.tuple([point, point]) }),
+    z.object({
+      ...base,
+      type: z.literal('arrow'),
+      points: z.tuple([point, point]),
+      start: attachment,
+      end: attachment,
+    }),
     z.object({ ...base, type: z.literal('pen'), points: penPoints }),
     z.object({
       ...base,

@@ -52,10 +52,22 @@ export type LineShape = ShapeBase & {
   readonly points: readonly [PathPoint, PathPoint];
 };
 
+/** Where on a shape an arrow end can attach: its center or an edge's midpoint. */
+export const ANCHORS = ['center', 'top', 'right', 'bottom', 'left'] as const;
+export type Anchor = (typeof ANCHORS)[number];
+
+/**
+ * An arrow end held to a shape's anchor. The arrow's points stay the source of truth
+ * for drawing; this records what they follow when that shape changes.
+ */
+export type Attachment = { readonly shapeId: ShapeId; readonly anchor: Anchor };
+
 export type ArrowShape = ShapeBase & {
   readonly type: 'arrow';
   /** The arrowhead is drawn at the second point. */
   readonly points: readonly [PathPoint, PathPoint];
+  readonly start?: Attachment;
+  readonly end?: Attachment;
 };
 
 export type PenShape = ShapeBase & {

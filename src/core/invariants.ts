@@ -1,3 +1,4 @@
+import { attachmentViolations } from './attachments';
 import { describeIssue, shapeSchema } from './persistence/schema';
 import { MIN_SHAPE_SIZE, type Shape } from './shapes';
 import { createSpatialIndex, type SpatialIndex } from './spatial/spatialIndex';
@@ -26,6 +27,9 @@ export function invariantViolations(state: EditorState, index?: SpatialIndex): s
       problems.push(`${id} is in the draw order but not in the scene.`);
     } else {
       problems.push(...shapeViolations(shape, id, position));
+      if (shape.type === 'arrow') {
+        problems.push(...attachmentViolations(shape, (other) => shapes.get(other)));
+      }
     }
   });
   for (const id of state.selectedIds) {

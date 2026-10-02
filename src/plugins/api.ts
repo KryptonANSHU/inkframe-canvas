@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { createShapesCommand, executeCommand, updateShapesCommand } from '../core/commands';
+import { reshapeCommand } from '../core/attachments';
+import { createShapesCommand, executeCommand } from '../core/commands';
 import { describeIssue, shapeSchema } from '../core/persistence/schema';
 import type { Result } from '../core/result';
 import { selectedShapes } from '../core/selection/selectedShapes';
@@ -67,11 +68,13 @@ function createShapes(params: unknown, context: ApiContext): ApiResult {
   for (const [i, input] of parsed.data.shapes.entries()) {
     // A placeholder ID and zIndex let the document schema check the rest; both are
     // replaced, so a plugin can never overwrite a shape by guessing its ID.
-    const candidate = shapeSchema.safeParse({
-      ...(typeof input === 'object' && input !== null ? input : {}),
-      id: 'pending',
-      zIndex: 0,
-    });
+    // Attachments name other shapes' IDs; plugins may read them but never set them.
+    const {
+      start: _start,
+      end: _end,
+      ...fields
+    } = (typeof input === 'object' && input !== null ? input : {}) as Record<string, unknown>;
+    const candidate = shapeSchema.safeParse({ ...fields, id: 'pending', zIndex: 0 });
     if (!candidate.success) return invalid(candidate.error, `shapes[${String(i)}]`);
     const shape = settle({ ...candidate.data, id: createShapeId() }, context);
     if (shape !== null) shapes.push(shape);
@@ -99,9 +102,10 @@ function updateShapes(params: unknown, context: ApiContext): ApiResult {
       return { ok: false, error: { code: 'not-found', message: `No shape with ID "${id}".` } };
     }
     const style = typeof patch['style'] === 'object' ? patch['style'] : {};
+    const { start: _start, end: _end, ...fields } = patch;
     const candidate = shapeSchema.safeParse({
       ...current,
-      ...patch,
+      ...fields,
       style: { ...current.style, ...style },
       id: current.id,
       type: current.type,
@@ -113,7 +117,12 @@ function updateShapes(params: unknown, context: ApiContext): ApiResult {
     before.push(current);
     after.push(updated);
   }
-  const command = updateShapesCommand(`${context.pluginName}: Update shapes`, before, after);
+  const command = reshapeCommand(
+    context.store.getState().document,
+    `${context.pluginName}: Update shapes`,
+    before,
+    after,
+  );
   return run(
     context,
     command,

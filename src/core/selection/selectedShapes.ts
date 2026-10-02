@@ -1,4 +1,5 @@
-import { executeCommand, updateShapesCommand } from '../commands';
+import { reshapeCommand } from '../attachments';
+import { executeCommand } from '../commands';
 import type { Shape } from '../shapes';
 import type { EditorState, EditorStore } from '../store';
 
@@ -28,7 +29,8 @@ export function nudgeSelection(
     return;
   }
   const after = before.map((shape) => ({ ...shape, x: shape.x + dx, y: shape.y + dy }));
-  const result = executeCommand(store, updateShapesCommand('Nudge', before, after), {
+  const command = reshapeCommand(store.getState().document, 'Nudge', before, after);
+  const result = executeCommand(store, command, {
     group: { key: 'nudge', continues: repeat },
   });
   if (!result.ok) {

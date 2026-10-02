@@ -1,13 +1,7 @@
 import { arrangeSelection, type ArrangeAction } from './arrange';
+import { deleteCommand, remapAttachments } from './attachments';
 import { assertNever } from './assertNever';
-import {
-  createShapesCommand,
-  deleteShapesCommand,
-  executeCommand,
-  redo,
-  undo,
-  type CommandError,
-} from './commands';
+import { createShapesCommand, executeCommand, redo, undo, type CommandError } from './commands';
 import type { DocumentState } from './document';
 import { groupSelection, regroupCopies, ungroupSelection } from './groups';
 import type { Result } from './result';
@@ -169,7 +163,7 @@ function clearCanvas(store: EditorStore, reportError: (error: Error) => void): v
   });
   if (shapes.length > 0) {
     report(
-      executeCommand(store, deleteShapesCommand('Clear canvas', shapes), {
+      executeCommand(store, deleteCommand(document, 'Clear canvas', shapes), {
         select: EMPTY_SELECTION,
       }),
       reportError,
@@ -181,7 +175,9 @@ export function deleteSelection(store: EditorStore, reportError: (error: Error) 
   const shapes = selectedShapes(store.getState());
   if (shapes.length > 0) {
     report(
-      executeCommand(store, deleteShapesCommand('Delete', shapes), { select: EMPTY_SELECTION }),
+      executeCommand(store, deleteCommand(store.getState().document, 'Delete', shapes), {
+        select: EMPTY_SELECTION,
+      }),
       reportError,
     );
   }
@@ -198,13 +194,17 @@ function addCopies(
   if (shapes.length === 0) {
     return;
   }
+  const newIds = new Map(shapes.map((shape) => [shape.id, createShapeId()]));
   const copies = regroupCopies(
-    shapes.map((shape) => ({
-      ...shape,
-      id: createShapeId(),
-      x: shape.x + offset,
-      y: shape.y + offset,
-    })),
+    remapAttachments(
+      shapes.map((shape) => ({
+        ...shape,
+        id: newIds.get(shape.id) ?? createShapeId(),
+        x: shape.x + offset,
+        y: shape.y + offset,
+      })),
+      newIds,
+    ),
   );
   const select = new Set(copies.map((shape) => shape.id));
   report(executeCommand(store, createShapesCommand(label, copies), { select }), reportError);

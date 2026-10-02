@@ -1,5 +1,6 @@
 import { screenToWorld } from '../camera';
-import { executeCommand, updateShapesCommand } from '../commands';
+import { reshapeCommand, withAttachments } from '../attachments';
+import { executeCommand } from '../commands';
 import { expandToGroups } from '../groups';
 import type { Bounds } from '../geometry/bounds';
 import { createPoint, distance, type Point } from '../geometry/point';
@@ -136,7 +137,10 @@ export function createSelectTool({ store, index, measurer, reportError }: Select
       }
       if (state.kind === 'transforming') {
         const { shapes, guides } = state.gesture.apply(toWorld(event), event);
-        store.setState({ preview: byId(shapes), guides });
+        // Attached arrows follow live, exactly as the commit will move them.
+        const { document } = store.getState();
+        const moved = withAttachments(document, state.gesture.originals, shapes).after;
+        store.setState({ preview: byId(moved), guides });
       } else if (state.kind === 'marquee') {
         updateMarquee(store, index, state, toWorld(event), event);
       }
@@ -323,7 +327,7 @@ function commitTransform(
   }
   const result = executeCommand(
     store,
-    updateShapesCommand(gesture.label, gesture.originals, after),
+    reshapeCommand(store.getState().document, gesture.label, gesture.originals, after),
   );
   if (!result.ok) {
     reportError(result.error);

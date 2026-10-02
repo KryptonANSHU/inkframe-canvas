@@ -1,4 +1,5 @@
-import { deleteShapesCommand, executeCommand, updateShapesCommand } from '../commands';
+import { deleteCommand, reshapeCommand } from '../attachments';
+import { executeCommand } from '../commands';
 import { EMPTY_SELECTION, type EditorStore } from '../store';
 import { createAndSelect } from '../tools/selectCreated';
 import type { TextMeasurer } from './layout';
@@ -35,12 +36,13 @@ export function commitTextEdit(
     return;
   }
   const updated = withText(current, typed, measurer);
+  const { document } = store.getState();
   const result =
     updated === null
-      ? executeCommand(store, deleteShapesCommand('Delete text', [current]), {
+      ? executeCommand(store, deleteCommand(document, 'Delete text', [current]), {
           select: EMPTY_SELECTION,
         })
-      : executeCommand(store, updateShapesCommand('Edit text', [current], [updated]));
+      : executeCommand(store, reshapeCommand(document, 'Edit text', [current], [updated]));
   if (!result.ok) {
     reportError(result.error);
   }
