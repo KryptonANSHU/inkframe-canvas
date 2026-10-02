@@ -1,0 +1,179 @@
+.panel {
+  composes: floating from './surfaces.module.css';
+  z-index: var(--z-overlay);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  inline-size: 320px;
+  max-block-size: min(560px, calc(100vh - 96px));
+  overflow-y: auto;
+  padding: var(--space-3);
+  animation: rise var(--duration-fast) var(--easing);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+}
+
+.title {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+}
+
+.empty {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.identity {
+  min-inline-size: 0;
+}
+
+.name {
+  margin: 0;
+  overflow: hidden;
+  color: var(--color-ink);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.version {
+  margin-inline-start: var(--space-2);
+  color: var(--color-ink-muted);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.status {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+}
+
+.stopped {
+  composes: status;
+  color: var(--color-danger);
+}
+
+.actions {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.action {
+  composes: iconButton from './surfaces.module.css';
+  inline-size: 28px;
+  block-size: 28px;
+  color: var(--color-ink-muted);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding-block: 2px;
+  padding-inline: var(--space-2) 2px;
+  border-radius: var(--radius-round);
+  background: var(--color-hover);
+  color: var(--color-ink);
+  font-size: var(--font-size-xs);
+}
+
+.revoke {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 18px;
+  block-size: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-round);
+  background: transparent;
+  color: var(--color-ink-muted);
+  cursor: pointer;
+}
+
+.revoke:hover {
+  background: var(--color-hover);
+  color: var(--color-danger);
+}
+
+.log {
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+}
+
+.log summary {
+  cursor: pointer;
+}
+
+.lines {
+  margin: var(--space-1) 0 0;
+  padding-inline-start: var(--space-4);
+  line-height: 1.5;
+}
+
+.load {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  block-size: var(--size-control);
+  border: 1px dashed var(--color-line);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--color-ink);
+  font: inherit;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--easing);
+}
+
+.load:hover {
+  background: var(--color-hover);
+}
+
+.picker {
+  display: none;
+}

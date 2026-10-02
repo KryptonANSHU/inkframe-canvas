@@ -10,6 +10,7 @@ import { EmptyHint } from './EmptyHint';
 import { ErrorBoundary } from './ErrorBoundary';
 import { HistoryControls } from './HistoryControls';
 import { MainMenu } from './MainMenu';
+import { PluginsArea } from './PluginsArea';
 import { ShortcutsDialog } from './ShortcutsDialog';
 import { StorageBanner } from './StorageBanner';
 import { StylePanel } from './StylePanel';
@@ -73,6 +74,12 @@ export function App() {
                 message="The toolbar failed. Shortcuts still work; reload to bring it back."
               >
                 <Toolbar />
+              </Area>
+              <Area
+                name="Plugins"
+                message="The plugin panel failed. Reload the page to bring it back."
+              >
+                <PluginsArea />
               </Area>
               <Area
                 name="Style panel"

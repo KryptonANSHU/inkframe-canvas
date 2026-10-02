@@ -1,0 +1,25 @@
+.bar {
+  composes: floating from './surfaces.module.css';
+  position: absolute;
+  z-index: var(--z-floating);
+  inset-block-start: var(--space-3);
+  inset-inline-end: var(--space-3);
+  display: flex;
+  padding: var(--space-1);
+}
+
+.trigger {
+  composes: iconButton from './surfaces.module.css';
+}
+
+.trigger[aria-expanded='true'] {
+  background: var(--color-hover);
+}
+
+.loading {
+  composes: floating from './surfaces.module.css';
+  margin: 0;
+  padding: var(--space-3);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+}

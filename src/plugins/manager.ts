@@ -18,8 +18,11 @@ export type PluginEntry = {
   readonly label: string;
   readonly source: PluginSource;
   readonly state: PluginState;
-  readonly log: readonly string[];
+  readonly log: readonly LogLine[];
 };
+
+/** One security-log line; the ID keys it in lists. */
+export type LogLine = { readonly id: number; readonly message: string };
 
 export type ManagerState = {
   readonly entries: readonly PluginEntry[];
@@ -55,6 +58,7 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
   const running = new Map<number, Running>();
   const pendingApprovals = new Map<number, (granted: readonly Permission[] | null) => void>();
   let nextKey = 1;
+  let nextLogId = 1;
 
   const update = (key: number, change: (entry: PluginEntry) => PluginEntry) => {
     state.setState({
@@ -62,7 +66,8 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
     });
   };
   const log = (key: number, line: string) => {
-    update(key, (entry) => ({ ...entry, log: [...entry.log, line].slice(-LOG_LIMIT) }));
+    const entry: LogLine = { id: nextLogId++, message: line };
+    update(key, (current) => ({ ...current, log: [...current.log, entry].slice(-LOG_LIMIT) }));
   };
 
   const approve = (key: number, manifest: Manifest) => {
