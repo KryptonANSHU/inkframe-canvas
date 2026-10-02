@@ -1,0 +1,13 @@
+# The collaboration relay on Render (a Blueprint). The frontend stays on Vercel; set
+# VITE_COLLAB_URL there to this service's URL with wss://, e.g. wss://inkframe-relay.onrender.com.
+services:
+  - type: web
+    name: inkframe-relay
+    runtime: node
+    plan: free
+    buildCommand: npm ci --omit=dev
+    startCommand: node server/relay.ts
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: '24'

@@ -16,6 +16,7 @@ export { Popover } from './components/Popover';
 export { SegmentedControl } from './components/SegmentedControl';
 export { shortcutKeys, shortcutText } from './components/shortcuts';
 export { Slider } from './components/Slider';
+export { StatusBadge } from './components/StatusBadge';
 export { Divider, Surface } from './components/Surface';
 export {
   Toolbar,

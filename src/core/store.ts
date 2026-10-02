@@ -1,4 +1,5 @@
 import type { AnchorHint } from './attachments';
+import type { CollabState } from './collabState';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import { DEFAULT_CAMERA, type Camera } from './camera';
 import { EMPTY_DOCUMENT, type DocumentState } from './document';
@@ -63,6 +64,8 @@ export type EditorState = {
    * the shared document; this mirrors what they can do. Null uses `history`.
    */
   readonly sharedUndo: { readonly canUndo: boolean; readonly canRedo: boolean } | null;
+  /** The shared room this drawing is in, or null when drawing alone. */
+  readonly collab: CollabState | null;
 };
 
 export type EditorStore = StoreApi<EditorState>;
@@ -92,6 +95,7 @@ export function createEditorStore(initial: Partial<EditorState> = {}): EditorSto
     gridVisible: true,
     anchorHint: null,
     sharedUndo: null,
+    collab: null,
     ...initial,
   }));
 }

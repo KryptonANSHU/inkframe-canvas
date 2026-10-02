@@ -39,13 +39,16 @@ export type PersistenceOptions = {
 export type Persistence = {
   /** Saves now if a save is pending, e.g. when the tab is hidden. */
   flush(): Promise<void>;
+  /** Loads the autosaved drawing again, replacing what is shown (leaving a room). */
+  reload(): Promise<void>;
   dispose(): void;
 };
 
 /**
  * Restores the last autosaved drawing (falling back to the backup), then saves every
  * document change after a quiet period. If storage fails, the status becomes
- * 'unavailable' and the editor keeps working in memory.
+ * 'unavailable' and the editor keeps working in memory. While in a shared room nothing
+ * is saved: the room's drawing must never replace this device's own.
  */
 export function startPersistence(options: PersistenceOptions): Persistence {
   const { store, storage, reportError } = options;
@@ -89,7 +92,11 @@ export function startPersistence(options: PersistenceOptions): Persistence {
       store.setState({ autosave: 'on' });
     }
     unsubscribe = store.subscribe((state, previous) => {
-      if (state.document !== previous.document && state.autosave === 'on') {
+      if (
+        state.document !== previous.document &&
+        state.autosave === 'on' &&
+        state.collab === null
+      ) {
         if (timer !== null) clearTimeout(timer);
         timer = setTimeout(() => void flush(), delay);
       }
@@ -98,6 +105,12 @@ export function startPersistence(options: PersistenceOptions): Persistence {
 
   return {
     flush,
+    async reload() {
+      if (timer !== null) clearTimeout(timer);
+      timer = null;
+      await saving;
+      await restore(options, () => !disposed, true);
+    },
     dispose() {
       disposed = true;
       unsubscribe();
@@ -110,7 +123,11 @@ export function startPersistence(options: PersistenceOptions): Persistence {
  * Loads the newest readable snapshot into the store. Returns the highest counter seen,
  * so new saves continue from it.
  */
-async function restore(options: PersistenceOptions, active: () => boolean): Promise<number> {
+async function restore(
+  options: PersistenceOptions,
+  active: () => boolean,
+  replace = false,
+): Promise<number> {
   const { store, storage, readFileText, reportError } = options;
   let saved;
   try {
@@ -129,8 +146,10 @@ async function restore(options: PersistenceOptions, active: () => boolean): Prom
       return latest;
     }
     if (read.ok) {
-      // Anything drawn while loading wins: the snapshot would overwrite it.
-      if (store.getState().document.order.length === 0) {
+      // Anything drawn while loading wins (the snapshot would overwrite it), and a
+      // shared room joined meanwhile keeps its drawing.
+      const { document, collab } = store.getState();
+      if (replace || (document.order.length === 0 && collab === null)) {
         store.setState({ document: documentFromShapes(read.value) });
       }
       return latest;

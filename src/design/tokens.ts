@@ -79,6 +79,21 @@ export const fillSwatches: readonly ShapeSwatch[] = [
 ];
 
 /** One layered shadow for floating surfaces; nothing else gets a shadow. */
+/**
+ * Collaborators' cursor and selection colors: distinct from each other and from the
+ * selection blue, dark enough for white name labels, and visible on both canvases.
+ */
+export const peerColors: readonly string[] = [
+  '#C2255C',
+  '#B4530C',
+  '#2B8A3E',
+  '#1971C2',
+  '#7048E8',
+  '#0C8599',
+  '#9C36B5',
+  '#C92A2A',
+];
+
 export const shadows = {
   light: { float: '0 1px 2px rgb(16 24 40 / 0.06), 0 6px 16px rgb(16 24 40 / 0.08)' },
   dark: { float: '0 1px 2px rgb(0 0 0 / 0.40), 0 6px 20px rgb(0 0 0 / 0.36)' },

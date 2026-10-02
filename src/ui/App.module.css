@@ -6,3 +6,11 @@
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 }
+
+/* Top right: drawing together, then plugins. */
+.topEnd {
+  position: absolute;
+  z-index: var(--z-floating);
+  inset-block-start: var(--space-3);
+  inset-inline-end: var(--space-3);
+}

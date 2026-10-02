@@ -1,7 +1,7 @@
 import { Puzzle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { PluginManager } from '../plugins/manager';
-import { IconTrigger, Popover, Surface } from '@inkframe/design';
+import { IconTrigger, Popover } from '@inkframe/design';
 import { useEditor } from './EditorContext';
 import { notify } from './notifications';
 import { PluginApproval } from './PluginApproval';
@@ -37,27 +37,25 @@ export function PluginsArea() {
 
   return (
     <>
-      <Surface layout="bar" className={styles.place}>
-        <Popover
-          label="Plugins"
-          align="end"
-          className={styles.content}
-          trigger={<IconTrigger label="Plugins" Icon={Puzzle} />}
-          onOpenChange={(open) => {
-            if (open) loadManager();
-          }}
-          onCloseAutoFocus={(event) => {
-            event.preventDefault();
-            editor.focus();
-          }}
-        >
-          {manager === null ? (
-            <p className={styles.loading}>Loading plugins…</p>
-          ) : (
-            <PluginPanel manager={manager} />
-          )}
-        </Popover>
-      </Surface>
+      <Popover
+        label="Plugins"
+        align="end"
+        className={styles.content}
+        trigger={<IconTrigger label="Plugins" Icon={Puzzle} />}
+        onOpenChange={(open) => {
+          if (open) loadManager();
+        }}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          editor.focus();
+        }}
+      >
+        {manager === null ? (
+          <p className={styles.loading}>Loading plugins…</p>
+        ) : (
+          <PluginPanel manager={manager} />
+        )}
+      </Popover>
       {manager !== null && <PluginApproval manager={manager} />}
     </>
   );

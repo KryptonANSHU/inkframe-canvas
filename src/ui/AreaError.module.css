@@ -1,6 +1,7 @@
 /* Below the top row of chrome, centered: where a failed control's absence is noticed. */
+/* Fixed, so it places the same inside a floating bar as on the canvas. */
 .place {
-  position: absolute;
+  position: fixed;
   z-index: var(--z-banner);
   inset-block-start: calc(var(--space-3) * 2 + var(--size-control) + 2 * var(--space-1) + 2px);
   inset-inline-start: 50%;

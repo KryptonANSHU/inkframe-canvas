@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useState, type ReactNode } from 'react';
-import { TooltipProvider } from '@inkframe/design';
+import { Divider, Surface, TooltipProvider } from '@inkframe/design';
 import type { Editor } from '../core/dom/createEditor';
 import { AppCrash } from './AppCrash';
 import styles from './App.module.css';
@@ -12,6 +12,7 @@ import { HistoryControls } from './HistoryControls';
 import { MainMenu } from './MainMenu';
 import { PluginsArea } from './PluginsArea';
 import { ShapeList } from './ShapeList';
+import { ShareArea } from './ShareArea';
 import { ShortcutsDialog } from './ShortcutsDialog';
 import { StorageBanner } from './StorageBanner';
 import { StylePanel } from './StylePanel';
@@ -76,12 +77,21 @@ export function App() {
               >
                 <Toolbar />
               </Area>
-              <Area
-                name="Plugins"
-                message="The plugin panel failed. Reload the page to bring it back."
-              >
-                <PluginsArea />
-              </Area>
+              <Surface layout="bar" className={styles.topEnd}>
+                <Area
+                  name="Sharing"
+                  message="Drawing together failed. Reload the page to bring it back."
+                >
+                  <ShareArea />
+                </Area>
+                <Divider />
+                <Area
+                  name="Plugins"
+                  message="The plugin panel failed. Reload the page to bring it back."
+                >
+                  <PluginsArea />
+                </Area>
+              </Surface>
               <Area
                 name="Style panel"
                 message="The style panel failed. Reload the page to bring it back."

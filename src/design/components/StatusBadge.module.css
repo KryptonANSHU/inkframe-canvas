@@ -1,0 +1,32 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-inline: var(--space-1) var(--space-2);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.dot {
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: var(--radius-round);
+  background: var(--color-ink-muted);
+}
+
+/* Shape as well as color: a filled dot when fine, a ring while trying, a dash when off. */
+.dot[data-tone='ok'] {
+  background: var(--color-select);
+}
+
+.dot[data-tone='busy'] {
+  border: 2px solid var(--color-ink-muted);
+  background: transparent;
+}
+
+.dot[data-tone='off'] {
+  block-size: 2px;
+  border-radius: 1px;
+  background: var(--color-danger);
+}

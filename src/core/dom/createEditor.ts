@@ -74,6 +74,11 @@ export type Editor = {
   readonly onFrame: (listener: FrameListener) => () => void;
   /** Routes undo and redo to a collaboration session's per-user history, or back. */
   readonly setSharedHistory: (history: SharedHistory | null) => void;
+  /** Saves any pending autosave now (before joining a room). */
+  readonly saveNow: () => Promise<void>;
+  /** Shows this device's autosaved drawing again (after leaving a room). */
+  readonly reloadDrawing: () => Promise<void>;
+  readonly reportError: (error: Error) => void;
 };
 
 const animationFrames: FrameScheduler = {
@@ -214,6 +219,9 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
     setSharedHistory: (history) => {
       sharedHistory = history;
     },
+    saveNow: () => persistence.flush(),
+    reloadDrawing: () => persistence.reload(),
+    reportError,
     perform: (action) => {
       performEditAction(action, store, reportError, hooks);
     },
