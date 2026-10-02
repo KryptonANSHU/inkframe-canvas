@@ -1,10 +1,11 @@
+import { anchorPoint, canAttachTo, type AnchorHint } from '../attachments';
 import { worldToScreen, type Camera } from '../camera';
 import type { Bounds } from '../geometry/bounds';
 import type { Point } from '../geometry/point';
 import { rotatedBoxCorners } from '../geometry/transform';
 import type { RenderContext } from '../renderer';
 import { shapeBox, shapeGeometryBounds } from '../shapeGeometry';
-import type { GroupId, Shape } from '../shapes';
+import { ANCHORS, type GroupId, type Shape } from '../shapes';
 import type { Guide } from '../snapping';
 import type { EditorState } from '../store';
 import { canvasTheme } from '../theme';
@@ -34,7 +35,12 @@ export function drawSelectionOverlay(
   devicePixelRatio: number,
 ): void {
   const shapes = selectedShapes(state);
-  if (shapes.length === 0 && state.marquee === null && state.guides.length === 0) {
+  if (
+    shapes.length === 0 &&
+    state.marquee === null &&
+    state.guides.length === 0 &&
+    state.anchorHint === null
+  ) {
     return;
   }
   const lineWidth = Math.max(1, Math.round(devicePixelRatio));
@@ -84,6 +90,35 @@ export function drawSelectionOverlay(
   for (const guide of state.guides) {
     const ends = guideEnds(guide);
     strokeLine(context, project(ends, true));
+  }
+  if (state.anchorHint !== null) {
+    drawAnchors(context, state, state.anchorHint, devicePixelRatio, theme);
+  }
+}
+
+/** Radius of an anchor dot, and of the one an arrow end is snapped to, in screen pixels. */
+const ANCHOR_RADIUS_PX = 3.5;
+const ACTIVE_ANCHOR_RADIUS_PX = 5;
+
+/** A shape's anchors while an arrow end moves near it; the snapped one filled in. */
+function drawAnchors(
+  context: RenderContext,
+  state: EditorState,
+  hint: AnchorHint,
+  devicePixelRatio: number,
+  theme: ReturnType<typeof canvasTheme>,
+): void {
+  const shape = state.preview?.get(hint.shapeId) ?? state.document.shapes.get(hint.shapeId);
+  if (shape === undefined || !canAttachTo(shape)) return;
+  for (const anchor of ANCHORS) {
+    const active = anchor === hint.anchor;
+    const screen = worldToScreen(state.camera, anchorPoint(shape, anchor));
+    const radius = (active ? ACTIVE_ANCHOR_RADIUS_PX : ANCHOR_RADIUS_PX) * devicePixelRatio;
+    context.beginPath();
+    context.arc(screen.x * devicePixelRatio, screen.y * devicePixelRatio, radius, 0, Math.PI * 2);
+    context.fillStyle = active ? theme.selection : theme.handleFill;
+    context.fill();
+    context.stroke();
   }
 }
 

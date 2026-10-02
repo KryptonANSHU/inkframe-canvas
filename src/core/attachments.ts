@@ -7,8 +7,9 @@ import {
 import type { DocumentState } from './document';
 import { distance, type Point } from './geometry/point';
 import { toWorldPoint } from './geometry/transform';
-import { pathWorldPoints } from './shapeGeometry';
+import { pathWorldPoints, shapeGeometryBounds } from './shapeGeometry';
 import {
+  ANCHORS,
   MIN_SHAPE_SIZE,
   type Anchor,
   type ArrowShape,
@@ -38,7 +39,7 @@ const ANCHOR_OFFSETS: Readonly<Record<Anchor, readonly [number, number]>> = {
 const ON_ANCHOR = 1e-6;
 
 const ENDS = ['start', 'end'] as const;
-type End = (typeof ENDS)[number];
+export type End = (typeof ENDS)[number];
 
 /** Arrows attach to rectangles, ellipses, and text; paths have no edges to hold on to. */
 export function canAttachTo(shape: Shape): shape is BoxShape {
@@ -219,6 +220,66 @@ export function settleAttachments(shapes: readonly Shape[]): Shape[] {
   );
 }
 
+/** Screen pixels around a shape within which its anchors show while an arrow end moves. */
+export const ANCHOR_REACH_PX = 24;
+/** Screen pixels from an anchor within which an arrow end snaps to it. */
+export const ATTACH_PX = 12;
+
+/** A shape whose anchors are showing, and the one an arrow end would attach to. */
+export type AnchorHint = { readonly shapeId: ShapeId; readonly anchor: Anchor | null };
+
+/** Where an arrow end near `point` would go: snapped to an anchor, or just hinted at. */
+export type AnchorTarget = {
+  readonly hint: AnchorHint;
+  /** The anchor's position when `hint.anchor` is set. */
+  readonly at: Point | null;
+};
+
+/**
+ * The topmost shape that takes arrows within reach of `point` (world), and its nearest
+ * anchor if within ATTACH_PX. `candidates` come from the spatial index; `avoid` is the
+ * other end's attachment, so both ends never share one anchor.
+ */
+export function findAnchor(
+  document: DocumentState,
+  candidates: readonly ShapeId[],
+  point: Readonly<Point>,
+  zoom: number,
+  avoid?: Attachment,
+): AnchorTarget | null {
+  const reach = ANCHOR_REACH_PX / zoom;
+  let target: BoxShape | null = null;
+  for (const id of candidates) {
+    const shape = document.shapes.get(id);
+    if (shape === undefined || !canAttachTo(shape)) continue;
+    const bounds = shapeGeometryBounds(shape);
+    const near =
+      point.x >= bounds.minX - reach &&
+      point.x <= bounds.maxX + reach &&
+      point.y >= bounds.minY - reach &&
+      point.y <= bounds.maxY + reach;
+    if (near && (target === null || shape.zIndex > target.zIndex)) target = shape;
+  }
+  if (target === null) return null;
+  let best: { anchor: Anchor; at: Point; gap: number } | null = null;
+  for (const anchor of ANCHORS) {
+    if (avoid?.shapeId === target.id && avoid.anchor === anchor) continue;
+    const at = anchorPoint(target, anchor);
+    const gap = distance(at, point);
+    if (gap <= ATTACH_PX / zoom && (best === null || gap < best.gap)) best = { anchor, at, gap };
+  }
+  return {
+    hint: { shapeId: target.id, anchor: best?.anchor ?? null },
+    at: best?.at ?? null,
+  };
+}
+
+/** The arrow with one end attached to `attachment`, or free when it is null. */
+export function withEnd(arrow: ArrowShape, end: End, attachment: Attachment | null): ArrowShape {
+  const { [end]: _old, ...rest } = arrow;
+  return attachment === null ? rest : { ...rest, [end]: attachment };
+}
+
 /** What is wrong with an arrow's attachments, for the invariants checker. */
 export function attachmentViolations(arrow: ArrowShape, shapeOf: Lookup): string[] {
   const points = pathWorldPoints(arrow);
@@ -239,3 +300,6 @@ export function attachmentViolations(arrow: ArrowShape, shapeOf: Lookup): string
       : [`${arrow.id}: ${end} is not on the ${attachment.anchor} of ${target.id}.`];
   });
 }
+
+/** Finds the anchor target near a world point; the editor wires it to the spatial index. */
+export type AnchorFinder = (point: Readonly<Point>, avoid?: Attachment) => AnchorTarget | null;

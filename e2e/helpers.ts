@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, type Page } from '@playwright/test';
 
 export const FULL = 255;
@@ -134,4 +135,24 @@ export async function chooseMenuItem(page: Page, name: string | RegExp): Promise
 /** The toast region, where errors and file progress appear. */
 export function notifications(page: Page) {
   return page.getByRole('region', { name: /Notifications/ });
+}
+
+export type SavedShape = {
+  type: string;
+  x: number;
+  y: number;
+  style: { strokeColor: string; fillColor: string | null };
+  points?: { x: number; y: number }[];
+  start?: { anchor: string };
+  end?: { anchor: string };
+};
+
+/** The drawing as saved to JSON, bottom to top: exact positions, not pixels. */
+export async function savedShapes(page: Page): Promise<SavedShape[]> {
+  const download = page.waitForEvent('download');
+  await chooseMenuItem(page, 'Save as JSON');
+  const file = JSON.parse(await readFile(await (await download).path(), 'utf8')) as {
+    shapes: SavedShape[];
+  };
+  return file.shapes;
 }

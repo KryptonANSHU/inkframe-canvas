@@ -3,7 +3,10 @@ import { EMPTY_DOCUMENT, insertShape } from '../document';
 import { createEditorStore } from '../store';
 import { makeRect, pointerAt, testShapeId } from '../testing/factories';
 import { createDragShapeTool, DRAG_THRESHOLD_PX } from './dragShapeTool';
-import { lineBetween, rectangleBetween } from './shapeBuilders';
+import { findAnchor, type AnchorFinder } from '../attachments';
+import { invariantViolations } from '../invariants';
+import { documentFromShapes } from '../persistence/fileFormat';
+import { arrowBetween, lineBetween, rectangleBetween } from './shapeBuilders';
 
 // Grid off unless a test turns it on: most tests check exact, unsnapped coordinates.
 function setup(camera = { x: 0, y: 0, zoom: 1 }, build = rectangleBetween, gridVisible = false) {
@@ -167,5 +170,70 @@ describe('drag shape tool: snap to grid', () => {
     tool.pointerMove(pointerAt(60, 70, 1, { metaKey: true }));
     tool.pointerUp(pointerAt(108, 71, 1, { metaKey: true }));
     expect(onlyShape(store)).toMatchObject({ x: 13, y: 27, width: 95, height: 44 });
+  });
+});
+
+describe('drag shape tool: arrows attach to shapes', () => {
+  const box = makeRect({ id: testShapeId('box'), x: 0, y: 0, width: 100, height: 50 });
+  const other = makeRect({ id: testShapeId('other'), x: 300, y: 0, width: 100, height: 50 });
+
+  function arrowSetup() {
+    const store = createEditorStore({
+      document: documentFromShapes([box, other]),
+      gridVisible: false,
+    });
+    const anchors: AnchorFinder = (point, avoid) => {
+      const { document, camera } = store.getState();
+      return findAnchor(document, [...document.order], point, camera.zoom, avoid);
+    };
+    const tool = createDragShapeTool(store, vi.fn(), arrowBetween, anchors);
+    const arrow = () => {
+      const { document } = store.getState();
+      return document.shapes.get(document.order.at(-1) ?? testShapeId('none'));
+    };
+    return { store, tool, arrow };
+  }
+
+  it('snaps both ends to nearby anchors, showing them while dragging', () => {
+    const { store, tool, arrow } = arrowSetup();
+    tool.pointerDown(pointerAt(105, 28));
+    tool.pointerMove(pointerAt(296, 20));
+    expect(store.getState().anchorHint).toEqual({ shapeId: other.id, anchor: 'left' });
+    tool.pointerUp(pointerAt(296, 20));
+    expect(arrow()).toMatchObject({
+      x: 100,
+      y: 25,
+      start: { shapeId: box.id, anchor: 'right' },
+      end: { shapeId: other.id, anchor: 'left' },
+    });
+    expect(store.getState().anchorHint).toBeNull();
+    expect(invariantViolations(store.getState())).toEqual([]);
+  });
+
+  it('shows anchors without attaching when not close to one, and draws free with Ctrl / ⌘', () => {
+    const { store, tool, arrow } = arrowSetup();
+    tool.pointerDown(pointerAt(200, 100));
+    tool.pointerMove(pointerAt(280, 60));
+    expect(store.getState().anchorHint).toEqual({ shapeId: other.id, anchor: null });
+    tool.pointerUp(pointerAt(296, 20, 1, { ctrlKey: true }));
+    const drawn = arrow();
+    expect(drawn && ('start' in drawn || 'end' in drawn)).toBe(false);
+  });
+});
+
+describe('drag shape tool: selection', () => {
+  it('clears the selection while drawing, and cancel brings it back', () => {
+    const existing = makeRect({ id: testShapeId('existing') });
+    const store = createEditorStore({
+      document: insertShape(EMPTY_DOCUMENT, existing),
+      selectedIds: new Set([existing.id]),
+      gridVisible: false,
+    });
+    const tool = createDragShapeTool(store, vi.fn(), rectangleBetween);
+    tool.pointerDown(pointerAt(200, 200));
+    tool.pointerMove(pointerAt(260, 240));
+    expect(store.getState().selectedIds.size).toBe(0);
+    tool.cancel();
+    expect([...store.getState().selectedIds]).toEqual([existing.id]);
   });
 });

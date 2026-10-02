@@ -1,5 +1,5 @@
 import { screenToWorld } from '../camera';
-import { reshapeCommand, withAttachments } from '../attachments';
+import { reshapeCommand, withAttachments, type AnchorFinder } from '../attachments';
 import { executeCommand } from '../commands';
 import { expandToGroups } from '../groups';
 import type { Bounds } from '../geometry/bounds';
@@ -49,6 +49,8 @@ export type SelectToolOptions = {
   readonly index: SpatialIndex;
   readonly measurer: TextMeasurer;
   readonly reportError: (error: Error) => void;
+  /** Lets dragged arrow ends attach to shapes. */
+  readonly anchors?: AnchorFinder;
 };
 
 /**
@@ -57,7 +59,13 @@ export type SelectToolOptions = {
  * empty canvas for a marquee (Ctrl / ⌘ selects what it touches), double-click text to
  * edit it or empty canvas to type new text. Every drag is one command on release; cancel restores shapes and selection.
  */
-export function createSelectTool({ store, index, measurer, reportError }: SelectToolOptions): Tool {
+export function createSelectTool({
+  store,
+  index,
+  measurer,
+  reportError,
+  anchors,
+}: SelectToolOptions): Tool {
   let state: SelectToolState = { kind: 'idle' };
   let selectionBefore: ReadonlySet<ShapeId> = EMPTY_SELECTION;
   let hoverCursor = 'default';
@@ -97,6 +105,7 @@ export function createSelectTool({ store, index, measurer, reportError }: Select
             zoom: store.getState().camera.zoom,
             measurer,
             grid: store.getState().gridVisible,
+            ...(anchors === undefined ? {} : { anchors }),
           })
         : moveGesture(originals, startWorld, {
             targets: snapTargets,
@@ -136,11 +145,11 @@ export function createSelectTool({ store, index, measurer, reportError }: Select
         state = startDrag(state, event);
       }
       if (state.kind === 'transforming') {
-        const { shapes, guides } = state.gesture.apply(toWorld(event), event);
+        const { shapes, guides, anchorHint = null } = state.gesture.apply(toWorld(event), event);
         // Attached arrows follow live, exactly as the commit will move them.
         const { document } = store.getState();
         const moved = withAttachments(document, state.gesture.originals, shapes).after;
-        store.setState({ preview: byId(moved), guides });
+        store.setState({ preview: byId(moved), guides, anchorHint });
       } else if (state.kind === 'marquee') {
         updateMarquee(store, index, state, toWorld(event), event);
       }
@@ -187,6 +196,7 @@ export function createSelectTool({ store, index, measurer, reportError }: Select
         store.setState({
           preview: null,
           guides: NO_GUIDES,
+          anchorHint: null,
           marquee: null,
           selectedIds: selectionBefore,
         });
@@ -318,7 +328,7 @@ function commitTransform(
   after: readonly Shape[],
   reportError: (error: Error) => void,
 ): void {
-  store.setState({ preview: null, guides: NO_GUIDES });
+  store.setState({ preview: null, guides: NO_GUIDES, anchorHint: null });
   const unchanged = after.every(
     (shape, i) => JSON.stringify(shape) === JSON.stringify(gesture.originals[i]),
   );

@@ -1,3 +1,4 @@
+import { ANCHOR_REACH_PX, findAnchor, type AnchorFinder } from '../attachments';
 import { createInputController } from '../input/inputController';
 import { startPersistence } from '../persistence/autosave';
 import { createRenderLoop, type FrameScheduler } from '../renderLoop';
@@ -134,6 +135,18 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
     reader,
     reportError,
   });
+  // Arrow ends attach to shapes found through the spatial index, near the pointer.
+  const anchors: AnchorFinder = (point, avoid) => {
+    const { document, camera } = store.getState();
+    const reach = ANCHOR_REACH_PX / camera.zoom;
+    const nearby = index.query({
+      minX: point.x - reach,
+      minY: point.y - reach,
+      maxX: point.x + reach,
+      maxY: point.y + reach,
+    });
+    return findAnchor(document, nearby, point, camera.zoom, avoid);
+  };
   const hooks: EditorHooks = {
     open: () => {
       files.open();
@@ -147,11 +160,11 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
     store,
     {
       byId: {
-        select: createSelectTool({ store, index, measurer, reportError }),
+        select: createSelectTool({ store, index, measurer, reportError, anchors }),
         rectangle: createDragShapeTool(store, reportError, rectangleBetween),
         ellipse: createDragShapeTool(store, reportError, ellipseBetween),
         line: createDragShapeTool(store, reportError, lineBetween),
-        arrow: createDragShapeTool(store, reportError, arrowBetween),
+        arrow: createDragShapeTool(store, reportError, arrowBetween, anchors),
         pen: createPenTool(store, reportError),
         text: createTextTool(store),
       },

@@ -1,15 +1,14 @@
-import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
 import {
   alphaAt,
   canvas,
-  chooseMenuItem,
   drag,
   EMPTY,
   FULL,
   nextFrame,
   notifications,
   openEditor,
+  savedShapes,
 } from './helpers';
 
 let consoleProblems: string[] = [];
@@ -70,22 +69,6 @@ test('a plugin from a file asks first, then adds a shape as one undo step', asyn
   await nextFrame(page);
   expect(await alphaAt(page, 300, 200)).toBe(EMPTY);
 });
-
-type SavedShape = {
-  x: number;
-  y: number;
-  style: { strokeColor: string; fillColor: string | null };
-};
-
-/** The drawing as saved to JSON, bottom to top: exact positions, not pixels. */
-async function savedShapes(page: Page): Promise<SavedShape[]> {
-  const download = page.waitForEvent('download');
-  await chooseMenuItem(page, 'Save as JSON');
-  const file = JSON.parse(await readFile(await (await download).path(), 'utf8')) as {
-    shapes: SavedShape[];
-  };
-  return file.shapes;
-}
 
 async function drawRectangles(page: Page, ...boxes: [number, number, number, number][]) {
   for (const [x1, y1, x2, y2] of boxes) {

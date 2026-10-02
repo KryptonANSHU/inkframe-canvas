@@ -1,3 +1,4 @@
+import type { AnchorHint } from './attachments';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import { DEFAULT_CAMERA, type Camera } from './camera';
 import { EMPTY_DOCUMENT, type DocumentState } from './document';
@@ -55,6 +56,8 @@ export type EditorState = {
   readonly helpOpen: boolean;
   /** A grid behind the shapes (Ctrl / ⌘ + '); a view setting, never exported. */
   readonly gridVisible: boolean;
+  /** Anchors to show while an arrow end is drawn or dragged near a shape. Transient. */
+  readonly anchorHint: AnchorHint | null;
 };
 
 export type EditorStore = StoreApi<EditorState>;
@@ -82,6 +85,7 @@ export function createEditorStore(initial: Partial<EditorState> = {}): EditorSto
     toolLocked: false,
     helpOpen: false,
     gridVisible: true,
+    anchorHint: null,
     ...initial,
   }));
 }

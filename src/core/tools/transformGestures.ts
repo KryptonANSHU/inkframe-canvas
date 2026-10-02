@@ -1,3 +1,4 @@
+import { withEnd, type AnchorFinder, type AnchorHint } from '../attachments';
 import { unionBounds, type Bounds } from '../geometry/bounds';
 import { gridSnapping, snapPointToGrid, snapToGrid } from '../grid';
 import type { Point } from '../geometry/point';
@@ -25,7 +26,12 @@ import type { ToolPointerEvent } from './tool';
 type Modifiers = Pick<ToolPointerEvent, 'shiftKey' | 'altKey' | 'ctrlKey' | 'metaKey'>;
 
 /** The shapes as they would be at this pointer position, and any snap guides to show. */
-export type GestureResult = { readonly shapes: Shape[]; readonly guides: readonly Guide[] };
+export type GestureResult = {
+  readonly shapes: Shape[];
+  readonly guides: readonly Guide[];
+  /** Anchors to show while an arrow end is dragged near a shape. */
+  readonly anchorHint?: AnchorHint | null;
+};
 
 /**
  * One drag that transforms the selection. `apply` is pure: it returns the shapes as
@@ -119,6 +125,8 @@ export type HandleGestureContext = {
   readonly measurer: TextMeasurer;
   /** Whether the grid is shown, so resizes and line ends snap to it. */
   readonly grid: boolean;
+  /** Lets a dragged arrow end attach to a shape's anchor. */
+  readonly anchors?: AnchorFinder;
 };
 
 export function handleGesture(handle: HandleId, context: HandleGestureContext): TransformGesture {
@@ -200,12 +208,29 @@ function endpointGesture(
     cursor: 'crosshair',
     originals,
     apply(pointer, modifiers) {
+      if (segment === null) return { shapes: [...originals], guides: NO_GUIDES };
       const free = { x: pointer.x + grab.x, y: pointer.y + grab.y };
-      const to = gridSnapping(context.grid, modifiers) ? snapPointToGrid(free) : free;
-      return {
-        shapes: segment === null ? [...originals] : [moveEndpoint(segment, endpoint, to)],
-        guides: NO_GUIDES,
-      };
+      const loose = modifiers.ctrlKey || modifiers.metaKey;
+      // An arrow end near a shape snaps to its nearest anchor (never the other end's).
+      const other =
+        segment.type === 'arrow' ? segment[endpoint === 'start' ? 'end' : 'start'] : undefined;
+      const target =
+        segment.type === 'arrow' && context.anchors !== undefined && !loose
+          ? context.anchors(free, other)
+          : null;
+      const attachment =
+        target !== null && target.hint.anchor !== null
+          ? { shapeId: target.hint.shapeId, anchor: target.hint.anchor }
+          : null;
+      const to =
+        attachment !== null && target?.at
+          ? target.at
+          : gridSnapping(context.grid, modifiers)
+            ? snapPointToGrid(free)
+            : free;
+      const moved = moveEndpoint(segment, endpoint, to);
+      const shape = moved.type === 'arrow' ? withEnd(moved, endpoint, attachment) : moved;
+      return { shapes: [shape], guides: NO_GUIDES, anchorHint: target?.hint ?? null };
     },
   };
 }

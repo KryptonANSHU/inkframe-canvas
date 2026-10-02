@@ -5,6 +5,7 @@ import { createSpatialIndex } from '../spatial/spatialIndex';
 import { bindSpatialIndex } from '../spatial/syncIndex';
 import { createEditorStore } from '../store';
 import {
+  makeArrow,
   makeLine,
   makeRect,
   pointerAt,
@@ -13,6 +14,8 @@ import {
 } from '../testing/factories';
 import { selectionFrame } from '../selection/selectionFrame';
 import { fakeMeasurer } from '../testing/factories';
+import { findAnchor, type AnchorFinder } from '../attachments';
+import { invariantViolations } from '../invariants';
 import { createSelectTool } from './selectTool';
 
 const filled = { ...DEFAULT_SHAPE_STYLE, fillColor: '#ff0000' };
@@ -38,7 +41,7 @@ const b = makeRect({
 const far = makeRect({ id: testShapeId('far'), x: 400, y: 0, width: 50, height: 50, zIndex: 2 });
 
 // Grid off unless a test turns it on: most tests check exact, unsnapped positions.
-function setup(shapes: readonly Shape[] = [a, b, far], gridVisible = false) {
+function setup(shapes: readonly Shape[] = [a, b, far], gridVisible = false, attach = false) {
   const store = createEditorStore({
     document: shapes.reduce(insertShape, EMPTY_DOCUMENT),
     gridVisible,
@@ -46,7 +49,17 @@ function setup(shapes: readonly Shape[] = [a, b, far], gridVisible = false) {
   const index = createSpatialIndex();
   bindSpatialIndex(store, index);
   const reportError = vi.fn();
-  const tool = createSelectTool({ store, index, measurer: fakeMeasurer, reportError });
+  const anchors: AnchorFinder = (point, avoid) => {
+    const { document, camera } = store.getState();
+    return findAnchor(document, [...document.order], point, camera.zoom, avoid);
+  };
+  const tool = createSelectTool({
+    store,
+    index,
+    measurer: fakeMeasurer,
+    reportError,
+    ...(attach ? { anchors } : {}),
+  });
   const selected = () => [...store.getState().selectedIds].sort();
   const shape = (id: string) => store.getState().document.shapes.get(testShapeId(id));
   return { store, tool, selected, shape, reportError };
@@ -507,5 +520,32 @@ describe('select tool: snap to grid', () => {
         { x: 120, y: 40 },
       ],
     });
+  });
+});
+
+describe('select tool: arrow ends attach to shapes', () => {
+  const box = makeRect({ id: testShapeId('box'), x: 300, y: 0, width: 100, height: 50, zIndex: 0 });
+  const arrow = makeArrow({
+    id: testShapeId('arrow'),
+    x: 0,
+    y: 25,
+    points: [
+      { x: 0, y: 0 },
+      { x: 200, y: 0 },
+    ],
+    zIndex: 1,
+  });
+
+  it('drags an end onto an anchor to attach it, and off again to let go', () => {
+    const { store, tool, shape } = setup([box, arrow], false, true);
+    store.setState({ selectedIds: new Set([arrow.id]) });
+    drag(tool, [200, 25], [295, 28]);
+    expect(shape('arrow')).toMatchObject({ x: 0, y: 25, end: { shapeId: box.id, anchor: 'left' } });
+    expect(store.getState().anchorHint).toBeNull();
+    expect(invariantViolations(store.getState())).toEqual([]);
+
+    drag(tool, [300, 25], [200, 200]);
+    const after = shape('arrow');
+    expect(after !== undefined && 'end' in after).toBe(false);
   });
 });

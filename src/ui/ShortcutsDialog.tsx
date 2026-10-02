@@ -55,6 +55,7 @@ const GROUPS: readonly Group[] = [
       ['Resize from center', 'Alt+Drag'],
       ['Keep proportions', 'Shift+Drag'],
       ['Rotate in 15° steps', 'Shift+Drag'],
+      ['No snapping or attaching', 'Mod+Drag'],
     ],
   },
   {
