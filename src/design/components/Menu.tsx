@@ -77,6 +77,11 @@ export function MenuItem({
   );
 }
 
+/** A quiet heading over a few related items. */
+export function MenuLabel({ children }: { readonly children: string }) {
+  return <DropdownMenu.Label className={styles.label}>{children}</DropdownMenu.Label>;
+}
+
 export function MenuSeparator() {
   return <DropdownMenu.Separator className={styles.separator} />;
 }

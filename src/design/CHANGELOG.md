@@ -3,6 +3,11 @@
 All notable changes to `@inkframe/design`. The package follows semantic versioning:
 a breaking change to a component's props is a new major version.
 
+## 1.3.0 — 2026-10-02
+
+- Added `ChoiceCard`: a large button with a picture, title, and one line, for picking a starting point such as a template.
+- Added `MenuLabel`: a heading over a group of menu items.
+
 ## 1.2.0 — 2026-10-02
 
 - Added `StatusBadge`: a short status (connected, reconnecting, offline) whose marker differs in shape as well as color.

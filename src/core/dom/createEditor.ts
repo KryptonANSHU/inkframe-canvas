@@ -1,11 +1,14 @@
 import { ANCHOR_REACH_PX, findAnchor, type AnchorFinder } from '../attachments';
+import { executeCommand, replaceDocumentCommand } from '../commands';
 import { createInputController } from '../input/inputController';
+import { documentFromShapes } from '../persistence/fileFormat';
+import { buildTemplate, type Template } from '../templates/templates';
 import { startPersistence } from '../persistence/autosave';
 import { createRenderLoop, type FrameScheduler } from '../renderLoop';
 import { createRenderer } from '../renderer';
 import { createSpatialIndex, type SpatialIndex } from '../spatial/spatialIndex';
 import { bindSpatialIndex } from '../spatial/syncIndex';
-import { createEditorStore, type EditorStore } from '../store';
+import { createEditorStore, EMPTY_SELECTION, type EditorStore } from '../store';
 import { createDragShapeTool } from '../tools/dragShapeTool';
 import { createPanTool } from '../tools/panTool';
 import { createPenTool } from '../tools/penTool';
@@ -81,6 +84,11 @@ export type Editor = {
   /** Shows this device's autosaved drawing again (after leaving a room). */
   readonly reloadDrawing: () => Promise<void>;
   readonly reportError: (error: Error) => void;
+  /**
+   * Replaces the drawing with a fresh copy of a template, as one undo step, and fits
+   * it in view. Returns false if it couldn't be loaded (the error is reported).
+   */
+  readonly loadTemplate: (template: Template) => boolean;
   /** The pointer over the canvas in world units, or null as it leaves; returns an unsubscribe. */
   readonly onPointerMove: (listener: PointerListener) => () => void;
 };
@@ -230,6 +238,20 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
     saveNow: () => persistence.flush(),
     reloadDrawing: () => persistence.reload(),
     reportError,
+    loadTemplate: (template) => {
+      const before = store.getState().document;
+      const after = documentFromShapes(buildTemplate(template, measurer));
+      const label = `Template: ${template.name}`;
+      const result = executeCommand(store, replaceDocumentCommand(label, before, after), {
+        select: EMPTY_SELECTION,
+      });
+      if (!result.ok) {
+        reportError(result.error);
+        return false;
+      }
+      performEditAction('zoomFit', store, reportError, hooks);
+      return true;
+    },
     onPointerMove: (listener) => {
       pointerListeners.add(listener);
       return () => {

@@ -4,6 +4,7 @@ import {
   FolderOpen,
   ImageDown,
   Keyboard,
+  LayoutTemplate,
   Menu as MenuIcon,
   Monitor,
   Moon,
@@ -16,11 +17,13 @@ import {
   IconTrigger,
   Menu,
   MenuItem,
+  MenuLabel,
   MenuRadioGroup,
   MenuSeparator,
   shortcutText,
   Surface,
 } from '@inkframe/design';
+import { TEMPLATES } from '../core/templates/templates';
 import { useEditor, useEditorState } from './EditorContext';
 import styles from './MainMenu.module.css';
 import { notify } from './notifications';
@@ -80,6 +83,24 @@ export function MainMenu() {
           label={`Export ${what} as SVG`}
           onSelect={() => void files.exportImage('svg')}
         />
+        <MenuSeparator />
+        <MenuLabel>New from template</MenuLabel>
+        {TEMPLATES.map((template) => (
+          <MenuItem
+            key={template.id}
+            icon={LayoutTemplate}
+            label={template.name}
+            onSelect={() => {
+              const replacing = !isEmpty;
+              if (editor.loadTemplate(template) && replacing) {
+                notify(
+                  `Loaded “${template.name}”. Press ${shortcutText('Mod+Z')} to get your drawing back.`,
+                  'info',
+                );
+              }
+            }}
+          />
+        ))}
         <MenuSeparator />
         <MenuItem
           icon={Eraser}

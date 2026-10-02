@@ -1,0 +1,45 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--easing),
+    box-shadow var(--duration-fast) var(--easing);
+}
+
+.card:hover {
+  border-color: var(--color-select);
+  box-shadow: var(--shadow-float);
+}
+
+/* The picture sits on the canvas color, so it reads as a tiny drawing. */
+.preview {
+  display: block;
+  inline-size: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-control);
+  background: var(--color-canvas);
+  object-fit: contain;
+  padding: var(--space-2);
+  box-sizing: border-box;
+}
+
+.title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.description {
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+}

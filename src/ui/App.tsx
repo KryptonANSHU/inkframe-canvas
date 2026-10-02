@@ -6,7 +6,6 @@ import styles from './App.module.css';
 import { AreaError } from './AreaError';
 import { CanvasHost } from './CanvasHost';
 import { EditorProvider } from './EditorContext';
-import { EmptyHint } from './EmptyHint';
 import { ErrorBoundary } from './ErrorBoundary';
 import { HistoryControls } from './HistoryControls';
 import { MainMenu } from './MainMenu';
@@ -18,6 +17,7 @@ import { StorageBanner } from './StorageBanner';
 import { StylePanel } from './StylePanel';
 import { Toaster } from './Toaster';
 import { Toolbar } from './Toolbar';
+import { WelcomePanel } from './WelcomePanel';
 import { ZoomControls } from './ZoomControls';
 
 /** The ?debug=1 performance meter, loaded only when asked for. */
@@ -59,7 +59,9 @@ export function App() {
         {editor !== null && (
           <EditorProvider editor={editor}>
             <TooltipProvider>
-              <EmptyHint />
+              <Area name="Welcome" message="The welcome panel failed. Pick a tool to start.">
+                <WelcomePanel />
+              </Area>
               <Area name="Shape list" message="The shape list failed. Reload to bring it back.">
                 <ShapeList />
               </Area>
