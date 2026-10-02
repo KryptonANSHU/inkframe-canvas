@@ -45,9 +45,9 @@ export default tseslint.config(
     ...jsxA11y.flatConfigs.recommended,
   },
 
-  // The editor core and the plugin host are plain TypeScript: never React or the UI layer.
+  // The editor core, plugin host, and collaboration layer are plain TypeScript: never React or the UI layer.
   {
-    files: ['src/core/**/*.{ts,tsx}', 'src/plugins/**/*.{ts,tsx}'],
+    files: ['src/core/**/*.{ts,tsx}', 'src/plugins/**/*.{ts,tsx}', 'src/collab/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
