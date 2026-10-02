@@ -146,7 +146,9 @@ export function createPluginSession(options: SessionOptions): PluginSession {
       });
       return;
     }
-    reply(callApi(method, params, { ...options.api, pluginName: state.manifest.name }));
+    const result = callApi(method, params, { ...options.api, pluginName: state.manifest.name });
+    if (!result.ok) log(`Rejected ${method}: ${result.error.message}`);
+    reply(result);
   };
 
   return {

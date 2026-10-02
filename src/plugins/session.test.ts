@@ -317,3 +317,29 @@ describe('plugin commands', () => {
     });
   });
 });
+
+describe('hostile input', () => {
+  it('rejects non-finite numbers and logs every refused call', async () => {
+    const { session, store, log, lastResult, start } = setup();
+    await start();
+    for (const x of [Number.NaN, Number.POSITIVE_INFINITY]) {
+      session.receive(call(1, 'shapes.create', { shapes: [{ ...newRect, x }] }));
+      expect(lastResult()).toMatchObject({ error: { code: 'invalid-params' } });
+    }
+    expect(log).toHaveBeenCalledWith(expect.stringMatching(/^Rejected shapes\.create: /));
+    expect(store.getState().document.order).toEqual([rect.id]);
+  });
+
+  it('drops __proto__ and other unknown keys instead of copying them', async () => {
+    const { session, store, start } = setup();
+    await start();
+    const hostile = JSON.parse(
+      `{"__proto__": {"polluted": true}, "constructor": {"prototype": {"polluted": true}}}`,
+    ) as object;
+    session.receive(call(1, 'shapes.create', { shapes: [{ ...newRect, ...hostile }] }));
+    const created = [...store.getState().document.shapes.values()].at(-1);
+    expect(created !== undefined && Object.keys(created)).not.toContain('constructor');
+    expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
+    expect(Object.getPrototypeOf(created)).toBe(Object.prototype);
+  });
+});

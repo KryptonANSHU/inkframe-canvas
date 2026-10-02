@@ -152,7 +152,10 @@ function PluginRow({
           <summary>Security log ({entry.log.length})</summary>
           <ol className={styles.lines}>
             {entry.log.map((line) => (
-              <li key={line.id}>{line.message}</li>
+              <li key={line.id}>
+                {line.message}
+                {line.count > 1 && <span className={styles.repeat}> ×{line.count}</span>}
+              </li>
             ))}
           </ol>
         </details>

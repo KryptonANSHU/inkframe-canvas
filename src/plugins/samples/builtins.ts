@@ -1,4 +1,5 @@
 import alignDistribute from './alignDistribute.js?raw';
+import malicious from './malicious.js?raw';
 import randomPalette from './randomPalette.js?raw';
 import shapeGrid from './shapeGrid.js?raw';
 
@@ -25,5 +26,10 @@ export const BUILTIN_PLUGINS: readonly BuiltinPlugin[] = [
     name: 'Grid of shapes',
     description: 'Repeat the selection as a grid.',
     code: shapeGrid,
+  },
+  {
+    name: 'Security test (malicious)',
+    description: 'Tries every forbidden action; each one is blocked.',
+    code: malicious,
   },
 ];

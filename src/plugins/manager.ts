@@ -22,8 +22,8 @@ export type PluginEntry = {
   readonly log: readonly LogLine[];
 };
 
-/** One security-log line; the ID keys it in lists. */
-export type LogLine = { readonly id: number; readonly message: string };
+/** One security-log line; the ID keys it in lists. `count` folds in identical repeats. */
+export type LogLine = { readonly id: number; readonly message: string; readonly count: number };
 
 export type ManagerState = {
   readonly entries: readonly PluginEntry[];
@@ -70,9 +70,18 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
       entries: state.getState().entries.map((entry) => (entry.key === key ? change(entry) : entry)),
     });
   };
+  // A repeat of the last line bumps its count, so a burst of the same refusal (a flood)
+  // can't push the rest of the log out.
   const log = (key: number, line: string) => {
-    const entry: LogLine = { id: nextLogId++, message: line };
-    update(key, (current) => ({ ...current, log: [...current.log, entry].slice(-LOG_LIMIT) }));
+    update(key, (current) => {
+      const last = current.log.at(-1);
+      const next: LogLine =
+        last?.message === line
+          ? { ...last, count: last.count + 1 }
+          : { id: nextLogId++, message: line, count: 1 };
+      const kept = last?.message === line ? current.log.slice(0, -1) : current.log;
+      return { ...current, log: [...kept, next].slice(-LOG_LIMIT) };
+    });
   };
 
   const approve = (key: number, manifest: Manifest) => {

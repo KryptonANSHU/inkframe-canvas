@@ -14,10 +14,11 @@
 
 - Rectangles, ellipses, lines, arrows, freehand pen, and text
 - Select, move, resize, rotate, with snapping guides
-- Undo and redo for every change
+- Undo and redo for every change, and grouping (Ctrl/⌘ + G)
 - Styles, layers, light and dark themes, a grid, keyboard shortcuts (press `?`)
 - Autosave in the browser, plus open and save as JSON
 - Export to PNG and SVG
+- Plugins in a sandboxed iframe, with permissions you approve and revoke: align and distribute, color palettes, grids, or your own from a file. A built-in malicious test plugin shows every attack being blocked
 - 60 fps with 10,000 shapes on screen
 
 ## Getting started

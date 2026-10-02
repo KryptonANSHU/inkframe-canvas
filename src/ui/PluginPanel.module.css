@@ -155,6 +155,11 @@
   line-height: 1.5;
 }
 
+.repeat {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
 .builtins {
   display: flex;
   flex-direction: column;
