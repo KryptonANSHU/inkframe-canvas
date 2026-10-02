@@ -1,0 +1,35 @@
+.segments {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-control);
+  background: var(--color-hover);
+}
+
+.segment {
+  display: grid;
+  place-items: center;
+  block-size: calc(var(--size-control) - 4px);
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--radius-control) - 2px);
+  background: transparent;
+  color: var(--color-ink-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--easing),
+    color var(--duration-fast) var(--easing);
+}
+
+.segment:hover {
+  color: var(--color-ink);
+}
+
+/* The chosen segment lifts onto the surface. */
+.segment[aria-checked='true'] {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-float);
+  color: var(--color-ink);
+}

@@ -5,26 +5,16 @@
   inset-inline-end: var(--space-3);
 }
 
-.trigger {
-  composes: iconButton from './surfaces.module.css';
-}
-
-.trigger[aria-expanded='true'] {
-  background: var(--color-hover);
-}
-
-/*
- * Radix copies this z-index to the positioned wrapper it portals into <body>; without it
- * the wrapper stacks at auto, under the style panel whenever shapes are selected.
- */
+/* The plugin panel: a fixed width, scrolling when the list outgrows the window. */
 .content {
-  z-index: var(--z-overlay);
+  inline-size: 320px;
+  max-block-size: min(560px, calc(100vh - 96px));
+  overflow-y: auto;
+  padding: var(--space-3);
 }
 
 .loading {
-  composes: floating from './surfaces.module.css';
   margin: 0;
-  padding: var(--space-3);
   color: var(--color-ink-muted);
   font-size: var(--font-size-sm);
 }

@@ -1,8 +1,7 @@
 import { Puzzle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Popover } from 'radix-ui';
 import type { PluginManager } from '../plugins/manager';
-import { ICON_STROKE, size, Surface } from '@inkframe/design';
+import { IconTrigger, Popover, Surface } from '@inkframe/design';
 import { useEditor } from './EditorContext';
 import { notify } from './notifications';
 import { PluginApproval } from './PluginApproval';
@@ -38,36 +37,27 @@ export function PluginsArea() {
 
   return (
     <>
-      <Popover.Root
-        onOpenChange={(open) => {
-          if (open) loadManager();
-        }}
-      >
-        <Surface layout="bar" className={styles.place}>
-          {/* No tooltip: the panel explains itself (see the main menu). */}
-          <Popover.Trigger className={styles.trigger} aria-label="Plugins">
-            <Puzzle size={size.icon} strokeWidth={ICON_STROKE} aria-hidden />
-          </Popover.Trigger>
-        </Surface>
-        <Popover.Portal>
-          <Popover.Content
-            className={styles.content}
-            align="end"
-            sideOffset={8}
-            aria-label="Plugins"
-            onCloseAutoFocus={(event) => {
-              event.preventDefault();
-              editor.focus();
-            }}
-          >
-            {manager === null ? (
-              <p className={styles.loading}>Loading plugins…</p>
-            ) : (
-              <PluginPanel manager={manager} />
-            )}
-          </Popover.Content>
-        </Popover.Portal>
-      </Popover.Root>
+      <Surface layout="bar" className={styles.place}>
+        <Popover
+          label="Plugins"
+          align="end"
+          className={styles.content}
+          trigger={<IconTrigger label="Plugins" Icon={Puzzle} />}
+          onOpenChange={(open) => {
+            if (open) loadManager();
+          }}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            editor.focus();
+          }}
+        >
+          {manager === null ? (
+            <p className={styles.loading}>Loading plugins…</p>
+          ) : (
+            <PluginPanel manager={manager} />
+          )}
+        </Popover>
+      </Surface>
       {manager !== null && <PluginApproval manager={manager} />}
     </>
   );

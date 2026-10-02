@@ -5,10 +5,6 @@
   inset-inline-start: var(--space-3);
 }
 
-.trigger {
-  composes: iconButton from './surfaces.module.css';
-}
-
 /* The wordmark sits at icon scale, so it reads as a label, not a banner. */
 .logo {
   display: block;
@@ -16,59 +12,4 @@
   block-size: 20px;
   margin-inline: var(--space-1) var(--space-2);
   pointer-events: none;
-}
-
-.trigger[aria-expanded='true'] {
-  background: var(--color-hover);
-}
-
-.menu {
-  composes: menu from './surfaces.module.css';
-}
-
-.item {
-  composes: menuItem from './surfaces.module.css';
-}
-
-.danger {
-  composes: menuItem from './surfaces.module.css';
-}
-
-/* The attribute outranks the composed base color, whatever order the CSS loads in. */
-.danger[role='menuitem'] {
-  color: var(--color-danger);
-}
-
-.danger[role='menuitem'][data-disabled] {
-  color: var(--color-ink-muted);
-}
-
-/* The icon takes the row's color: red with it, muted when disabled. */
-.danger .icon {
-  color: inherit;
-}
-
-.icon {
-  composes: menuIcon from './surfaces.module.css';
-}
-
-.shortcut {
-  composes: menuShortcut from './surfaces.module.css';
-}
-
-.separator {
-  composes: menuSeparator from './surfaces.module.css';
-}
-
-.label {
-  composes: menuLabel from './surfaces.module.css';
-}
-
-/* The chosen theme: a small dot at the end of its row. */
-.check {
-  inline-size: 6px;
-  block-size: 6px;
-  margin-inline-start: auto;
-  border-radius: var(--radius-round);
-  background: var(--color-select);
 }

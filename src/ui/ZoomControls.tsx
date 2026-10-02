@@ -1,8 +1,7 @@
 import { Grid3x3, Minus, Plus } from 'lucide-react';
-import { DropdownMenu } from 'radix-ui';
 import type { EditAction } from '../core/editActions';
 import { MAX_ZOOM, MIN_ZOOM } from '../core/camera';
-import { Divider, IconButton, shortcutText, Surface } from '@inkframe/design';
+import { Button, Divider, IconButton, Menu, MenuItem, Surface } from '@inkframe/design';
 import { useEditor, useEditorState } from './EditorContext';
 import { useBackToCanvas } from './useBackToCanvas';
 import styles from './ZoomControls.module.css';
@@ -33,38 +32,30 @@ export function ZoomControls() {
           editor.perform('zoomOut');
         })}
       />
-      {/* Non-modal: a menu button needs no focus trap, and nothing else is aria-hidden. */}
-      <DropdownMenu.Root modal={false}>
-        {/* No tooltip: the menu explains itself, and a focus tooltip would outlive it. */}
-        <DropdownMenu.Trigger className={styles.level} aria-label={`Zoom ${percent}`}>
-          {percent}
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content
-            className={styles.menu}
-            side="top"
-            align="start"
-            sideOffset={8}
-            onCloseAutoFocus={(event) => {
-              event.preventDefault();
-              editor.focus();
+      <Menu
+        side="top"
+        trigger={
+          // No tooltip: the menu explains itself, and a focus tooltip would outlive it.
+          <Button variant="ghost" className={styles.level} aria-label={`Zoom ${percent}`}>
+            {percent}
+          </Button>
+        }
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          editor.focus();
+        }}
+      >
+        {ZOOM_ITEMS.map(({ action, label, shortcut }) => (
+          <MenuItem
+            key={action}
+            label={label}
+            shortcut={shortcut}
+            onSelect={() => {
+              editor.perform(action);
             }}
-          >
-            {ZOOM_ITEMS.map(({ action, label, shortcut }) => (
-              <DropdownMenu.Item
-                key={action}
-                className={styles.item}
-                onSelect={() => {
-                  editor.perform(action);
-                }}
-              >
-                {label}
-                <span className={styles.shortcut}>{shortcutText(shortcut)}</span>
-              </DropdownMenu.Item>
-            ))}
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
-      </DropdownMenu.Root>
+          />
+        ))}
+      </Menu>
       <IconButton
         label="Zoom in"
         Icon={Plus}

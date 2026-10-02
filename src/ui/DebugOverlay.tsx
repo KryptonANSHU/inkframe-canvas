@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { Surface } from '@inkframe/design';
 import { useEditor, useEditorState } from './EditorContext';
 import styles from './DebugOverlay.module.css';
 
@@ -78,7 +79,7 @@ export function DebugOverlay() {
   }, [editor, theme]);
 
   return (
-    <section className={styles.overlay} aria-label="Performance">
+    <Surface as="section" className={styles.overlay} aria-label="Performance">
       <output ref={readout} className={styles.readout}>
         Waiting for a frame…
       </output>
@@ -89,6 +90,6 @@ export function DebugOverlay() {
         height={GRAPH_HEIGHT}
         aria-hidden="true"
       />
-    </section>
+    </Surface>
   );
 }

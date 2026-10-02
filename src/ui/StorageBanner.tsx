@@ -1,4 +1,4 @@
-import { Button } from '@inkframe/design';
+import { Banner, Button } from '@inkframe/design';
 import { useStore } from 'zustand';
 import type { Editor } from '../core/dom/createEditor';
 import styles from './StorageBanner.module.css';
@@ -12,21 +12,23 @@ export function StorageBanner({ editor }: StorageBannerProps) {
     return null;
   }
   return (
-    <div className={styles.banner} role="alert">
-      <span>
-        Autosave is off: this browser isn&apos;t letting Inkframe store data, so your drawing is
-        kept only until you close this tab.
-      </span>
-      <Button
-        variant="primary"
-        size="sm"
-        onClick={() => {
-          editor.files.save();
-          editor.focus();
-        }}
-      >
-        Save a copy
-      </Button>
-    </div>
+    <Banner
+      className={styles.place}
+      action={
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => {
+            editor.files.save();
+            editor.focus();
+          }}
+        >
+          Save a copy
+        </Button>
+      }
+    >
+      Autosave is off: this browser isn&apos;t letting Inkframe store data, so your drawing is kept
+      only until you close this tab.
+    </Banner>
   );
 }

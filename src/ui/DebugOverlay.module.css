@@ -1,5 +1,4 @@
 .overlay {
-  composes: floating from './surfaces.module.css';
   position: absolute;
   z-index: var(--z-floating);
   inset-block-start: calc(var(--space-3) * 2 + var(--size-control) + 2 * var(--space-1) + 2px);

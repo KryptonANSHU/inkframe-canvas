@@ -1,15 +1,16 @@
 import { ArrowDown, ArrowUp, BringToFront, Group, SendToBack, Ungroup } from 'lucide-react';
 import { useRef, type ReactNode } from 'react';
-import { Slider, ToggleGroup } from 'radix-ui';
 import { canGroup } from '../core/groups';
 import { selectedShapes } from '../core/selection/selectedShapes';
 import { selectionStyle, type Shared } from '../core/style';
 import {
+  ColorPicker,
   fillSwatches,
   IconButton,
+  SegmentedControl,
+  Slider,
   strokeSwatches,
   Surface,
-  Tooltip,
   type ShapeSwatch,
   type ThemeName,
 } from '@inkframe/design';
@@ -150,83 +151,52 @@ type SwatchesProps = {
 
 /** Color choices drawn as they appear in this theme; values are the stored colors. */
 function Swatches({ label, swatches, theme, value, withNone, onChange }: SwatchesProps) {
-  const editor = useEditor();
+  const backToCanvas = useBackToCanvas();
   return (
-    <ToggleGroup.Root
-      type="single"
-      className={styles.swatches}
-      aria-label={label}
-      value={value === 'mixed' ? '' : value}
-      onValueChange={(color) => {
-        if (color !== '') onChange(color);
-      }}
-    >
-      {withNone === true && (
-        <Tooltip label="No fill" side="left">
-          <ToggleGroup.Item
-            value={NO_FILL}
-            className={styles.none}
-            aria-label="No fill"
-            onClick={(event) => {
-              if (event.detail > 0) editor.focus();
-            }}
-          />
-        </Tooltip>
-      )}
-      {swatches.map((swatch) => (
-        <Tooltip key={swatch.name} label={swatch.name} side="left">
-          <ToggleGroup.Item
-            value={swatch.light.toLowerCase()}
-            className={styles.swatch}
-            aria-label={swatch.name}
-            style={{ backgroundColor: swatch[theme] }}
-            onClick={(event) => {
-              if (event.detail > 0) editor.focus();
-            }}
-          />
-        </Tooltip>
-      ))}
-    </ToggleGroup.Root>
+    <ColorPicker
+      label={label}
+      options={swatches.map((swatch) => ({
+        value: swatch.light.toLowerCase(),
+        name: swatch.name,
+        display: swatch[theme],
+      }))}
+      value={value === 'mixed' ? null : value}
+      onChange={onChange}
+      {...(withNone === true ? { none: { value: NO_FILL, name: 'No fill' } } : {})}
+      onItemClick={backToCanvas(() => undefined)}
+    />
   );
 }
 
 function StrokeWidths({ value }: { readonly value: Shared<number> }) {
   const editor = useEditor();
+  const backToCanvas = useBackToCanvas();
   return (
-    <ToggleGroup.Root
-      type="single"
-      className={styles.segments}
-      aria-label="Stroke width"
-      value={value === 'mixed' ? '' : String(value)}
-      onValueChange={(width) => {
-        if (width !== '') editor.applyStyle({ strokeWidth: Number(width) });
+    <SegmentedControl
+      label="Stroke width"
+      options={WIDTHS.map(({ value: width, label, drawn }) => ({
+        value: String(width),
+        label,
+        content: (
+          <svg width="20" height="16" viewBox="0 0 20 16" aria-hidden="true">
+            <line
+              x1="3"
+              y1="8"
+              x2="17"
+              y2="8"
+              stroke="currentColor"
+              strokeWidth={drawn}
+              strokeLinecap="round"
+            />
+          </svg>
+        ),
+      }))}
+      value={value === 'mixed' ? null : String(value)}
+      onChange={(width) => {
+        editor.applyStyle({ strokeWidth: Number(width) });
       }}
-    >
-      {WIDTHS.map(({ value: width, label, drawn }) => (
-        <Tooltip key={width} label={label} side="bottom">
-          <ToggleGroup.Item
-            value={String(width)}
-            className={styles.segment}
-            aria-label={label}
-            onClick={(event) => {
-              if (event.detail > 0) editor.focus();
-            }}
-          >
-            <svg width="20" height="16" viewBox="0 0 20 16" aria-hidden="true">
-              <line
-                x1="3"
-                y1="8"
-                x2="17"
-                y2="8"
-                stroke="currentColor"
-                strokeWidth={drawn}
-                strokeLinecap="round"
-              />
-            </svg>
-          </ToggleGroup.Item>
-        </Tooltip>
-      ))}
-    </ToggleGroup.Root>
+      onItemClick={backToCanvas(() => undefined)}
+    />
   );
 }
 
@@ -236,31 +206,20 @@ function Opacity({ value }: { readonly value: Shared<number> }) {
   const dragging = useRef(false);
   const percent = value === 'mixed' ? null : Math.round(value * 100);
   return (
-    <div className={styles.opacity}>
-      <Slider.Root
-        className={styles.slider}
-        min={OPACITY_MIN}
-        max={100}
-        step={OPACITY_STEP}
-        value={[percent ?? 100]}
-        aria-label="Opacity"
-        onValueChange={([next = 100]) => {
-          editor.applyStyle(
-            { opacity: next / 100 },
-            { key: 'opacity', continues: dragging.current },
-          );
-          dragging.current = true;
-        }}
-        onValueCommit={() => {
-          dragging.current = false;
-        }}
-      >
-        <Slider.Track className={styles.track}>
-          <Slider.Range className={styles.range} />
-        </Slider.Track>
-        <Slider.Thumb className={styles.thumb} aria-label="Opacity" />
-      </Slider.Root>
-      <output className={styles.value}>{percent === null ? 'Mixed' : `${String(percent)}%`}</output>
-    </div>
+    <Slider
+      label="Opacity"
+      min={OPACITY_MIN}
+      max={100}
+      step={OPACITY_STEP}
+      value={percent ?? 100}
+      valueText={percent === null ? 'Mixed' : `${String(percent)}%`}
+      onChange={(next) => {
+        editor.applyStyle({ opacity: next / 100 }, { key: 'opacity', continues: dragging.current });
+        dragging.current = true;
+      }}
+      onCommit={() => {
+        dragging.current = false;
+      }}
+    />
   );
 }

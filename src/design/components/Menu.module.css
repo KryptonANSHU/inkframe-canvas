@@ -1,0 +1,83 @@
+.menu {
+  composes: floating rise from './base.module.css';
+  z-index: var(--z-overlay);
+  min-inline-size: 232px;
+  padding: var(--space-1);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  block-size: var(--size-control);
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-control);
+  color: var(--color-ink);
+  font-size: var(--font-size-sm);
+  cursor: default;
+  outline: none;
+  user-select: none;
+}
+
+.item[data-highlighted] {
+  background: var(--color-hover);
+}
+
+.item[data-disabled] {
+  color: var(--color-ink-muted);
+}
+
+.danger {
+  composes: item;
+}
+
+/* The attribute outranks the composed base color, whatever order the CSS loads in. */
+.danger[role='menuitem'] {
+  color: var(--color-danger);
+}
+
+.danger[role='menuitem'][data-disabled] {
+  color: var(--color-ink-muted);
+}
+
+.icon {
+  flex-shrink: 0;
+  color: var(--color-ink-muted);
+}
+
+/* The icon takes a danger row's color: red with it, muted when disabled. */
+.danger .icon {
+  color: inherit;
+}
+
+.shortcut {
+  margin-inline-start: auto;
+  padding-inline-start: var(--space-4);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.separator {
+  block-size: 1px;
+  margin-block: var(--space-1);
+  margin-inline: calc(-1 * var(--space-1));
+  background: var(--color-line);
+}
+
+.label {
+  padding-block: var(--space-1);
+  padding-inline: var(--space-2);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+}
+
+/* The chosen option of a radio group: a small dot at the end of its row. */
+.check {
+  inline-size: 6px;
+  block-size: 6px;
+  margin-inline-start: auto;
+  border-radius: var(--radius-round);
+  background: var(--color-select);
+}

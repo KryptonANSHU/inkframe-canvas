@@ -1,19 +1,10 @@
-.banner {
+/* Bottom center, clear of the zoom and history bars on wide windows. */
+.place {
   position: absolute;
   z-index: var(--z-banner);
   inset-block-end: var(--space-4);
   inset-inline: var(--space-4);
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
   inline-size: fit-content;
   max-inline-size: 640px;
   margin-inline: auto;
-  padding-block: var(--space-2);
-  padding-inline: var(--space-4) var(--space-2);
-  border: 1px solid var(--color-danger);
-  border-radius: var(--radius-panel);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-float);
-  color: var(--color-ink);
 }

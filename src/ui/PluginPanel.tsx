@@ -1,8 +1,8 @@
-import { CircleStop, RotateCcw, Trash2, Upload, X } from 'lucide-react';
+import { CircleStop, RotateCcw, Trash2, Upload } from 'lucide-react';
 import { useRef } from 'react';
 import { useStore } from 'zustand';
 import type { PluginEntry, PluginManager } from '../plugins/manager';
-import { Button, ICON_STROKE, IconButton } from '@inkframe/design';
+import { Button, Chip, IconButton } from '@inkframe/design';
 import { BuiltinPlugins } from './BuiltinPlugins';
 import { PERMISSION_LABEL, stateText } from './pluginCopy';
 import styles from './PluginPanel.module.css';
@@ -135,18 +135,14 @@ function PluginRow({
       {state.kind === 'running' && state.granted.length > 0 && (
         <ul className={styles.chips} aria-label="Permissions">
           {state.granted.map((permission) => (
-            <li key={permission} className={styles.chip}>
-              {PERMISSION_LABEL[permission]}
-              <button
-                type="button"
-                className={styles.revoke}
-                aria-label={`Revoke ${PERMISSION_LABEL[permission]}`}
-                onClick={() => {
+            <li key={permission}>
+              <Chip
+                label={PERMISSION_LABEL[permission]}
+                removeLabel="Revoke"
+                onRemove={() => {
                   manager.revoke(entry.key, permission);
                 }}
-              >
-                <X size={12} strokeWidth={ICON_STROKE} aria-hidden />
-              </button>
+              />
             </li>
           ))}
         </ul>

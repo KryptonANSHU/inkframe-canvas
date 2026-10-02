@@ -1,9 +1,5 @@
-import { X } from 'lucide-react';
-import { useRef } from 'react';
-import { Dialog } from 'radix-ui';
-import { ICON_STROKE, size } from '../design/tokens';
+import { Dialog, Kbd } from '@inkframe/design';
 import { useEditor, useEditorState } from './EditorContext';
-import { Kbd } from '@inkframe/design';
 import styles from './ShortcutsDialog.module.css';
 
 type Group = { readonly title: string; readonly rows: readonly (readonly [string, string])[] };
@@ -93,57 +89,38 @@ const GROUPS: readonly Group[] = [
 export function ShortcutsDialog() {
   const editor = useEditor();
   const open = useEditorState((state) => state.helpOpen);
-  const content = useRef<HTMLDivElement>(null);
   return (
-    <Dialog.Root
+    <Dialog
       open={open}
       onOpenChange={(next) => {
         editor.store.setState({ helpOpen: next });
       }}
+      title="Keyboard shortcuts"
+      description="Shortcuts work while the canvas or the toolbar has focus."
+      width="wide"
+      closable
+      onCloseAutoFocus={(event) => {
+        event.preventDefault();
+        editor.focus();
+      }}
     >
-      <Dialog.Portal>
-        <Dialog.Overlay className={styles.scrim} />
-        <Dialog.Content
-          className={styles.dialog}
-          // Focus the dialog itself, not its close button: no ring until the user tabs.
-          ref={content}
-          onOpenAutoFocus={(event) => {
-            event.preventDefault();
-            content.current?.focus();
-          }}
-          onCloseAutoFocus={(event) => {
-            event.preventDefault();
-            editor.focus();
-          }}
-        >
-          <header className={styles.header}>
-            <Dialog.Title className={styles.title}>Keyboard shortcuts</Dialog.Title>
-            <Dialog.Close className={styles.close} aria-label="Close">
-              <X size={size.icon} strokeWidth={ICON_STROKE} aria-hidden />
-            </Dialog.Close>
-          </header>
-          <Dialog.Description className={styles.description}>
-            Shortcuts work while the canvas or the toolbar has focus.
-          </Dialog.Description>
-          <div className={styles.groups}>
-            {GROUPS.map((group) => (
-              <section key={group.title} className={styles.group}>
-                <h3 className={styles.groupTitle}>{group.title}</h3>
-                <dl className={styles.list}>
-                  {group.rows.map(([label, shortcut]) => (
-                    <div key={label} className={styles.row}>
-                      <dt>{label}</dt>
-                      <dd className={styles.keys}>
-                        <Kbd shortcut={shortcut} />
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              </section>
-            ))}
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+      <div className={styles.groups}>
+        {GROUPS.map((group) => (
+          <section key={group.title} className={styles.group}>
+            <h3 className={styles.groupTitle}>{group.title}</h3>
+            <dl className={styles.list}>
+              {group.rows.map(([label, shortcut]) => (
+                <div key={label} className={styles.row}>
+                  <dt>{label}</dt>
+                  <dd className={styles.keys}>
+                    <Kbd shortcut={shortcut} />
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        ))}
+      </div>
+    </Dialog>
   );
 }

@@ -1,17 +1,9 @@
 /* Below the top row of chrome, centered: where a failed control's absence is noticed. */
-.error {
+.place {
   position: absolute;
   z-index: var(--z-banner);
   inset-block-start: calc(var(--space-3) * 2 + var(--size-control) + 2 * var(--space-1) + 2px);
   inset-inline-start: 50%;
   max-inline-size: min(440px, calc(100% - 2 * var(--space-4)));
-  margin: 0;
-  padding-block: var(--space-2);
-  padding-inline: var(--space-3);
-  border: 1px solid var(--color-danger);
-  border-radius: var(--radius-panel);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-float);
-  color: var(--color-ink);
   transform: translateX(-50%);
 }

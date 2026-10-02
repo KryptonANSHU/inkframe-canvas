@@ -1,0 +1,8 @@
+/*
+ * Radix copies this z-index to the positioned wrapper it portals into <body>; without it
+ * the wrapper stacks at auto, under floating panels.
+ */
+.content {
+  composes: floating rise from './base.module.css';
+  z-index: var(--z-overlay);
+}

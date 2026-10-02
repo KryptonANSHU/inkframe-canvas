@@ -1,0 +1,76 @@
+.scrim {
+  position: fixed;
+  z-index: var(--z-overlay);
+  inset: 0;
+  background: var(--color-scrim);
+  animation: fade var(--duration-base) var(--easing);
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.dialog {
+  composes: floating from './base.module.css';
+  position: fixed;
+  z-index: var(--z-overlay);
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  display: flex;
+  flex-direction: column;
+  inline-size: min(420px, calc(100vw - 2 * var(--space-4)));
+  max-block-size: calc(100vh - 2 * var(--space-6));
+  overflow-y: auto;
+  padding: var(--space-6);
+  transform: translate(-50%, -50%);
+  outline: none;
+  animation: open var(--duration-base) var(--easing);
+}
+
+.dialog[data-width='wide'] {
+  inline-size: min(760px, calc(100vw - 2 * var(--space-4)));
+}
+
+@keyframes open {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 6px)) scale(0.99);
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.close {
+  composes: iconButton from './base.module.css';
+  margin-inline-end: calc(-1 * var(--space-2));
+  color: var(--color-ink-muted);
+}
+
+.description {
+  margin-block: var(--space-1) var(--space-4);
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* The actions, bottom right; the main one goes last. */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-block-start: var(--space-6);
+}

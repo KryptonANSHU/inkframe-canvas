@@ -48,7 +48,8 @@
 }
 
 .secondary:hover:not(:disabled),
-.ghost:hover:not(:disabled) {
+.ghost:hover:not(:disabled),
+.ghost[aria-expanded='true'] {
   background: var(--color-hover);
 }
 

@@ -1,0 +1,16 @@
+/* Something stopped working: the danger color on the edge, the message in plain ink. */
+.banner {
+  composes: floating from './base.module.css';
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  padding-block: var(--space-2);
+  padding-inline: var(--space-3);
+  border-color: var(--color-danger);
+  color: var(--color-ink);
+}
+
+.banner[data-has-action='true'] {
+  padding-inline: var(--space-4) var(--space-2);
+}

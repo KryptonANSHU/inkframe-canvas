@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
-import type { MouseEvent } from 'react';
+import { forwardRef, type ComponentPropsWithoutRef, type MouseEvent } from 'react';
 import { ICON_STROKE, size as sizes } from '../tokens';
+import { classes } from './classes';
 import styles from './IconButton.module.css';
 import { shortcutText } from './shortcuts';
 import { Tooltip } from './Tooltip';
@@ -46,3 +47,29 @@ export function IconButton({
     </Tooltip>
   );
 }
+
+type IconTriggerProps = Omit<ComponentPropsWithoutRef<'button'>, 'type' | 'children'> & {
+  readonly label: string;
+  readonly Icon: LucideIcon;
+};
+
+/**
+ * The icon-only button that opens a Menu or Popover. No tooltip: the panel explains
+ * itself, and a tooltip shown on focus would outlive it.
+ */
+export const IconTrigger = forwardRef<HTMLButtonElement, IconTriggerProps>(function IconTrigger(
+  { label, Icon, className, ...rest },
+  ref,
+) {
+  return (
+    <button
+      ref={ref}
+      type="button"
+      className={classes(styles.button, className)}
+      aria-label={label}
+      {...rest}
+    >
+      <Icon size={sizes.icon} strokeWidth={ICON_STROKE} aria-hidden />
+    </button>
+  );
+});
