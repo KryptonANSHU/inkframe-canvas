@@ -11,6 +11,7 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { HistoryControls } from './HistoryControls';
 import { MainMenu } from './MainMenu';
 import { PluginsArea } from './PluginsArea';
+import { ShapeList } from './ShapeList';
 import { ShortcutsDialog } from './ShortcutsDialog';
 import { StorageBanner } from './StorageBanner';
 import { StylePanel } from './StylePanel';
@@ -58,6 +59,9 @@ export function App() {
           <EditorProvider editor={editor}>
             <TooltipProvider>
               <EmptyHint />
+              <Area name="Shape list" message="The shape list failed. Reload to bring it back.">
+                <ShapeList />
+              </Area>
               {debug && (
                 <Suspense fallback={null}>
                   <DebugOverlay />

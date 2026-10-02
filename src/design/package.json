@@ -1,6 +1,6 @@
 {
   "name": "@inkframe/design",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "Inkframe's design tokens, themes, and shared React components (Radix-based).",
   "type": "module",

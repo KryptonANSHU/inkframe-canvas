@@ -3,6 +3,10 @@
 All notable changes to `@inkframe/design`. The package follows semantic versioning:
 a breaking change to a component's props is a new major version.
 
+## 1.1.0 — 2026-10-02
+
+- Added `Listbox`: a multi-select listbox (WAI-ARIA pattern, `aria-activedescendant`) that renders only the 50 options around the active one, for lists of any length.
+
 ## 1.0.0 — 2026-10-02
 
 First version as a package, extracted from the app's UI.

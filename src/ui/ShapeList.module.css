@@ -1,0 +1,56 @@
+/*
+ * Off screen (but in the accessibility tree and the Tab order) until it holds keyboard
+ * focus; then a panel on the left, so sighted keyboard users see where focus went.
+ */
+.region {
+  position: absolute;
+  /* Inside the window even while hidden: focusing it must never scroll the page. */
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.region:focus-within {
+  z-index: var(--z-floating);
+  inset-block-start: calc(var(--space-3) * 2 + var(--size-control) + 2 * var(--space-1) + 2px);
+  inset-inline-start: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  inline-size: var(--size-panel);
+  block-size: auto;
+  max-block-size: min(420px, calc(100vh - 200px));
+  padding: var(--space-3);
+  overflow: auto;
+  clip-path: none;
+  white-space: normal;
+}
+
+.title {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+}
+
+/* Announcements only: never shown. */
+.status {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
