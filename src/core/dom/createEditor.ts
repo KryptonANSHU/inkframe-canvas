@@ -26,6 +26,7 @@ import {
 import type { HistoryGroup } from '../history';
 import type { ShapeStyle } from '../shapes';
 import { applyStyle } from '../style';
+import type { TextMeasurer } from '../text/layout';
 import type { ToolId } from '../tools/toolIds';
 import { bindCanvasInput } from './bindCanvasInput';
 import { bindClipboard } from './clipboard';
@@ -56,6 +57,8 @@ export type Editor = {
   readonly index: SpatialIndex;
   /** Open, Save, and Export, for the main menu. */
   readonly files: FileActions;
+  /** Text measurement with the editor's font, for anything that creates text (plugins). */
+  readonly measurer: TextMeasurer;
   /** Runs what a shortcut would: undo, zoom, arrange, and so on (for buttons). */
   readonly perform: (action: EditAction) => void;
   readonly setTool: (tool: ToolId) => void;
@@ -183,6 +186,7 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
     store,
     index,
     files,
+    measurer,
     onFrame: (listener) => {
       frameListeners.add(listener);
       return () => {
