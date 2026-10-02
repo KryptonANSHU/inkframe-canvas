@@ -85,7 +85,7 @@ const GROUPS: readonly Group[] = [
   },
 ];
 
-/** Every shortcut, grouped (CLAUDE.md §9). Opens with ? or from the menu. */
+/** Every shortcut, grouped. Opens with ? or from the menu. */
 export function ShortcutsDialog() {
   const editor = useEditor();
   const open = useEditorState((state) => state.helpOpen);

@@ -3,7 +3,7 @@ import { describe, it } from 'vitest';
 import { MAX_ZOOM, MIN_ZOOM, screenToWorld, worldToScreen, zoomAt, type Camera } from './camera';
 import type { Point } from './geometry/point';
 
-// The PRD's precision guarantee holds for world coordinates up to ±1e6 units.
+// The precision guarantee holds for world coordinates up to ±1e6 units.
 // Beyond that, float spacing alone (ulp(1e6) ≈ 1.2e-10) eats most of the 1e-9 budget.
 const WORLD_LIMIT = 1e6;
 const TOLERANCE = 1e-9;

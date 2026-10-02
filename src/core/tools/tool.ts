@@ -9,7 +9,7 @@ export type ToolPointerEvent = {
   readonly shiftKey: boolean;
   readonly altKey: boolean;
   readonly ctrlKey: boolean;
-  /** ⌘ on macOS. Where the PRD says "Ctrl", tools accept either. */
+  /** ⌘ on macOS. Where a shortcut says "Ctrl", tools accept either. */
   readonly metaKey: boolean;
   /** 0–1. A pressed mouse, or a pen without pressure sensing, reports 0.5. */
   readonly pressure: number;

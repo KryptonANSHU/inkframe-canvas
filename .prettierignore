@@ -3,5 +3,3 @@ coverage
 playwright-report
 test-results
 package-lock.json
-docs/PRD.md
-CLAUDE.md

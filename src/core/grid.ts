@@ -2,7 +2,7 @@ import type { Camera } from './camera';
 import type { RenderContext, Viewport } from './renderer';
 import type { CanvasTheme } from './theme';
 
-/** World units between grid lines at 100%. Snap to grid (Tier 2) will use the same. */
+/** World units between grid lines at 100%. Snap to grid will use the same. */
 export const GRID_SIZE = 20;
 /** Every fifth line is stronger, so distances can be counted at a glance. */
 const MAJOR_EVERY = 5;

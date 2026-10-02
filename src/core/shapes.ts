@@ -79,5 +79,5 @@ export const DEFAULT_SHAPE_STYLE: ShapeStyle = {
 /** Smallest width or height a shape may have, in world units. */
 export const MIN_SHAPE_SIZE = 1;
 
-/** Most points a freehand path may have (PRD 1D). */
+/** Most points a freehand path may have. */
 export const MAX_PEN_POINTS = 10_000;

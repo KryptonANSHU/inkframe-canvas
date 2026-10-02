@@ -1,7 +1,7 @@
 const TAU = Math.PI * 2;
 const RIGHT_ANGLE = Math.PI / 2;
 
-/** Radians in [0, 2π), as shapes store them (PRD 1C). */
+/** Radians in [0, 2π), as shapes store them. */
 export function normalizeAngle(angle: number): number {
   const wrapped = angle % TAU;
   const positive = wrapped < 0 ? wrapped + TAU : wrapped;

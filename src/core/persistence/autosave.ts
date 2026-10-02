@@ -25,7 +25,7 @@ export type SnapshotStorage = {
 /** Parses and validates file text; the editor runs this in a worker. */
 export type ReadFileText = (text: string) => Promise<Result<Shape[], FileError>>;
 
-/** Quiet time after the last change before saving (PRD 1D). */
+/** Quiet time after the last change before saving. */
 export const AUTOSAVE_DELAY_MS = 500;
 
 export type PersistenceOptions = {

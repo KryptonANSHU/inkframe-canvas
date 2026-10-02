@@ -49,7 +49,7 @@ function Item({ Icon, label, shortcut, onSelect, danger, disabled }: ItemProps) 
   );
 }
 
-/** File actions, export, theme, and help, top left (the PRD's "file menu"). */
+/** File actions, export, theme, and help, top left. */
 export function MainMenu() {
   const editor = useEditor();
   const { files } = editor;

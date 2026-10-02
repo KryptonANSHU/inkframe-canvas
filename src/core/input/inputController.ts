@@ -25,7 +25,7 @@ export type KeyInput = {
   readonly repeat: boolean;
 };
 
-/** Arrow keys nudge the selection by 1 world unit, or 10 with Shift (PRD 1C). */
+/** Arrow keys nudge the selection by 1 world unit, or 10 with Shift. */
 const NUDGE: Readonly<Record<string, readonly [number, number]>> = {
   ArrowLeft: [-1, 0],
   ArrowRight: [1, 0],

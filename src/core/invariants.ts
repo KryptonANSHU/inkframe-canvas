@@ -6,7 +6,7 @@ import type { EditorState, EditorStore } from './store';
 const FULL_TURN = Math.PI * 2;
 
 /**
- * Checks the rules every editor state must keep (PRD 1D) and returns what is broken,
+ * Checks the rules every editor state must keep and returns what is broken,
  * or nothing. With `index`, also checks it against a full rebuild.
  */
 export function invariantViolations(state: EditorState, index?: SpatialIndex): string[] {

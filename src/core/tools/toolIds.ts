@@ -2,7 +2,7 @@ export type ToolId = 'select' | 'rectangle' | 'ellipse' | 'line' | 'arrow' | 'pe
 
 export const DEFAULT_TOOL: ToolId = 'select';
 
-/** Single-key shortcuts (PRD 1A), matched case-insensitively. */
+/** Single-key shortcuts, matched case-insensitively. */
 export const TOOL_SHORTCUTS: Readonly<Record<string, ToolId>> = {
   v: 'select',
   r: 'rectangle',

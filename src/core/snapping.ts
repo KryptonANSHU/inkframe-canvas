@@ -1,6 +1,6 @@
 import type { Bounds } from './geometry/bounds';
 
-/** How close, in screen pixels, an edge or center must come to snap (PRD 1C). */
+/** How close, in screen pixels, an edge or center must come to snap. */
 export const SNAP_THRESHOLD_PX = 6;
 /** How far around the moving shapes, in screen pixels, to look for snap targets. */
 export const SNAP_REACH_PX = 1200;

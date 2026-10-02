@@ -12,7 +12,7 @@ const GRAPH_WIDTH = 240;
 const GRAPH_HEIGHT = 48;
 
 /**
- * FPS, draw time, and a frame-time graph, shown with ?debug=1 (CLAUDE.md §5). It
+ * FPS, draw time, and a frame-time graph, shown with ?debug=1. It
  * draws straight to its own canvas on each editor frame, so React never re-renders
  * per frame, and an idle editor leaves it still.
  */

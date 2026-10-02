@@ -3,7 +3,7 @@ import type { Shape } from '../shapes';
 import { CURRENT_VERSION } from './migrations';
 
 export const FILE_FORMAT = 'inkframe';
-/** Import limits (PRD 1D). Paths over the point limit are simplified, not refused. */
+/** Import limits. Paths over the point limit are simplified, not refused. */
 export const MAX_FILE_BYTES = 20 * 1024 * 1024;
 export const MAX_SHAPES = 20_000;
 

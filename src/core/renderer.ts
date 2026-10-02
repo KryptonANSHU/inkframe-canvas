@@ -87,7 +87,7 @@ export function createRenderer(
       const t = worldToDeviceTransform(state.camera, viewport.devicePixelRatio, transform);
       context.setTransform(t.a, t.b, t.c, t.d, t.e, t.f);
 
-      // Text is never drawn with a fallback font: it waits for the real one (PRD 1B).
+      // Text is never drawn with a fallback font: it waits for the real one.
       const layout = state.fontsReady ? layoutText : null;
       const theme = canvasTheme(state.theme);
       const { shapes } = state.document;

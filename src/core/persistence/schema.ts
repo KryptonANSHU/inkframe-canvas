@@ -62,7 +62,7 @@ export const shapeSchema = shapeSchemaWith(
 
 /**
  * A shape from a file. Freehand paths over the point limit are simplified to fit
- * rather than refused (PRD 1D).
+ * rather than refused.
  */
 export const importedShapeSchema = shapeSchemaWith(
   z

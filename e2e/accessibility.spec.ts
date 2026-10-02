@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { canvas, drag, openEditor } from './helpers';
 
-/** WCAG 2.1 A and AA: the PRD's baseline. */
+/** WCAG 2.1 A and AA: the accessibility baseline. */
 const WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
 async function seriousViolations(page: Page) {

@@ -2,7 +2,7 @@ import type { Shape } from '../shapes';
 import { normalizeAngle, snapAngle } from './angles';
 import { shapeCenter, withCenter } from './shapeTransforms';
 
-/** Shift + rotate snaps to 15° steps (PRD 1C). */
+/** Shift + rotate snaps to 15° steps. */
 export const ROTATION_SNAP = Math.PI / 12;
 
 /** Turns every shape by `delta` radians around (centerX, centerY): positions orbit, rotations add. */

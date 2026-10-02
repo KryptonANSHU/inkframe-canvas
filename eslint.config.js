@@ -20,7 +20,7 @@ export default tseslint.config(
     rules: {
       eqeqeq: ['error', 'always'],
       'no-console': 'error',
-      // Named exports only (CLAUDE.md §3). Config files that need a default export opt out below.
+      // Named exports only. Config files that need a default export opt out below.
       'no-restricted-syntax': [
         'error',
         { selector: 'ExportDefaultDeclaration', message: 'Use named exports.' },

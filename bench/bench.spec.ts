@@ -3,7 +3,7 @@ import { cpus, platform, release, totalmem } from 'node:os';
 import { test, type Page } from '@playwright/test';
 import type { BenchApi, FileTimes, FrameStats, Stats } from './types';
 
-/** PRD: frame times, hit-test latency, and file times at each size; memory at 5k. */
+/** Frame times, hit-test latency, and file times at each size; memory at 5k. */
 const SIZES = [1000, 5000, 10_000] as const;
 const ANIMATION_FRAMES = 240;
 const DRAG_SHAPES = 50;

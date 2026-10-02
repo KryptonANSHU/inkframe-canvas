@@ -171,7 +171,7 @@ function coalescedMoves(event: PointerEvent): readonly PointerEvent[] {
 
 /**
  * Tool and edit shortcuts also work while a toolbar or panel control has focus
- * (CLAUDE.md), but never while typing, and never for keys a control handled itself.
+ * too, but never while typing, and never for keys a control handled itself.
  */
 function bindChromeKeys(
   canvas: HTMLCanvasElement,

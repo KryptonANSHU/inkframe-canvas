@@ -93,7 +93,7 @@ export const radius = { control: 6, panel: 10, round: 999 } as const;
 /** Fixed sizes: one control height everywhere, 16 px Lucide icons, one panel width. */
 export const size = { control: 32, swatch: 22, icon: 16, panel: 236 } as const;
 
-/** Lucide icons use a 1.5 px stroke (CLAUDE.md). */
+/** Lucide icons use a 1.5 px stroke. */
 export const ICON_STROKE = 1.5;
 
 export const fontSize = { xs: 12, sm: 13, md: 14, lg: 16, xl: 20 } as const;
