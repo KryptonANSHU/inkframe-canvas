@@ -1,9 +1,29 @@
 import type { Camera } from './camera';
+import type { Point } from './geometry/point';
 import type { RenderContext, Viewport } from './renderer';
 import type { CanvasTheme } from './theme';
 
-/** World units between grid lines at 100%. Snap to grid will use the same. */
+/** World units between grid lines at 100%, and the step snap to grid rounds to. */
 export const GRID_SIZE = 20;
+
+/** Snap to grid is on while the grid is shown; Ctrl / ⌘ turns it off for a gesture. */
+export function gridSnapping(
+  gridVisible: boolean,
+  modifiers: { readonly ctrlKey: boolean; readonly metaKey: boolean },
+): boolean {
+  return gridVisible && !modifiers.ctrlKey && !modifiers.metaKey;
+}
+
+/** The nearest grid line: always an exact multiple of GRID_SIZE. */
+export function snapToGrid(value: number): number {
+  // `+ 0` turns -0 into 0, so snapped values compare and serialize cleanly.
+  return Math.round(value / GRID_SIZE) * GRID_SIZE + 0;
+}
+
+export function snapPointToGrid(point: Readonly<Point>): Point {
+  return { x: snapToGrid(point.x), y: snapToGrid(point.y) };
+}
+
 /** Every fifth line is stronger, so distances can be counted at a glance. */
 const MAJOR_EVERY = 5;
 /** Lines closer than this on screen merge into fives, so the grid never turns to noise. */

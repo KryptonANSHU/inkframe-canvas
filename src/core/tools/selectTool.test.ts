@@ -37,8 +37,12 @@ const b = makeRect({
 });
 const far = makeRect({ id: testShapeId('far'), x: 400, y: 0, width: 50, height: 50, zIndex: 2 });
 
-function setup(shapes: readonly Shape[] = [a, b, far]) {
-  const store = createEditorStore({ document: shapes.reduce(insertShape, EMPTY_DOCUMENT) });
+// Grid off unless a test turns it on: most tests check exact, unsnapped positions.
+function setup(shapes: readonly Shape[] = [a, b, far], gridVisible = false) {
+  const store = createEditorStore({
+    document: shapes.reduce(insertShape, EMPTY_DOCUMENT),
+    gridVisible,
+  });
   const index = createSpatialIndex();
   bindSpatialIndex(store, index);
   const reportError = vi.fn();
@@ -453,5 +457,55 @@ describe('select tool: snapping', () => {
     expect(store.getState().guides).not.toEqual([]);
     tool.cancel();
     expect(store.getState().guides).toEqual([]);
+  });
+});
+
+describe('select tool: snap to grid', () => {
+  it("moves the selection's top-left corner onto grid lines", () => {
+    const { tool, shape } = setup([{ ...far, zIndex: 0 }], true);
+    // Pressed on its top edge (it has no fill), moved by (13, 11).
+    drag(tool, [425, 0], [438, 11]);
+    // Raw corner (413, 11) → nearest grid lines (420, 20).
+    expect(shape('far')).toMatchObject({ x: 420, y: 20 });
+  });
+
+  it("lets a neighbor's line win over the grid, axis by axis", () => {
+    const { tool, shape } = setup([a, { ...far, zIndex: 1 }], true);
+    drag(tool, [25, 25], [60, 45]);
+    // y snaps to far's center line (25); x, with nothing to line up with, to the grid.
+    expect(shape('a')).toMatchObject({ x: 40, y: 25 });
+  });
+
+  it('resizes the dragged edges onto grid lines, and not with Ctrl / ⌘', () => {
+    const rect = makeRect({ id: testShapeId('r'), x: 0, y: 0, width: 100, height: 50 });
+    const { tool, shape, store } = setup([rect], true);
+    store.setState({ selectedIds: new Set([rect.id]) });
+    drag(tool, [100, 50], [153, 77]);
+    expect(shape('r')).toMatchObject({ x: 0, y: 0, width: 160, height: 80 });
+    drag(tool, [160, 80], [173, 87], { ctrlKey: true });
+    expect(shape('r')).toMatchObject({ width: 173, height: 87 });
+  });
+
+  it('snaps a dragged line end to the grid', () => {
+    const line = makeLine({
+      id: testShapeId('l'),
+      x: 0,
+      y: 0,
+      points: [
+        { x: 0, y: 0 },
+        { x: 100, y: 0 },
+      ],
+    });
+    const { tool, shape, store } = setup([line], true);
+    store.setState({ selectedIds: new Set([line.id]) });
+    drag(tool, [100, 0], [127, 33]);
+    expect(shape('l')).toMatchObject({
+      x: 0,
+      y: 0,
+      points: [
+        { x: 0, y: 0 },
+        { x: 120, y: 40 },
+      ],
+    });
   });
 });

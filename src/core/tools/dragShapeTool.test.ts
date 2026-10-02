@@ -5,8 +5,9 @@ import { makeRect, pointerAt, testShapeId } from '../testing/factories';
 import { createDragShapeTool, DRAG_THRESHOLD_PX } from './dragShapeTool';
 import { lineBetween, rectangleBetween } from './shapeBuilders';
 
-function setup(camera = { x: 0, y: 0, zoom: 1 }, build = rectangleBetween) {
-  const store = createEditorStore({ camera });
+// Grid off unless a test turns it on: most tests check exact, unsnapped coordinates.
+function setup(camera = { x: 0, y: 0, zoom: 1 }, build = rectangleBetween, gridVisible = false) {
+  const store = createEditorStore({ camera, gridVisible });
   const reportError = vi.fn();
   const tool = createDragShapeTool(store, reportError, build);
   return { store, tool, reportError };
@@ -103,7 +104,10 @@ describe('drag shape tool', () => {
 
   it('reports a failed command and keeps the document unchanged', () => {
     const existing = makeRect({ id: testShapeId('taken') });
-    const store = createEditorStore({ document: insertShape(EMPTY_DOCUMENT, existing) });
+    const store = createEditorStore({
+      document: insertShape(EMPTY_DOCUMENT, existing),
+      gridVisible: false,
+    });
     const before = store.getState().document;
     const reportError = vi.fn();
     const tool = createDragShapeTool(store, reportError, rectangleBetween);
@@ -144,5 +148,24 @@ describe('drag shape tool', () => {
     const [id] = store.getState().document.order;
     expect([...store.getState().selectedIds]).toEqual([id]);
     expect(store.getState().activeTool).toBe('select');
+  });
+});
+
+describe('drag shape tool: snap to grid', () => {
+  it('puts both corners on grid lines while the grid is shown', () => {
+    const { store, tool } = setup(undefined, rectangleBetween, true);
+    tool.pointerDown(pointerAt(13, 27));
+    tool.pointerMove(pointerAt(60, 70));
+    tool.pointerUp(pointerAt(108, 71));
+    // (13, 27) → (20, 20) and (108, 71) → (100, 80).
+    expect(onlyShape(store)).toMatchObject({ x: 20, y: 20, width: 80, height: 60 });
+  });
+
+  it('draws freely with Ctrl / ⌘ held', () => {
+    const { store, tool } = setup(undefined, rectangleBetween, true);
+    tool.pointerDown(pointerAt(13, 27, 1, { metaKey: true }));
+    tool.pointerMove(pointerAt(60, 70, 1, { metaKey: true }));
+    tool.pointerUp(pointerAt(108, 71, 1, { metaKey: true }));
+    expect(onlyShape(store)).toMatchObject({ x: 13, y: 27, width: 95, height: 44 });
   });
 });

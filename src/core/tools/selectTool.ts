@@ -95,10 +95,12 @@ export function createSelectTool({ store, index, measurer, reportError }: Select
             start: startWorld,
             zoom: store.getState().camera.zoom,
             measurer,
+            grid: store.getState().gridVisible,
           })
         : moveGesture(originals, startWorld, {
             targets: snapTargets,
             zoom: store.getState().camera.zoom,
+            grid: store.getState().gridVisible,
           });
     return { kind: 'transforming', gesture };
   };

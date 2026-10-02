@@ -1,4 +1,5 @@
 import { unionBounds, type Bounds } from '../geometry/bounds';
+import { gridSnapping, snapPointToGrid, snapToGrid } from '../grid';
 import type { Point } from '../geometry/point';
 import { toLocalPoint } from '../geometry/transform';
 import {
@@ -41,11 +42,17 @@ export type TransformGesture = {
 /** Bounds of the shapes a move may snap to, near `area` (the select tool asks the index). */
 export type SnapTargets = (area: Bounds) => Bounds[];
 
-export type MoveSnapping = { readonly targets: SnapTargets; readonly zoom: number };
+export type MoveSnapping = {
+  readonly targets: SnapTargets;
+  readonly zoom: number;
+  /** Whether the grid is shown, so moves snap to it too. */
+  readonly grid: boolean;
+};
 
 /**
  * Moves the selection with the pointer. With `snapping`, its box snaps to nearby shapes'
- * edges and centers (within 6 screen pixels); holding Ctrl / ⌘ moves freely.
+ * edges and centers (within 6 screen pixels), and otherwise its top-left corner to the
+ * grid while the grid is shown; holding Ctrl / ⌘ moves freely.
  */
 export function moveGesture(
   originals: readonly Shape[],
@@ -74,6 +81,13 @@ export function moveGesture(
         dx += snapped.dx;
         dy += snapped.dy;
         guides = snapped.guides;
+        // A shape to line up with beats the grid; the grid takes each axis left free.
+        if (snapping.grid) {
+          if (!guides.some((guide) => guide.axis === 'x'))
+            dx += snapToGrid(moving.minX) - moving.minX;
+          if (!guides.some((guide) => guide.axis === 'y'))
+            dy += snapToGrid(moving.minY) - moving.minY;
+        }
       }
       return {
         shapes: originals.map((shape) => ({ ...shape, x: shape.x + dx, y: shape.y + dy })),
@@ -103,6 +117,8 @@ export type HandleGestureContext = {
   readonly start: Readonly<Point>;
   readonly zoom: number;
   readonly measurer: TextMeasurer;
+  /** Whether the grid is shown, so resizes and line ends snap to it. */
+  readonly grid: boolean;
 };
 
 export function handleGesture(handle: HandleId, context: HandleGestureContext): TransformGesture {
@@ -140,6 +156,11 @@ function resizeGesture(handle: ResizeHandle, context: HandleGestureContext): Tra
     apply(pointer, modifiers) {
       toLocalPoint(pointer, frame.centerX, frame.centerY, frame.rotation, local);
       const target = { x: local.x + grab.x, y: local.y + grab.y };
+      // The dragged edges land on grid lines; a turned frame's edges can't, so it is free.
+      if (frame.rotation === 0 && gridSnapping(context.grid, modifiers)) {
+        if (direction.x !== 0) target.x = snapToGrid(target.x + frame.centerX) - frame.centerX;
+        if (direction.y !== 0) target.y = snapToGrid(target.y + frame.centerY) - frame.centerY;
+      }
       const result = resizeFromHandle(frame, direction, target, {
         fromCenter: modifiers.altKey,
         keepAspect: modifiers.shiftKey || forcedAspect,
@@ -178,12 +199,13 @@ function endpointGesture(
     label: 'Resize',
     cursor: 'crosshair',
     originals,
-    apply: (pointer) => ({
-      shapes:
-        segment === null
-          ? [...originals]
-          : [moveEndpoint(segment, endpoint, { x: pointer.x + grab.x, y: pointer.y + grab.y })],
-      guides: NO_GUIDES,
-    }),
+    apply(pointer, modifiers) {
+      const free = { x: pointer.x + grab.x, y: pointer.y + grab.y };
+      const to = gridSnapping(context.grid, modifiers) ? snapPointToGrid(free) : free;
+      return {
+        shapes: segment === null ? [...originals] : [moveEndpoint(segment, endpoint, to)],
+        guides: NO_GUIDES,
+      };
+    },
   };
 }

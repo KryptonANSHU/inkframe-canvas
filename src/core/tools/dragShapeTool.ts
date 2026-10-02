@@ -1,5 +1,6 @@
 import { screenToWorld } from '../camera';
 import { createPoint, distance, type Point } from '../geometry/point';
+import { gridSnapping, snapPointToGrid } from '../grid';
 import { createShapeId, type ShapeId } from '../shapes';
 import { createAndSelect } from './selectCreated';
 import type { EditorStore } from '../store';
@@ -30,8 +31,14 @@ export function createDragShapeTool(
   let state: DragShapeToolState = { kind: 'idle' };
   const pointerWorld = createPoint();
 
+  // Both corners land on grid lines while the grid is shown (not with Ctrl / ⌘).
+  const worldAt = (event: ToolPointerEvent, out?: Point): Point => {
+    const { camera, gridVisible } = store.getState();
+    const point = screenToWorld(camera, event.screen, out);
+    return gridSnapping(gridVisible, event) ? snapPointToGrid(point) : point;
+  };
   const shapeTo = (event: ToolPointerEvent, startWorld: Readonly<Point>, id: ShapeId) =>
-    build(id, startWorld, screenToWorld(store.getState().camera, event.screen, pointerWorld));
+    build(id, startWorld, worldAt(event, pointerWorld));
 
   return {
     getCursor: () => 'crosshair',
@@ -41,7 +48,7 @@ export function createDragShapeTool(
     },
 
     pointerDown(event) {
-      const startWorld = screenToWorld(store.getState().camera, event.screen);
+      const startWorld = worldAt(event);
       state = { kind: 'pressing', startScreen: { ...event.screen }, startWorld };
     },
 
