@@ -82,4 +82,9 @@ export default tseslint.config(
     files: ['**/*.js'],
     ...tseslint.configs.disableTypeChecked,
   },
+  // Sample plugins run in the sandbox, where the SDK provides `inkframe`.
+  {
+    files: ['src/plugins/samples/*.js'],
+    languageOptions: { globals: { ...globals.browser, inkframe: 'readonly' } },
+  },
 );

@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import { useStore } from 'zustand';
 import type { PluginEntry, PluginManager } from '../plugins/manager';
 import { ICON_STROKE, size } from '../design/tokens';
+import { BuiltinPlugins } from './BuiltinPlugins';
 import { PERMISSION_LABEL, stateText } from './pluginCopy';
 import styles from './PluginPanel.module.css';
 
@@ -27,6 +28,7 @@ export function PluginPanel({ manager }: PluginPanelProps) {
           ))}
         </ul>
       )}
+      <BuiltinPlugins manager={manager} />
       <button
         type="button"
         className={styles.load}
@@ -106,6 +108,26 @@ function PluginRow({
           />
         </div>
       </div>
+      {state.kind === 'running' && state.manifest.commands.length > 0 && (
+        <div
+          className={styles.commands}
+          role="group"
+          aria-label={`${state.manifest.name} commands`}
+        >
+          {state.manifest.commands.map((command) => (
+            <button
+              key={command.id}
+              type="button"
+              className={styles.command}
+              onClick={() => {
+                manager.command(entry.key, command.id);
+              }}
+            >
+              {command.label}
+            </button>
+          ))}
+        </div>
+      )}
       {state.kind === 'running' && state.granted.length > 0 && (
         <ul className={styles.chips} aria-label="Permissions">
           {state.granted.map((permission) => (

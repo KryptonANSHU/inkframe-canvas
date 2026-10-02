@@ -43,6 +43,8 @@ export type PluginSession = {
   /** A message from the plugin's iframe (already checked to come from it). */
   receive(raw: unknown): void;
   revoke(permission: Permission): void;
+  /** Runs one of the commands the plugin declared; ignored unless it is running. */
+  command(id: string): void;
   stop(reason: string): void;
   state(): PluginState;
 };
@@ -193,6 +195,14 @@ export function createPluginSession(options: SessionOptions): PluginSession {
       if (state.kind === 'running') {
         setState({ ...state, granted: state.granted.filter((p) => p !== permission) });
       }
+    },
+    command(id) {
+      if (state.kind !== 'running') return;
+      if (!state.manifest.commands.some((command) => command.id === id)) {
+        log(`Ignored unknown command "${id}".`);
+        return;
+      }
+      send(hostMessage({ type: 'command', id }));
     },
     stop,
     state: () => state,

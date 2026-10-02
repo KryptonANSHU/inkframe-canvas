@@ -3,6 +3,7 @@ import { createShapesCommand, executeCommand, updateShapesCommand } from '../cor
 import { describeIssue, shapeSchema } from '../core/persistence/schema';
 import type { Result } from '../core/result';
 import { selectedShapes } from '../core/selection/selectedShapes';
+import { shapeGeometryBounds } from '../core/shapeGeometry';
 import { createShapeId, type Shape, type ShapeId } from '../core/shapes';
 import type { EditorStore } from '../core/store';
 import type { TextMeasurer } from '../core/text/layout';
@@ -33,7 +34,7 @@ const notifyParams = z.object({ message: z.string().trim().min(1).max(200) });
 export function callApi(method: Method, params: unknown, context: ApiContext): ApiResult {
   switch (method) {
     case 'selection.get':
-      return { ok: true, value: selectedShapes(context.store.getState()) };
+      return { ok: true, value: selectedShapes(context.store.getState()).map(withBounds) };
     case 'shapes.create':
       return createShapes(params, context);
     case 'shapes.update':
@@ -45,6 +46,16 @@ export function callApi(method: Method, params: unknown, context: ApiContext): A
       return { ok: true, value: null };
     }
   }
+}
+
+/**
+ * Selected shapes as plugins see them: each with its axis-aligned world `bounds`
+ * (rotation included), so layout plugins never have to reimplement shape geometry. The
+ * extra key is dropped if the shape is sent back.
+ */
+function withBounds(shape: Shape) {
+  const { minX, minY, maxX, maxY } = shapeGeometryBounds(shape);
+  return { ...shape, bounds: { x: minX, y: minY, width: maxX - minX, height: maxY - minY } };
 }
 
 /** Shapes come in without IDs that matter: the host assigns fresh ones. */

@@ -41,12 +41,33 @@ export const METHOD_PERMISSION: Readonly<Record<Method, Permission>> = {
   notify: 'notify',
 };
 
+/** Most commands one plugin may offer: a short menu, not a toolbar. */
+export const MAX_COMMANDS = 8;
+
+const slug = z
+  .string()
+  .regex(/^[a-z0-9][a-z0-9-]{0,62}$/, 'lower-case letters, digits, and dashes');
+
+/**
+ * A button the plugin panel shows for a running plugin. Plugins have no UI of their own
+ * (their iframe is hidden), so this is how the user asks one to do something.
+ */
+const commandSchema = z.object({ id: slug, label: z.string().trim().min(1).max(40) });
+export type PluginCommand = z.infer<typeof commandSchema>;
+
 /** What a plugin declares about itself in its handshake, and asks the user to approve. */
 export const manifestSchema = z.object({
-  id: z.string().regex(/^[a-z0-9][a-z0-9-]{0,62}$/, 'lower-case letters, digits, and dashes'),
+  id: slug,
   name: z.string().trim().min(1).max(60),
   version: z.string().regex(/^\d+\.\d+\.\d+$/, 'a version like 1.0.0'),
   permissions: z.array(z.enum(PERMISSIONS)).max(PERMISSIONS.length),
+  commands: z
+    .array(commandSchema)
+    .max(MAX_COMMANDS)
+    .refine((commands) => new Set(commands.map((c) => c.id)).size === commands.length, {
+      message: 'command IDs must be unique',
+    })
+    .default([]),
 });
 export type Manifest = z.infer<typeof manifestSchema>;
 
@@ -91,6 +112,7 @@ export type HostMessage = { readonly protocol: typeof PROTOCOL; readonly version
   | { readonly type: 'handshake-ok'; readonly apiVersion: number }
   | { readonly type: 'refused'; readonly reason: string }
   | { readonly type: 'start'; readonly permissions: readonly Permission[] }
+  | { readonly type: 'command'; readonly id: string }
   | { readonly type: 'result'; readonly id: number; readonly ok: true; readonly value: unknown }
   | { readonly type: 'result'; readonly id: number; readonly ok: false; readonly error: CallError }
 );

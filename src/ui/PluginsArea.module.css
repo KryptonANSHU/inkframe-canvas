@@ -16,6 +16,14 @@
   background: var(--color-hover);
 }
 
+/*
+ * Radix copies this z-index to the positioned wrapper it portals into <body>; without it
+ * the wrapper stacks at auto, under the style panel whenever shapes are selected.
+ */
+.content {
+  z-index: var(--z-overlay);
+}
+
 .loading {
   composes: floating from './surfaces.module.css';
   margin: 0;

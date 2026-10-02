@@ -155,6 +155,56 @@
   line-height: 1.5;
 }
 
+.builtins {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--color-ink-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.builtin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-inline: var(--space-1);
+}
+
+.commands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.command {
+  block-size: 26px;
+  padding-inline: var(--space-2);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--easing);
+}
+
+.command:hover {
+  background: var(--color-hover);
+}
+
+.run {
+  composes: command;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
 .load {
   display: flex;
   align-items: center;

@@ -9,6 +9,8 @@
   const CALL_TIMEOUT_MS = 2000;
   let nextId = 0;
   let main = null;
+  let started = false;
+  let onCommand = null;
   const pending = new Map();
 
   const post = (message) => {
@@ -46,9 +48,14 @@
         request.reject(
           Object.assign(new Error(message.error.message), { code: message.error.code }),
         );
-    } else if (message.type === 'start' && main) {
+    } else if (message.type === 'start' && !started) {
+      started = true;
       Promise.resolve()
-        .then(() => main({ permissions: message.permissions }))
+        .then(() => main && main({ permissions: message.permissions }))
+        .catch(crash);
+    } else if (message.type === 'command' && started && onCommand) {
+      Promise.resolve()
+        .then(() => onCommand(String(message.id)))
         .catch(crash);
     }
   });
@@ -56,10 +63,17 @@
   addEventListener('unhandledrejection', (event) => crash(event.reason));
 
   globalThis.inkframe = Object.freeze({
-    /** Declare the plugin and its main function, which runs once the user allows it. */
+    /**
+     * Declare the plugin and, optionally, a main function that runs once the user allows
+     * it. Plugins that only offer commands can leave it out and use onCommand.
+     */
     register(manifest, run) {
       main = run;
       post({ type: 'handshake', apiVersion: API_VERSION, manifest });
+    },
+    /** Called with a command's ID when the user picks it in the plugin panel. */
+    onCommand(handler) {
+      onCommand = handler;
     },
     selection: Object.freeze({ get: () => call('selection.get') }),
     shapes: Object.freeze({

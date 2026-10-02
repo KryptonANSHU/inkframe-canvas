@@ -2,6 +2,7 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 import type { EditorStore } from '../core/store';
 import type { TextMeasurer } from '../core/text/layout';
 import { PERMISSIONS, type Manifest, type Permission } from './protocol';
+import { BUILTIN_PLUGINS, type BuiltinPlugin } from './samples/builtins';
 import { runInSandbox, type SandboxedPlugin } from './sandbox';
 import { createPluginSession, type PluginState } from './session';
 
@@ -40,12 +41,16 @@ export type PluginManagerOptions = {
 
 export type PluginManager = {
   readonly state: StoreApi<ManagerState>;
+  /** Plugins shipped with Inkframe; here so their code loads with the manager, lazily. */
+  readonly builtins: readonly BuiltinPlugin[];
   run(code: string, label: string, source: PluginSource): number;
   /** Runs the same code again in a fresh sandbox, e.g. after a crash. */
   restart(key: number): void;
   stop(key: number): void;
   remove(key: number): void;
   revoke(key: number, permission: Permission): void;
+  /** Asks a running plugin to run one of its commands. */
+  command(key: number, id: string): void;
   /** The user's answer to the pending approval. */
   decide(key: number, allow: boolean): void;
   dispose(): void;
@@ -126,6 +131,7 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
 
   return {
     state,
+    builtins: BUILTIN_PLUGINS,
     run(code, label, source) {
       const key = nextKey++;
       running.set(key, { code, sandbox: null });
@@ -162,6 +168,9 @@ export function createPluginManager(options: PluginManagerOptions): PluginManage
           Object.fromEntries(Object.entries(readApprovals()).filter(([key]) => key !== id)),
         );
       }
+    },
+    command(key, id) {
+      running.get(key)?.sandbox?.session.command(id);
     },
     decide(key, allow) {
       const approval = state.getState().approval;

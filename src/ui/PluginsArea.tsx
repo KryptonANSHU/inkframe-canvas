@@ -51,6 +51,7 @@ export function PluginsArea() {
         </div>
         <Popover.Portal>
           <Popover.Content
+            className={styles.content}
             align="end"
             sideOffset={8}
             aria-label="Plugins"

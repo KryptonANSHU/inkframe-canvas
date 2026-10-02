@@ -18,6 +18,7 @@ const manifest: Manifest = {
   name: 'Grid maker',
   version: '1.0.0',
   permissions: ['selection:read', 'shapes:create', 'notify'],
+  commands: [{ id: 'small', label: 'Small grid' }],
 };
 const envelope = { protocol: PROTOCOL, version: PROTOCOL_VERSION };
 const handshake = (apiVersion = 1) => ({ ...envelope, type: 'handshake', apiVersion, manifest });
@@ -280,5 +281,39 @@ describe('plugin API', () => {
     await start();
     session.receive(call(1, 'notify', { message: 'Grid ready' }));
     expect(notify).toHaveBeenCalledWith('Grid ready');
+  });
+});
+
+describe('plugin commands', () => {
+  it('sends a declared command to a running plugin only', async () => {
+    const { session, sent, log, start } = setup();
+    session.command('small');
+    expect(sent).toEqual([]);
+    await start();
+    session.command('small');
+    session.command('delete-everything');
+    expect(sent.filter((message) => message.type === 'command')).toEqual([
+      expect.objectContaining({ id: 'small' }),
+    ]);
+    expect(log).toHaveBeenCalledWith('Ignored unknown command "delete-everything".');
+  });
+
+  it('refuses a manifest with duplicate or too many commands', () => {
+    const { session, log } = setup();
+    const commands = Array.from({ length: 9 }, (_, i) => ({ id: `c${String(i)}`, label: 'C' }));
+    session.receive({ ...handshake(), manifest: { ...manifest, commands } });
+    const twice = [commands[0], commands[0]];
+    session.receive({ ...handshake(), manifest: { ...manifest, commands: twice } });
+    expect(session.state().kind).toBe('loading');
+    expect(log).toHaveBeenCalledTimes(2);
+  });
+
+  it('gives selected shapes their world bounds', async () => {
+    const { session, start, lastResult } = setup();
+    await start();
+    session.receive(call(1, 'selection.get'));
+    expect(lastResult()).toMatchObject({
+      value: [{ id: rect.id, bounds: { x: rect.x, y: rect.y, width: 100, height: 50 } }],
+    });
   });
 });
