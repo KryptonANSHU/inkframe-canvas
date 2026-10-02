@@ -40,12 +40,18 @@ export type EditorHooks = {
   save(): void;
   /** The canvas's size in CSS pixels. */
   viewSize(): { readonly width: number; readonly height: number };
+  /** Per-user undo while collaborating; null runs the editor's own history. */
+  sharedHistory(): SharedHistory | null;
 };
+
+/** Undo and redo of the local user's own changes in a shared drawing. */
+export type SharedHistory = { undo(): void; redo(): void };
 
 const NO_HOOKS: EditorHooks = {
   open: () => undefined,
   save: () => undefined,
   viewSize: () => ({ width: 0, height: 0 }),
+  sharedHistory: () => null,
 };
 
 const ZOOMS = { zoomIn: 'in', zoomOut: 'out', zoomReset: 'reset', zoomFit: 'fit' } as const;
@@ -97,11 +103,16 @@ export function performEditAction(
 ): void {
   switch (action) {
     case 'undo':
-      report(undo(store), reportError);
+    case 'redo': {
+      const shared = hooks.sharedHistory();
+      if (shared !== null) {
+        if (action === 'undo') shared.undo();
+        else shared.redo();
+      } else {
+        report(action === 'undo' ? undo(store) : redo(store), reportError);
+      }
       return;
-    case 'redo':
-      report(redo(store), reportError);
-      return;
+    }
     case 'delete':
       deleteSelection(store, reportError);
       return;

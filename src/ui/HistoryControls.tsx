@@ -8,10 +8,13 @@ import { useBackToCanvas } from './useBackToCanvas';
 export function HistoryControls() {
   const editor = useEditor();
   const backToCanvas = useBackToCanvas();
-  const { canUndo, canRedo } = useEditorState((state) => ({
-    canUndo: state.history.past.length > 0,
-    canRedo: state.history.future.length > 0,
-  }));
+  const { canUndo, canRedo } = useEditorState(
+    (state) =>
+      state.sharedUndo ?? {
+        canUndo: state.history.past.length > 0,
+        canRedo: state.history.future.length > 0,
+      },
+  );
   return (
     <Surface layout="bar" className={styles.place} role="group" aria-label="History">
       <IconButton

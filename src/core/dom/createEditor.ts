@@ -23,6 +23,7 @@ import {
   performEditAction,
   type EditAction,
   type EditorHooks,
+  type SharedHistory,
 } from '../editActions';
 import type { HistoryGroup } from '../history';
 import type { ShapeStyle } from '../shapes';
@@ -71,6 +72,8 @@ export type Editor = {
   readonly dispose: () => void;
   /** Called after every drawn frame with the draw time; returns an unsubscribe. */
   readonly onFrame: (listener: FrameListener) => () => void;
+  /** Routes undo and redo to a collaboration session's per-user history, or back. */
+  readonly setSharedHistory: (history: SharedHistory | null) => void;
 };
 
 const animationFrames: FrameScheduler = {
@@ -147,7 +150,9 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
     });
     return findAnchor(document, nearby, point, camera.zoom, avoid);
   };
+  let sharedHistory: SharedHistory | null = null;
   const hooks: EditorHooks = {
+    sharedHistory: () => sharedHistory,
     open: () => {
       files.open();
     },
@@ -205,6 +210,9 @@ export function createEditor(canvas: HTMLCanvasElement, options: EditorOptions):
       return () => {
         frameListeners.delete(listener);
       };
+    },
+    setSharedHistory: (history) => {
+      sharedHistory = history;
     },
     perform: (action) => {
       performEditAction(action, store, reportError, hooks);

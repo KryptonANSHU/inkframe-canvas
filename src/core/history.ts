@@ -14,6 +14,11 @@ export type HistoryEntry = {
 export type History = {
   readonly past: readonly HistoryEntry[];
   readonly future: readonly HistoryEntry[];
+  /**
+   * Counts new steps (joined commands don't count). Shared undo while collaborating
+   * reads it to know where one undo step ends and the next begins.
+   */
+  readonly steps: number;
 };
 
 /**
@@ -22,7 +27,7 @@ export type History = {
  */
 export type HistoryGroup = { readonly key: string; readonly continues: boolean };
 
-export const EMPTY_HISTORY: History = { past: [], future: [] };
+export const EMPTY_HISTORY: History = { past: [], future: [], steps: 0 };
 
 /** Oldest steps are dropped past this, so a long session can't grow memory forever. */
 export const MAX_HISTORY = 200;
@@ -41,9 +46,13 @@ export function pushHistory(
       selectionAfter: entry.selectionAfter,
       groupKey: group.key,
     };
-    return { past: [...history.past.slice(0, -1), joined], future: [] };
+    return { past: [...history.past.slice(0, -1), joined], future: [], steps: history.steps };
   }
-  return { past: [...history.past, entry].slice(-MAX_HISTORY), future: [] };
+  return {
+    past: [...history.past, entry].slice(-MAX_HISTORY),
+    future: [],
+    steps: history.steps + 1,
+  };
 }
 
 /** `first` then `second`, undone in reverse order, as one command. */

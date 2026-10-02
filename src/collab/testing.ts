@@ -3,11 +3,17 @@ import { vi } from 'vitest';
 import { toFile } from '../core/persistence/fileFormat';
 import { createEditorStore, type EditorStore } from '../core/store';
 import { bindDocument } from './binding';
+import { createSharedUndo, type SharedUndo } from './sharedUndo';
 
 /** Replica origin for updates arriving from another replica in tests. */
 const PEER = Symbol('peer');
 
-export type Replica = { readonly store: EditorStore; readonly doc: Y.Doc };
+export type Replica = {
+  readonly store: EditorStore;
+  readonly doc: Y.Doc;
+  /** This client's per-user undo. */
+  readonly undo: SharedUndo;
+};
 
 /**
  * In-memory replicas of one shared drawing, like clients on a relay. While
@@ -19,8 +25,13 @@ export function replicas(count: number, initial?: Parameters<typeof createEditor
       i === 0 ? { ...initial, gridVisible: false } : { gridVisible: false },
     );
     const doc = new Y.Doc();
-    bindDocument(store, doc, { seed: i === 0, reportError: vi.fn() });
-    return { store, doc };
+    const undo = createSharedUndo(store, doc);
+    bindDocument(store, doc, {
+      seed: i === 0,
+      reportError: vi.fn(),
+      onLocalEdit: undo.onLocalEdit,
+    });
+    return { store, doc, undo };
   });
   let partitioned = false;
   const queued: { to: Y.Doc; update: Uint8Array }[] = [];

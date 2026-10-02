@@ -16,6 +16,16 @@ export type BindingOptions = {
   readonly seed: boolean;
   /** Told once per remote shape that fails validation. */
   readonly reportError: (error: Error) => void;
+  /** Called just before each local edit is written, e.g. to mark undo steps. */
+  readonly onLocalEdit?: (edit: LocalEdit) => void;
+};
+
+/** One local document change, as shared undo sees it. */
+export type LocalEdit = {
+  /** False when the change joins the previous undo step (a held key, a slider drag). */
+  readonly newStep: boolean;
+  readonly selectionBefore: ReadonlySet<ShapeId>;
+  readonly selectionAfter: ReadonlySet<ShapeId>;
 };
 
 export type DocumentBinding = { dispose(): void };
@@ -29,7 +39,7 @@ export type DocumentBinding = { dispose(): void };
 export function bindDocument(
   store: EditorStore,
   doc: Y.Doc,
-  { seed, reportError }: BindingOptions,
+  { seed, reportError, onLocalEdit }: BindingOptions,
 ): DocumentBinding {
   const shared = sharedShapes(doc);
   /** The order key of every shape in the shared document (this client's view). */
@@ -111,6 +121,11 @@ export function bindDocument(
   shared.observe(onShared);
   const unsubscribe = store.subscribe((state, previous) => {
     if (!applying && state.document !== previous.document) {
+      onLocalEdit?.({
+        newStep: state.history.steps !== previous.history.steps,
+        selectionBefore: previous.selectedIds,
+        selectionAfter: state.selectedIds,
+      });
       writeLocal(previous.document, state.document, LOCAL_EDIT);
     }
   });

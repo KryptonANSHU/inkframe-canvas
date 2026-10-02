@@ -155,7 +155,11 @@ export function undo(store: EditorStore): Result<DocumentState, CommandError> | 
     store.setState({
       document: result.value,
       selectedIds: entry.selectionBefore,
-      history: { past: history.past.slice(0, -1), future: [...history.future, entry] },
+      history: {
+        past: history.past.slice(0, -1),
+        future: [...history.future, entry],
+        steps: history.steps,
+      },
     });
   }
   return result;
@@ -173,7 +177,11 @@ export function redo(store: EditorStore): Result<DocumentState, CommandError> | 
     store.setState({
       document: result.value,
       selectedIds: entry.selectionAfter,
-      history: { past: [...history.past, entry], future: history.future.slice(0, -1) },
+      history: {
+        past: [...history.past, entry],
+        future: history.future.slice(0, -1),
+        steps: history.steps,
+      },
     });
   }
   return result;

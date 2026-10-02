@@ -17,6 +17,8 @@ type Step =
   | { readonly kind: 'delete'; readonly on: number; readonly pick: number }
   | { readonly kind: 'front'; readonly on: number; readonly pick: number }
   | { readonly kind: 'group'; readonly on: number; readonly picks: readonly [number, number] }
+  | { readonly kind: 'undo'; readonly on: number }
+  | { readonly kind: 'redo'; readonly on: number }
   | { readonly kind: 'partition' }
   | { readonly kind: 'sync' };
 
@@ -29,6 +31,8 @@ const step: fc.Arbitrary<Step> = fc.oneof(
   fc.record({ kind: fc.constant('delete'), on, pick }),
   fc.record({ kind: fc.constant('front'), on, pick }),
   fc.record({ kind: fc.constant('group'), on, picks: fc.tuple(pick, pick) }),
+  fc.record({ kind: fc.constant('undo'), on }),
+  fc.record({ kind: fc.constant('redo'), on }),
   fc.record({ kind: fc.constant('partition') }),
   fc.record({ kind: fc.constant('sync') }),
 );
@@ -46,6 +50,12 @@ function run(replica: Replica, s: Exclude<Step, { kind: 'partition' | 'sync' }>)
   const document = () => store.getState().document;
   const target = 'pick' in s ? nth(replica, s.pick) : undefined;
   switch (s.kind) {
+    case 'undo':
+      replica.undo.undo();
+      return;
+    case 'redo':
+      replica.undo.redo();
+      return;
     case 'rect':
       executeCommand(
         store,

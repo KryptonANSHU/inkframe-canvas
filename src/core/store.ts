@@ -58,6 +58,11 @@ export type EditorState = {
   readonly gridVisible: boolean;
   /** Anchors to show while an arrow end is drawn or dragged near a shape. Transient. */
   readonly anchorHint: AnchorHint | null;
+  /**
+   * While collaborating, undo and redo act on the local user's own changes, through
+   * the shared document; this mirrors what they can do. Null uses `history`.
+   */
+  readonly sharedUndo: { readonly canUndo: boolean; readonly canRedo: boolean } | null;
 };
 
 export type EditorStore = StoreApi<EditorState>;
@@ -86,6 +91,7 @@ export function createEditorStore(initial: Partial<EditorState> = {}): EditorSto
     helpOpen: false,
     gridVisible: true,
     anchorHint: null,
+    sharedUndo: null,
     ...initial,
   }));
 }
