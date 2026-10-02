@@ -21,6 +21,8 @@ jobs:
       # Runs both unit and property projects and enforces the src/core coverage threshold.
       - run: npm run test:coverage
       - run: npm run build
+      # A story that no longer compiles against its component fails the pull request.
+      - run: npm run build-storybook
       - run: npx playwright install --with-deps chromium
       - run: npm run e2e
       - if: failure()

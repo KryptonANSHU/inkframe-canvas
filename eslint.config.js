@@ -5,7 +5,9 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'playwright-report', 'test-results'] },
+  {
+    ignores: ['dist', 'coverage', 'playwright-report', 'test-results', 'storybook-static'],
+  },
 
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,
@@ -92,6 +94,11 @@ export default tseslint.config(
     },
   },
 
+  // Storybook's config files and stories (CSF) are built on default exports.
+  {
+    files: ['.storybook/*.{ts,tsx}', 'src/**/*.stories.tsx'],
+    rules: { 'no-restricted-syntax': 'off' },
+  },
   {
     files: ['*.config.{js,ts}', 'bench/*.config.ts'],
     languageOptions: { globals: globals.node },

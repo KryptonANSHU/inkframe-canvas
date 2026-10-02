@@ -14,3 +14,4 @@ First version as a package, extracted from the app's UI.
   - Overlays: `Tooltip` (with `TooltipProvider`), `Popover`, `Menu` with its items, `Dialog`, `Toast` (with `ToastProvider` and `ToastViewport`).
   - Inputs: `ColorPicker`, `SegmentedControl`, `Slider`, `Chip`.
   - Text: `Kbd`, plus `shortcutKeys` and `shortcutText`.
+- Storybook: one story file per component (`npm run storybook`), covering default, hover, focus, disabled, and error states where they apply, in light and dark themes; every story passes axe.

@@ -57,15 +57,20 @@
   composes: base;
 }
 
-/* Destructive: the danger color on the outline and label, never a filled red slab. */
+/*
+ * Destructive: the danger color on the outline and label, never a filled red slab. On
+ * its own surface, so the label keeps AA contrast wherever the button sits; hover adds
+ * only a faint tint of the same red (a grey hover dropped it below 4.5:1).
+ */
 .danger {
   composes: base;
   border-color: var(--color-danger);
+  background: var(--color-surface);
   color: var(--color-danger);
 }
 
 .danger:hover:not(:disabled) {
-  background: var(--color-hover);
+  background: color-mix(in srgb, var(--color-danger) 6%, var(--color-surface));
 }
 
 /* An action that adds something: a dashed outline across the panel's width. */

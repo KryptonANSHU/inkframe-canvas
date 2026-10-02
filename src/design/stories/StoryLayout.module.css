@@ -1,0 +1,24 @@
+/* Layout for stories only: never imported by the app. */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  inline-size: var(--size-panel);
+}
+
+/* The dark chip a tooltip draws, for showing what sits on it. */
+.onTooltip {
+  padding-block: var(--space-1);
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--color-tooltip);
+  color: var(--color-tooltip-text);
+  font-size: var(--font-size-xs);
+}

@@ -34,14 +34,15 @@ Then open http://localhost:5173.
 
 ## Commands
 
-| Command         | What it does                               |
-| --------------- | ------------------------------------------ |
-| `npm run dev`   | Start the dev server                       |
-| `npm run build` | Type-check and build for production        |
-| `npm test`      | Run unit tests                             |
-| `npm run e2e`   | Run end-to-end tests in Chromium           |
-| `npm run bench` | Run the benchmarks at 1k / 5k / 10k shapes |
-| `npm run lint`  | Lint the code                              |
+| Command             | What it does                               |
+| ------------------- | ------------------------------------------ |
+| `npm run dev`       | Start the dev server                       |
+| `npm run build`     | Type-check and build for production        |
+| `npm test`          | Run unit tests                             |
+| `npm run e2e`       | Run end-to-end tests in Chromium           |
+| `npm run bench`     | Run the benchmarks at 1k / 5k / 10k shapes |
+| `npm run lint`      | Lint the code                              |
+| `npm run storybook` | Browse the design system's components      |
 
 Add `?debug=1` to the URL to see a live frame-time meter.
 

@@ -1,0 +1,9 @@
+/*
+ * The app locks the page to the window (the canvas fills it); stories and docs pages
+ * must scroll like ordinary documents.
+ */
+html,
+body {
+  block-size: auto;
+  overflow: auto;
+}

@@ -25,5 +25,12 @@
     // The design system, an internal package (see vite.config.ts).
     "paths": { "@inkframe/design": ["./src/design/index.ts"] }
   },
-  "include": ["src", "bench/scene.ts", "bench/driver.ts", "bench/types.ts"]
+  "include": [
+    "src",
+    ".storybook/*.ts",
+    ".storybook/*.tsx",
+    "bench/scene.ts",
+    "bench/driver.ts",
+    "bench/types.ts"
+  ]
 }

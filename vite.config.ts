@@ -54,7 +54,14 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
       // src/core/dom is browser glue, covered by Playwright (e2e/) rather than unit tests.
-      exclude: ['src/**/*.test.{ts,tsx}', 'src/**/testing/**', 'src/core/dom/**'],
+      // Stories are demos, checked by the Storybook build and its axe pass.
+      exclude: [
+        'src/**/*.test.{ts,tsx}',
+        'src/**/testing/**',
+        'src/core/dom/**',
+        'src/**/*.stories.tsx',
+        'src/design/stories/**',
+      ],
       thresholds: {
         'src/core/**': { lines: 90 },
       },
