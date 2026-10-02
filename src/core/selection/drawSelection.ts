@@ -3,7 +3,8 @@ import type { Bounds } from '../geometry/bounds';
 import type { Point } from '../geometry/point';
 import { rotatedBoxCorners } from '../geometry/transform';
 import type { RenderContext } from '../renderer';
-import { shapeBox } from '../shapeGeometry';
+import { shapeBox, shapeGeometryBounds } from '../shapeGeometry';
+import type { GroupId, Shape } from '../shapes';
 import type { Guide } from '../snapping';
 import type { EditorState } from '../store';
 import { canvasTheme } from '../theme';
@@ -47,10 +48,17 @@ export function drawSelectionOverlay(
   const theme = canvasTheme(state.theme);
   context.strokeStyle = theme.selection;
 
-  if (shapes.length > 1) {
-    for (const shape of shapes) {
-      const corners = rotatedBoxCorners(shapeBox(shape), shape.rotation);
-      strokePolygon(context, project(corners, isAxisAligned(shape.rotation)));
+  // One outline per thing the user picked: a shape, or a whole group as one box. A lone
+  // shape or group needs none; the frame already traces it.
+  const units = selectionUnits(shapes);
+  if (units.length > 1) {
+    for (const unit of units) {
+      if (unit.kind === 'group') {
+        strokePolygon(context, project(marqueeCorners(unionBounds(unit.members)), true));
+      } else {
+        const corners = rotatedBoxCorners(shapeBox(unit.shape), unit.shape.rotation);
+        strokePolygon(context, project(corners, isAxisAligned(unit.shape.rotation)));
+      }
     }
   }
   const frame = selectionFrame(shapes);
@@ -77,6 +85,39 @@ export function drawSelectionOverlay(
     const ends = guideEnds(guide);
     strokeLine(context, project(ends, true));
   }
+}
+
+type SelectionUnit =
+  | { readonly kind: 'shape'; readonly shape: Shape }
+  | { readonly kind: 'group'; readonly members: Shape[] };
+
+/** Ungrouped shapes on their own, and each group's selected members together. */
+function selectionUnits(shapes: readonly Shape[]): SelectionUnit[] {
+  const groups = new Map<GroupId, Shape[]>();
+  const units: SelectionUnit[] = [];
+  for (const shape of shapes) {
+    const members = shape.groupId === undefined ? undefined : groups.get(shape.groupId);
+    if (shape.groupId === undefined) {
+      units.push({ kind: 'shape', shape });
+    } else if (members === undefined) {
+      const created = [shape];
+      groups.set(shape.groupId, created);
+      units.push({ kind: 'group', members: created });
+    } else {
+      members.push(shape);
+    }
+  }
+  return units;
+}
+
+function unionBounds(shapes: readonly Shape[]): Bounds {
+  const bounds = shapes.map(shapeGeometryBounds);
+  return {
+    minX: Math.min(...bounds.map((b) => b.minX)),
+    minY: Math.min(...bounds.map((b) => b.minY)),
+    maxX: Math.max(...bounds.map((b) => b.maxX)),
+    maxY: Math.max(...bounds.map((b) => b.maxY)),
+  };
 }
 
 /** A guide's two ends in world space: vertical guides run along y, horizontal along x. */
